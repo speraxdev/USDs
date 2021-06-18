@@ -19,6 +19,15 @@ contract VaultCore is VaultStorage, Ownable {
 		_;
 	}
 
+	constructor() public {
+		collaValut = address(this);
+		SPAValut = address(this);
+		USDsFeeValut = address(this);
+		USDsYieldValut = address(this);
+		supportedCollat[0xb7a4F3E9097C08dA09517b5aB877F7a917224ede] = true;
+
+	}
+
 
 	function calculateSwapFeeIn() public returns (uint swapFeeIn) {
 		return 1000;
@@ -41,17 +50,19 @@ contract VaultCore is VaultStorage, Ownable {
 		address collaAddr,
 		uint USDsAmt
 	) internal whenMintRedeemAllowed {
-		uint priceColla = uint(IOracle(oracleAddr).price(collaAddr));
+		uint priceColla = uint(IOracle(oracleAddr).collatPrice(collaAddr));
+		uint precisionColla = IOracle(oracleAddr).collatPrecision(collaAddr);
 		uint priceSPA = uint(IOracle(oracleAddr).getSPAPrice());
+		uint precisionSPA = IOracle(oracleAddr).SPAPricePrecision();
 		uint swapFee = calculateSwapFeeIn();
-		uint SPABurnAmt = USDsAmt.mul(chi).div(chiPresion).div(priceSPA);
+		uint SPABurnAmt = USDsAmt.mul(chi).div(chiPresion).mul(precisionSPA).div(priceSPA);
 		if (swapFee > 0) {
 			SPABurnAmt = SPABurnAmt.add(SPABurnAmt.mul(swapFee).div(swapFeePresion));
 		}
 		ISperaxToken(SPATokenAddr).burnFrom(msg.sender, SPABurnAmt);
 
 		//Deposit collaeral
-		uint CollaDepAmt = USDsAmt.mul(chiPresion - chi).div(chiPresion).div(priceColla);
+		uint CollaDepAmt = USDsAmt.mul(chiPresion - chi).div(chiPresion).mul(precisionColla).div(priceColla);
 		if (swapFee > 0) {
 			CollaDepAmt = CollaDepAmt.add(CollaDepAmt.mul(swapFee).div(swapFeePresion));
 		}
@@ -76,18 +87,20 @@ contract VaultCore is VaultStorage, Ownable {
 		address collaAddr,
 		uint USDsAmt
 	) internal whenMintRedeemAllowed {
-		uint priceColla = uint(IOracle(oracleAddr).price(collaAddr));
+		uint priceColla = uint(IOracle(oracleAddr).collatPrice(collaAddr));
+		uint precisionColla = IOracle(oracleAddr).collatPrecision(collaAddr);
 		//FixedPoint.uq112x112 priceSPAuq = IOracle(oracleAddr).priceSPAuq();
 		uint priceSPA = uint(IOracle(oracleAddr).getSPAPrice());
+		uint precisionSPA = IOracle(oracleAddr).SPAPricePrecision();
 		uint swapFee = calculateSwapFeeOut();
-		uint SPAMintAmt = USDsAmt.mul(chi).div(chiPresion).div(priceSPA);
+		uint SPAMintAmt = USDsAmt.mul(chi).div(chiPresion).mul(precisionSPA).div(priceSPA);
 		if (swapFee > 0) {
 			SPAMintAmt = SPAMintAmt.sub(SPAMintAmt.mul(swapFee).div(swapFeePresion));
 		}
 		IERC20(collaAddr).safeTransferFrom(SPAValut, msg.sender, SPAMintAmt);
 
 		//Unlock collaeral
-		uint CollaUnlockAmt = USDsAmt.mul(chiPresion - chi).div(chiPresion).div(priceColla);
+		uint CollaUnlockAmt = USDsAmt.mul(chiPresion - chi).div(chiPresion).mul(precisionColla).div(priceColla);
 		if (swapFee > 0) {
 			CollaUnlockAmt = CollaUnlockAmt.sub(CollaUnlockAmt.mul(swapFee).div(swapFeePresion));
 		}

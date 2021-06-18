@@ -1,8 +1,5 @@
-/*
-    1.1.7
-*/
 // SPDX-License-Identifier: MIT
-
+// Note: 00000000000000000000000006ee09ff6f4c83eab024173f5507515b0f810db0
 pragma solidity ^0.6.12;
 
 import "../interfaces/AggregatorV3Interface.sol";
@@ -55,7 +52,11 @@ contract Oracle is IOracle, Ownable {
 	AggregatorV3Interface priceFeedETH;
 	AggregatorV3Interface priceFeedUSDC;
 
-	address public USDCAddr = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
+	address public USDCAddr = 0xb7a4F3E9097C08dA09517b5aB877F7a917224ede;
+
+    uint public override ETHPricePrecision = 10**8;
+    uint public USDCPricePrecision = 10**8;
+    uint public override SPAPricePrecision = 10**8 * 2**112;
 
 
 
@@ -139,13 +140,21 @@ contract Oracle is IOracle, Ownable {
 		) = priceFeedUSDC.latestRoundData();
 		return price;
 	}
+
 	function getSPAPrice() public view override returns (int) {
 		int ETHPrice = getETHPrice();
 		return int(token0PriceMA.mul(uint(ETHPrice)));
 	}
-	function price(address tokenAddr) public view override returns (int) {
+
+	function collatPrice(address tokenAddr) public view override returns (int) {
 		if (tokenAddr == USDCAddr) {
 			return getUSDCPrice();
+		}
+	}
+
+    function collatPrecision(address tokenAddr) public view override returns (uint) {
+		if (tokenAddr == USDCAddr) {
+			return USDCPricePrecision;
 		}
 	}
 
