@@ -19,22 +19,75 @@ contract VaultCore is VaultStorage, Ownable {
 		_;
 	}
 
-	constructor() public {
+	constructor(address USDsToken_, address oracleAddr_) public {
 		collaValut = address(this);
 		SPAValut = address(this);
 		USDsFeeValut = address(this);
 		USDsYieldValut = address(this);
 		supportedCollat[0xb7a4F3E9097C08dA09517b5aB877F7a917224ede] = true;
+		USDsInstance = USDs(USDsToken_);
+		oracleAddr = oracleAddr_;
 
 	}
 
 
-	function calculateSwapFeeIn() public returns (uint swapFeeIn) {
+	/**
+	 * @dev swapFeePresion = 1000000
+	 */
+
+	function calculateSwapFeeIn() public returns (uint) {
+		uint priceUSDs = uint(IOracle(oracleAddr).getUSDsPrice()); //TODO: change to 3 days average
+		uint precisionUSDs = IOracle(oracleAddr).USDsPricePrecision();
+		uint smallPwithPrecision = swapFee_P.mul(precisionUSDs).div(swapFee_PPresion);
+		if (smallPwithPrecision < priceUSDs) {
+			return swapFeePresion / 1000; // 0.1%
+		} else {
+			uint temp = (smallPwithPrecision - priceUSDs).mul(swapFeeTheta); //precision: precisionUSDs
+			uint temp2 = temp.mul(temp); //precision: precisionUSDs^2
+			uint temp3 = temp2.mul(swapFeePresion).div(precisionUSDs).div(precisionUSDs);
+			uint temp4 = temp3.div(100);
+			return swapFeePresion / 1000 + temp4;
+		}
+
+	}
+
+	function calculateSwapFeeOut() public returns (uint) {
 		return 1000;
 	}
-	function calculateSwapFeeOut() public returns (uint swapFeeOut) {
-		return 1000;
+
+	function chiTarget(uint chiInit_, uint blockHeight, uint priceUSDs, uint precisionUSDs) internal view returns (uint chiTarget_) {
+		uint chiAdjustmentA = chiAlpha.mul(blockHeight);
+		uint chiAdjustmentB;
+		if (priceUSDs > precisionUSDs) {
+			chiAdjustmentB = chiBeta.mul(priceUSDs - precisionUSDs).mul(priceUSDs - precisionUSDs);
+			chiTarget_ = chiInit_.sub(chiAdjustmentA).add(chiAdjustmentB);
+		} else if (priceUSDs < precisionUSDs) {
+			chiAdjustmentB = chiBeta.mul(precisionUSDs - priceUSDs).mul(precisionUSDs - priceUSDs);
+			chiTarget_ = chiInit_.sub(chiAdjustmentA).sub(chiAdjustmentB);
+		} else {
+			chiTarget_ = chiInit_.sub(chiAdjustmentA);
+		}
 	}
+
+	function chiMint() public view returns (uint)  {
+		uint priceUSDs = uint(IOracle(oracleAddr).getUSDsPrice());
+		uint precisionUSDs = IOracle(oracleAddr).USDsPricePrecision();
+		return chiTarget(chiInit, block.number, priceUSDs, precisionUSDs);
+	}
+
+	function chiRedeem() public view returns (uint chiRedeem_) {
+		uint priceUSDs = uint(IOracle(oracleAddr).getUSDsPrice());
+		uint precisionUSDs = IOracle(oracleAddr).USDsPricePrecision();
+		uint chiTarget_ = chiTarget(chiInit, block.number, priceUSDs, precisionUSDs);
+		uint collateralRatio_ = collateralRatio();
+		if (chiTarget_ > collateralRatio_) {
+			chiRedeem_ = chiTarget_.add(chiGamma.mul(chiTarget_ - collateralRatio_));
+		} else {
+			chiRedeem_ = chiTarget_;
+		}
+
+	}
+
 
 
 	function mint(address collaAddr, uint USDsAmt)
@@ -51,10 +104,11 @@ contract VaultCore is VaultStorage, Ownable {
 		uint USDsAmt
 	) internal whenMintRedeemAllowed {
 		uint priceColla = uint(IOracle(oracleAddr).collatPrice(collaAddr));
-		uint precisionColla = IOracle(oracleAddr).collatPrecision(collaAddr);
+		uint precisionColla = IOracle(oracleAddr).collatPricePrecision(collaAddr);
 		uint priceSPA = uint(IOracle(oracleAddr).getSPAPrice());
 		uint precisionSPA = IOracle(oracleAddr).SPAPricePrecision();
 		uint swapFee = calculateSwapFeeIn();
+		uint chi = chiMint();
 		uint SPABurnAmt = USDsAmt.mul(chi).div(chiPresion).mul(precisionSPA).div(priceSPA);
 		if (swapFee > 0) {
 			SPABurnAmt = SPABurnAmt.add(SPABurnAmt.mul(swapFee).div(swapFeePresion));
@@ -62,15 +116,17 @@ contract VaultCore is VaultStorage, Ownable {
 		ISperaxToken(SPATokenAddr).burnFrom(msg.sender, SPABurnAmt);
 
 		//Deposit collaeral
-		uint CollaDepAmt = USDsAmt.mul(chiPresion - chi).div(chiPresion).mul(precisionColla).div(priceColla);
+		uint CollaDepAmtDiv = chiPresion.mul(priceColla);
+		uint CollaDepAmt = USDsAmt.mul(chiPresion - chi).mul(precisionColla).div(CollaDepAmtDiv);
 		if (swapFee > 0) {
 			CollaDepAmt = CollaDepAmt.add(CollaDepAmt.mul(swapFee).div(swapFeePresion));
 		}
 		IERC20(collaAddr).safeTransferFrom(msg.sender, collaValut, CollaDepAmt);
 
 		//Mint USDs
+		uint swapFeeAmount = USDsAmt.mul(swapFee).div(swapFeePresion);
 		USDsInstance.mint(msg.sender, USDsAmt);
-		USDsInstance.mint(USDsFeeValut, USDsAmt.mul(swapFee).div(swapFeePresion));
+		USDsInstance.mint(USDsFeeValut, swapFeeAmount);
 	}
 
 	function redeem(address collaAddr, uint USDsAmt)
@@ -88,11 +144,12 @@ contract VaultCore is VaultStorage, Ownable {
 		uint USDsAmt
 	) internal whenMintRedeemAllowed {
 		uint priceColla = uint(IOracle(oracleAddr).collatPrice(collaAddr));
-		uint precisionColla = IOracle(oracleAddr).collatPrecision(collaAddr);
+		uint precisionColla = IOracle(oracleAddr).collatPricePrecision(collaAddr);
 		//FixedPoint.uq112x112 priceSPAuq = IOracle(oracleAddr).priceSPAuq();
 		uint priceSPA = uint(IOracle(oracleAddr).getSPAPrice());
 		uint precisionSPA = IOracle(oracleAddr).SPAPricePrecision();
 		uint swapFee = calculateSwapFeeOut();
+		uint chi = chiRedeem();
 		uint SPAMintAmt = USDsAmt.mul(chi).div(chiPresion).mul(precisionSPA).div(priceSPA);
 		if (swapFee > 0) {
 			SPAMintAmt = SPAMintAmt.sub(SPAMintAmt.mul(swapFee).div(swapFeePresion));
@@ -100,15 +157,17 @@ contract VaultCore is VaultStorage, Ownable {
 		IERC20(collaAddr).safeTransferFrom(SPAValut, msg.sender, SPAMintAmt);
 
 		//Unlock collaeral
-		uint CollaUnlockAmt = USDsAmt.mul(chiPresion - chi).div(chiPresion).mul(precisionColla).div(priceColla);
+		uint CollaUnlockAmtDiv = chiPresion.mul(priceColla);
+		uint CollaUnlockAmt = USDsAmt.mul(chiPresion - chi).mul(precisionColla).div(CollaUnlockAmtDiv);
 		if (swapFee > 0) {
 			CollaUnlockAmt = CollaUnlockAmt.sub(CollaUnlockAmt.mul(swapFee).div(swapFeePresion));
 		}
 		IERC20(collaAddr).safeTransferFrom(collaValut, msg.sender, CollaUnlockAmt);
 
 		//Burn USDs
-		USDsInstance.burn(msg.sender, USDsAmt.sub(USDsAmt.mul(swapFee).div(swapFeePresion)));
-		USDsInstance.transfer(USDsFeeValut, USDsAmt.mul(swapFee).div(swapFeePresion));
+		uint swapFeeAmount = USDsAmt.mul(swapFee).div(swapFeePresion);
+		USDsInstance.burn(msg.sender, USDsAmt.sub(swapFeeAmount));
+		USDsInstance.transfer(USDsFeeValut, swapFeeAmount);
 	}
 
 	/**
@@ -132,6 +191,16 @@ contract VaultCore is VaultStorage, Ownable {
 			USDsInstance.changeSupply(vaultValue);
 		}
 	}
+
+	/**
+	 * @dev  Precision: same as chi
+	 */
+
+	function collateralRatio() public view returns (uint256 ratio) {
+        uint totalValue = _totalValue();
+		uint USDsSupply =  USDsInstance.totalSupply();
+		ratio = totalValue.mul(chiPresion).div(USDsSupply);
+    }
 
 	/**
      * @dev Determine the total value of assets held by the vault and its

@@ -6,3 +6,6 @@ libraries/.DS_Store
 .env
 truffle-config.js
 LICENSE
+flat.sh
+*.json
+build/

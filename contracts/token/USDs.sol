@@ -36,6 +36,8 @@ contract USDs is Initializable, InitializableERC20Detailed, Ownable {
 
     uint256 private constant MAX_SUPPLY = ~uint128(0); // (2^128) - 1
     uint256 public _totalSupply;
+    uint256 public _totalMinted;
+    uint256 public _totalBurnt;
     mapping(address => mapping(address => uint256)) private _allowances;
     address public vaultAddress = address(0);
     mapping(address => uint256) private _creditBalances;
@@ -55,6 +57,10 @@ contract USDs is Initializable, InitializableERC20Detailed, Ownable {
         InitializableERC20Detailed._initialize(_nameArg, _symbolArg, 18);
         rebasingCreditsPerToken = 1e18;
         vaultAddress = _vaultAddress;
+    }
+
+    function changeVault(address newVault) external onlyOwner {
+        vaultAddress = newVault;
     }
 
     /**
@@ -284,6 +290,7 @@ contract USDs is Initializable, InitializableERC20Detailed, Ownable {
         }
 
         _totalSupply = _totalSupply.add(_amount);
+        _totalMinted = _totalSupply.add(_amount);
 
         require(_totalSupply < MAX_SUPPLY, "Max supply");
 
@@ -340,7 +347,7 @@ contract USDs is Initializable, InitializableERC20Detailed, Ownable {
         }
 
         _totalSupply = _totalSupply.sub(_amount);
-
+        _totalBurnt = _totalBurnt.add(_amount);
         emit Transfer(_account, address(0), _amount);
     }
 

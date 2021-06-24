@@ -26,6 +26,7 @@ contract Oracle is IOracle, Ownable {
        uint price0Cumulative;
     }
 
+
     //
     // Constants & Immutables
     //
@@ -56,14 +57,21 @@ contract Oracle is IOracle, Ownable {
 
     uint public override ETHPricePrecision = 10**8;
     uint public USDCPricePrecision = 10**8;
+    uint public override USDsPricePrecision = 10**18;
     uint public override SPAPricePrecision = 10**8 * 2**112;
+
+    //  For swap fee:
+    uint[FREQUENCY+1] public USDsInflow;
+    uint[FREQUENCY+1] public USDsOutflow;
+    uint USDsInOutRatio;
+    uint USDsInOutRatioPrecision = 10000000;
 
 
 
     //
     // Constructor
     //
-    constructor(address pair_) public {
+    constructor(address pair_, address USDsToken_) public {
 		priceFeedETH = AggregatorV3Interface(0x9326BFA02ADD2366b30bacB125260Af641031331);
         priceFeedUSDC = AggregatorV3Interface(0x9211c6b3BF41A10F78539810Cf5c64e1BB78Ec60);
         uint32 constructTime = uint32(now % 2 ** 32);
@@ -89,6 +97,13 @@ contract Oracle is IOracle, Ownable {
                                                    .sub(basePricetime);
             token0Pricetimes[i].timestamp = constructTime - period * uint32(FREQUENCY - i);
         }
+        USDsInstance = USDs(USDsToken_);
+
+        for (uint i = 0; i < (FREQUENCY+1); i++) {
+            USDsInflow[i] = 0;
+            USDsOutflow[i] = 0;
+        }
+
     }
 
     //
@@ -146,17 +161,22 @@ contract Oracle is IOracle, Ownable {
 		return int(token0PriceMA.mul(uint(ETHPrice)));
 	}
 
+    function getUSDsPrice() public view override returns (int) {
+		return int(1 * USDsPricePrecision);
+	}
+
 	function collatPrice(address tokenAddr) public view override returns (int) {
 		if (tokenAddr == USDCAddr) {
 			return getUSDCPrice();
 		}
 	}
 
-    function collatPrecision(address tokenAddr) public view override returns (uint) {
+    function collatPricePrecision(address tokenAddr) public view override returns (uint) {
 		if (tokenAddr == USDCAddr) {
 			return USDCPricePrecision;
 		}
 	}
+
 
     /**
      * @notice update the price of token0 to the latest
@@ -189,5 +209,8 @@ contract Oracle is IOracle, Ownable {
         lastUpdateTime = currTime;
         pricetimeOldestIndex = indexOld;
         emit Update(token0PriceMA, price0Cumulative);
+
+        USDsInflow[indexNew] = USDsInstance._totalMinted();
+        USDsOutflow[indexNew] = USDsInstance._totalBurnt();
     }
 }

@@ -9,7 +9,9 @@ interface IOracle {
     function update() external;
     function collatPrice(address tokenAddr) external view returns (int);
     function getSPAPrice() external view returns (int);
+    function getUSDsPrice() external view returns (int);
     function ETHPricePrecision() external view returns (uint);
-    function collatPrecision(address tokenAddr) external view returns (uint);
+    function collatPricePrecision(address tokenAddr) external view returns (uint);
     function SPAPricePrecision() external view returns (uint);
+    function USDsPricePrecision() external view returns (uint);
 }
