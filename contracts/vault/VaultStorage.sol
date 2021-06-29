@@ -7,6 +7,9 @@ contract VaultStorage {
 
 	bool public mintRedeemAllowed = true;
 
+	bool public swapfeeInAllowed = true;
+	bool public swapfeeOutAllowed = true;
+
 	mapping(address => bool) supportedCollat;
 	address[] allCollat;
 	address[] allStrategies;
