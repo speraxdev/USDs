@@ -35,7 +35,11 @@ contract VaultCore is VaultStorage, Ownable {
 	 * @dev swapFeePresion = 1000000
 	 */
 
-	function calculateSwapFeeIn() public returns (uint) {
+	function calculateSwapFeeIn() public view returns (uint) {
+		if (!swapfeeInAllowed) {
+			return 0;
+		}
+
 		uint priceUSDs = uint(IOracle(oracleAddr).getUSDsPrice()); //TODO: change to 3 days average
 		uint precisionUSDs = IOracle(oracleAddr).USDsPricePrecision();
 		uint smallPwithPrecision = swapFee_P.mul(precisionUSDs).div(swapFee_PPresion);
@@ -51,7 +55,11 @@ contract VaultCore is VaultStorage, Ownable {
 
 	}
 
-	function calculateSwapFeeOut() public returns (uint) {
+	function calculateSwapFeeOut() public view returns (uint) {
+		if (!swapfeeOutAllowed) {
+			return 0;
+		}
+
 		return 1000;
 	}
 
@@ -88,20 +96,37 @@ contract VaultCore is VaultStorage, Ownable {
 
 	}
 
-
-
 	function mint(address collaAddr, uint USDsAmt)
 		public
 		whenMintRedeemAllowed
 	{
 		require(supportedCollat[collaAddr], "Collateral not supported");
 		require(USDsAmt > 0, "Amount needs to be greater than 0");
-		_mint(collaAddr, USDsAmt);
+		_mint(collaAddr, USDsAmt, 0);
+	}
+
+	function mintWithSPA(address collaAddr, uint SPAAmt)
+		public
+		whenMintRedeemAllowed
+	{
+		require(supportedCollat[collaAddr], "Collateral not supported");
+		require(SPAAmt > 0, "Amount needs to be greater than 0");
+		_mint(collaAddr, SPAAmt, 1);
+	}
+
+	function mintWithColla(address collaAddr, uint CollaAmt)
+		public
+		whenMintRedeemAllowed
+	{
+		require(supportedCollat[collaAddr], "Collateral not supported");
+		require(CollaAmt > 0, "Amount needs to be greater than 0");
+		_mint(collaAddr, CollaAmt, 2);
 	}
 
 	function _mint(
 		address collaAddr,
-		uint USDsAmt
+		uint valueAmt,
+		uint8 valueType
 	) internal whenMintRedeemAllowed {
 		uint priceColla = uint(IOracle(oracleAddr).collatPrice(collaAddr));
 		uint precisionColla = IOracle(oracleAddr).collatPricePrecision(collaAddr);
@@ -109,22 +134,62 @@ contract VaultCore is VaultStorage, Ownable {
 		uint precisionSPA = IOracle(oracleAddr).SPAPricePrecision();
 		uint swapFee = calculateSwapFeeIn();
 		uint chi = chiMint();
-		uint SPABurnAmt = USDsAmt.mul(chi).div(chiPresion).mul(precisionSPA).div(priceSPA);
-		if (swapFee > 0) {
-			SPABurnAmt = SPABurnAmt.add(SPABurnAmt.mul(swapFee).div(swapFeePresion));
+		uint SPABurnAmt = 0;
+		uint CollaDepAmt = 0;
+		uint USDsAmt = 0;
+		uint swapFeeAmount = 0;
+		if (valueType == 0) {
+			USDsAmt = valueAmt;
+
+			SPABurnAmt = USDsAmt.mul(chi).div(chiPresion).mul(precisionSPA).div(priceSPA);
+			if (swapFee > 0) {
+				SPABurnAmt = SPABurnAmt.add(SPABurnAmt.mul(swapFee).div(swapFeePresion));
+			}
+
+			//Deposit collaeral
+			uint CollaDepAmtDiv = chiPresion.mul(priceColla);
+			CollaDepAmt = USDsAmt.mul(chiPresion - chi).mul(precisionColla).div(CollaDepAmtDiv);
+			if (swapFee > 0) {
+				CollaDepAmt = CollaDepAmt.add(CollaDepAmt.mul(swapFee).div(swapFeePresion));
+			}
+
+			swapFeeAmount = USDsAmt.mul(swapFee).div(swapFeePresion);
+		} else if (valueType == 1) {
+			SPABurnAmt = valueAmt;
+
+			uint tempUSDsAmt = SPABurnAmt;
+			if (swapFee > 0) {
+				tempUSDsAmt = tempUSDsAmt.sub(SPABurnAmt.mul(swapFee).div(swapFeePresion));
+			}
+			USDsAmt = tempUSDsAmt.mul(chiPresion).div(chi).mul(priceSPA).div(precisionSPA);
+
+			//Deposit collaeral
+			uint CollaDepAmtDiv = chiPresion.mul(priceColla);
+			CollaDepAmt = USDsAmt.mul(chiPresion - chi).mul(precisionColla).div(CollaDepAmtDiv);
+			if (swapFee > 0) {
+				CollaDepAmt = CollaDepAmt.add(CollaDepAmt.mul(swapFee).div(swapFeePresion));
+			}
+
+			swapFeeAmount = USDsAmt.mul(swapFee).div(swapFeePresion);
+		} else if (valueType == 2) {
+			CollaDepAmt = valueAmt;
+
+			uint tempUSDsAmt = CollaDepAmt;
+			uint CollaDepAmtDiv = chiPresion.mul(priceColla);
+			USDsAmt = tempUSDsAmt.mul(CollaDepAmtDiv).div(precisionColla).div(chiPresion - chi);
+
+			SPABurnAmt = USDsAmt.mul(chi).div(chiPresion).mul(precisionSPA).div(priceSPA);
+			if (swapFee > 0) {
+				SPABurnAmt = SPABurnAmt.add(SPABurnAmt.mul(swapFee).div(swapFeePresion));
+			}
+
+			swapFeeAmount = USDsAmt.mul(swapFee).div(swapFeePresion);
 		}
 		ISperaxToken(SPATokenAddr).burnFrom(msg.sender, SPABurnAmt);
-
-		//Deposit collaeral
-		uint CollaDepAmtDiv = chiPresion.mul(priceColla);
-		uint CollaDepAmt = USDsAmt.mul(chiPresion - chi).mul(precisionColla).div(CollaDepAmtDiv);
-		if (swapFee > 0) {
-			CollaDepAmt = CollaDepAmt.add(CollaDepAmt.mul(swapFee).div(swapFeePresion));
-		}
+		
 		IERC20(collaAddr).safeTransferFrom(msg.sender, collaValut, CollaDepAmt);
 
 		//Mint USDs
-		uint swapFeeAmount = USDsAmt.mul(swapFee).div(swapFeePresion);
 		USDsInstance.mint(msg.sender, USDsAmt);
 		USDsInstance.mint(USDsFeeValut, swapFeeAmount);
 	}
@@ -287,6 +352,15 @@ contract VaultCore is VaultStorage, Ownable {
         // }
     }
 
+    //
+    // Owner Only Function: change swap fee allowance
+    //
 
+    function toggleSwapfeeInAllowed(bool newAllowance) external onlyOwner {
+      swapfeeInAllowed = newAllowance;
+    }
 
+    function toggleSwapfeeOutAllowed(bool newAllowance) external onlyOwner {
+      swapfeeOutAllowed = newAllowance;
+    }
 }

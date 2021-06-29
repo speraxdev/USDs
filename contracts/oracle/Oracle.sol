@@ -8,6 +8,7 @@ import "../interfaces/IOracle.sol";
 import "../interfaces/IUniswapV2Pair.sol";
 import "../libraries/UniswapV2OracleLibrary.sol";
 import "../libraries/SafeERC20.sol";
+import { USDs } from "../token/USDs.sol";
 
 /**
  * @title Oracle - the oracle contract for Spark
@@ -62,6 +63,8 @@ contract Oracle is IOracle, Ownable {
     uint public override ETHPricePrecision = 10**8;
     uint public USDCPricePrecision = 10**8;
     uint public override USDsPricePrecision = 10**18;
+    uint public USDTPricePrecision = 10**8;
+    uint public DAIPricePrecision = 10**8;
     uint public override SPAPricePrecision = 10**8 * 2**112;
 
     //  For swap fee:
@@ -71,7 +74,8 @@ contract Oracle is IOracle, Ownable {
     uint USDsInOutRatioPrecision = 10000000;
 
 
-
+    // USDs Instance
+	USDs public USDsInstance;
     //
     // Constructor
     //
@@ -205,6 +209,12 @@ contract Oracle is IOracle, Ownable {
     function collatPricePrecision(address tokenAddr) public view override returns (uint) {
 		if (tokenAddr == USDCAddr) {
 			return USDCPricePrecision;
+		}
+		if (tokenAddr == USDTAddr) {
+			return USDTPricePrecision;
+		}
+		if (tokenAddr == DAIAddr) {
+			return DAIPricePrecision;
 		}
 	}
 
