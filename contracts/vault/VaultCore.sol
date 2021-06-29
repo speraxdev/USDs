@@ -127,17 +127,19 @@ contract VaultCore is VaultStorage, Ownable {
 		address collaAddr,
 		uint valueAmt,
 		uint8 valueType
-	) internal whenMintRedeemAllowed {
+	) internal {
 		uint priceColla = uint(IOracle(oracleAddr).collatPrice(collaAddr));
 		uint precisionColla = IOracle(oracleAddr).collatPricePrecision(collaAddr);
 		uint priceSPA = uint(IOracle(oracleAddr).getSPAPrice());
 		uint precisionSPA = IOracle(oracleAddr).SPAPricePrecision();
 		uint swapFee = calculateSwapFeeIn();
 		uint chi = chiMint();
-		uint SPABurnAmt = 0;
-		uint CollaDepAmt = 0;
-		uint USDsAmt = 0;
-		uint swapFeeAmount = 0;
+		uint SPABurnAmt;
+		uint CollaDepAmt;
+		uint USDsAmt;
+		uint swapFeeAmount;
+		uint CollaDepAmtDiv = chiPresion.mul(priceColla);
+
 		if (valueType == 0) {
 			USDsAmt = valueAmt;
 
@@ -147,7 +149,6 @@ contract VaultCore is VaultStorage, Ownable {
 			}
 
 			//Deposit collaeral
-			uint CollaDepAmtDiv = chiPresion.mul(priceColla);
 			CollaDepAmt = USDsAmt.mul(chiPresion - chi).mul(precisionColla).div(CollaDepAmtDiv);
 			if (swapFee > 0) {
 				CollaDepAmt = CollaDepAmt.add(CollaDepAmt.mul(swapFee).div(swapFeePresion));
@@ -157,14 +158,13 @@ contract VaultCore is VaultStorage, Ownable {
 		} else if (valueType == 1) {
 			SPABurnAmt = valueAmt;
 
-			uint tempUSDsAmt = SPABurnAmt;
+			USDsAmt = SPABurnAmt;
 			if (swapFee > 0) {
-				tempUSDsAmt = tempUSDsAmt.sub(SPABurnAmt.mul(swapFee).div(swapFeePresion));
+				USDsAmt = USDsAmt.div(1 + swapFee.div(swapFeePresion));
 			}
-			USDsAmt = tempUSDsAmt.mul(chiPresion).div(chi).mul(priceSPA).div(precisionSPA);
+			USDsAmt = USDsAmt.mul(chiPresion).div(chi).mul(priceSPA).div(precisionSPA);
 
 			//Deposit collaeral
-			uint CollaDepAmtDiv = chiPresion.mul(priceColla);
 			CollaDepAmt = USDsAmt.mul(chiPresion - chi).mul(precisionColla).div(CollaDepAmtDiv);
 			if (swapFee > 0) {
 				CollaDepAmt = CollaDepAmt.add(CollaDepAmt.mul(swapFee).div(swapFeePresion));
@@ -174,9 +174,7 @@ contract VaultCore is VaultStorage, Ownable {
 		} else if (valueType == 2) {
 			CollaDepAmt = valueAmt;
 
-			uint tempUSDsAmt = CollaDepAmt;
-			uint CollaDepAmtDiv = chiPresion.mul(priceColla);
-			USDsAmt = tempUSDsAmt.mul(CollaDepAmtDiv).div(precisionColla).div(chiPresion - chi);
+			USDsAmt = CollaDepAmt.mul(CollaDepAmtDiv).div(precisionColla).div(chiPresion - chi);
 
 			SPABurnAmt = USDsAmt.mul(chi).div(chiPresion).mul(precisionSPA).div(priceSPA);
 			if (swapFee > 0) {
