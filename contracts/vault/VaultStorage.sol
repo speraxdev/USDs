@@ -1,10 +1,9 @@
 pragma solidity ^0.6.12;
 
 import { USDs } from "../token/USDs.sol";
+import { BancorFormula } from "../libraries/BancorFormula.sol";
 
 contract VaultStorage {
-	uint256 public constant Q112 = 0x10000000000000000000000000000;
-
 	bool public mintRedeemAllowed = true;
 
 	bool public swapfeeInAllowed = true;
@@ -23,7 +22,8 @@ contract VaultStorage {
 
 	uint public chiInit = 95000;
 	uint public constant chiPresion = 100000;
-	uint public constant chiAlpha = 1;
+	uint public constant chiAlpha = 200;
+	uint public constant chiAlpha_Presion = 10000;
 	uint public constant chiBeta = 1;
 	uint public constant chiGamma = 1;
 
@@ -33,5 +33,6 @@ contract VaultStorage {
 	uint public constant swapFeeTheta = 50;
 
 	USDs USDsInstance;
+	BancorFormula BancorInstance;
 
 }

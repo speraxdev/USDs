@@ -1,14 +1,13 @@
-// SPDX-License-Identifier: MIT
 // Note: 00000000000000000000000006ee09ff6f4c83eab024173f5507515b0f810db0
 pragma solidity ^0.6.12;
 
+import { USDs } from "../token/USDs.sol";
 import "../interfaces/AggregatorV3Interface.sol";
 import "../libraries/Ownable.sol";
 import "../interfaces/IOracle.sol";
 import "../interfaces/IUniswapV2Pair.sol";
 import "../libraries/UniswapV2OracleLibrary.sol";
 import "../libraries/SafeERC20.sol";
-import { USDs } from "../token/USDs.sol";
 
 /**
  * @title Oracle - the oracle contract for Spark
@@ -53,37 +52,29 @@ contract Oracle is IOracle, Ownable {
     uint32 public override period = 1 hours;
 	AggregatorV3Interface priceFeedETH;
 	AggregatorV3Interface priceFeedUSDC;
-	AggregatorV3Interface priceFeedDAI;
-	AggregatorV3Interface priceFeedUSDT;
 
 	address public USDCAddr = 0xb7a4F3E9097C08dA09517b5aB877F7a917224ede;
-    address public USDTAddr = 0xf3e0d7bF58c5d455D31ef1c2d5375904dF525105;
-    address public DAIAddr = 0x1528F3FCc26d13F7079325Fb78D9442607781c8C;
 
     uint public override ETHPricePrecision = 10**8;
     uint public USDCPricePrecision = 10**8;
     uint public override USDsPricePrecision = 10**18;
-    uint public USDTPricePrecision = 10**8;
-    uint public DAIPricePrecision = 10**8;
     uint public override SPAPricePrecision = 10**8 * 2**112;
 
     //  For swap fee:
     uint[FREQUENCY+1] public USDsInflow;
     uint[FREQUENCY+1] public USDsOutflow;
-    uint USDsInOutRatio;
-    uint USDsInOutRatioPrecision = 10000000;
+    uint public override USDsInOutRatio;
+    uint public override USDsInOutRatioPrecision = 10000000;
+    USDs public USDsInstance;
 
 
-    // USDs Instance
-	USDs public USDsInstance;
+
     //
     // Constructor
     //
     constructor(address pair_, address USDsToken_) public {
 		priceFeedETH = AggregatorV3Interface(0x9326BFA02ADD2366b30bacB125260Af641031331);
         priceFeedUSDC = AggregatorV3Interface(0x9211c6b3BF41A10F78539810Cf5c64e1BB78Ec60);
-        priceFeedDAI = AggregatorV3Interface(0x777A68032a88E5A84678A77Af2CD65A7b3c0775a);
-        priceFeedUSDT = AggregatorV3Interface(0x2ca5A90D34cA333661083F89D831f757A9A50148);
         uint32 constructTime = uint32(now % 2 ** 32);
         _pair = IUniswapV2Pair(pair_);
         lastUpdateTime = constructTime;
@@ -165,26 +156,7 @@ contract Oracle is IOracle, Ownable {
 		) = priceFeedUSDC.latestRoundData();
 		return price;
 	}
-	function getUSDTPrice() public view returns (int) {
-		(
-			uint80 roundID,
-			int price,
-			uint startedAt,
-			uint timeStamp,
-			uint80 answeredInRound
-		) = priceFeedUSDT.latestRoundData();
-		return price;
-	}
-	function getDAIPrice() public view returns (int) {
-		(
-			uint80 roundID,
-			int price,
-			uint startedAt,
-			uint timeStamp,
-			uint80 answeredInRound
-		) = priceFeedDAI.latestRoundData();
-		return price;
-	}
+
 	function getSPAPrice() public view override returns (int) {
 		int ETHPrice = getETHPrice();
 		return int(token0PriceMA.mul(uint(ETHPrice)));
@@ -198,23 +170,11 @@ contract Oracle is IOracle, Ownable {
 		if (tokenAddr == USDCAddr) {
 			return getUSDCPrice();
 		}
-		if (tokenAddr == USDTAddr) {
-			return getUSDTPrice();
-		}
-		if (tokenAddr == DAIAddr) {
-			return getDAIPrice();
-		}
 	}
 
     function collatPricePrecision(address tokenAddr) public view override returns (uint) {
 		if (tokenAddr == USDCAddr) {
 			return USDCPricePrecision;
-		}
-		if (tokenAddr == USDTAddr) {
-			return USDTPricePrecision;
-		}
-		if (tokenAddr == DAIAddr) {
-			return DAIPricePrecision;
 		}
 	}
 
@@ -253,5 +213,14 @@ contract Oracle is IOracle, Ownable {
 
         USDsInflow[indexNew] = USDsInstance._totalMinted();
         USDsOutflow[indexNew] = USDsInstance._totalBurnt();
+
+        uint USDsInflowOneDay = USDsInflow[indexNew].sub(USDsInflow[indexOld]);
+        uint USDsOutflowOneDay = USDsOutflow[indexNew].sub(USDsOutflow[indexOld]);
+        if (USDsInOutRatio == 0) {
+            USDsInOutRatio = USDsInOutRatioPrecision;
+        } else {
+            USDsInOutRatio = USDsOutflowOneDay.div(USDsInOutRatio);
+        }
+
     }
 }

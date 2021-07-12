@@ -14,4 +14,6 @@ interface IOracle {
     function collatPricePrecision(address tokenAddr) external view returns (uint);
     function SPAPricePrecision() external view returns (uint);
     function USDsPricePrecision() external view returns (uint);
+    function USDsInOutRatio() external view returns (uint);
+    function USDsInOutRatioPrecision() external view returns (uint);
 }

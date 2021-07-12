@@ -19,7 +19,7 @@ contract VaultCore is VaultStorage, Ownable {
 		_;
 	}
 
-	constructor(address USDsToken_, address oracleAddr_) public {
+	constructor(address USDsToken_, address oracleAddr_, address BancorFormulaAddr_) public {
 		collaValut = address(this);
 		SPAValut = address(this);
 		USDsFeeValut = address(this);
@@ -27,7 +27,7 @@ contract VaultCore is VaultStorage, Ownable {
 		supportedCollat[0xb7a4F3E9097C08dA09517b5aB877F7a917224ede] = true;
 		USDsInstance = USDs(USDsToken_);
 		oracleAddr = oracleAddr_;
-
+		BancorInstance = BancorFormula(BancorFormulaAddr_);
 	}
 
 
@@ -59,12 +59,19 @@ contract VaultCore is VaultStorage, Ownable {
 		if (!swapfeeOutAllowed) {
 			return 0;
 		}
+		uint USDsInOutRatio = IOracle(oracleAddr).USDsInOutRatio();
+		uint USDsInOutRatioPrecision = IOracle(oracleAddr).USDsInOutRatioPrecision();
+		if (USDsInOutRatio <= uint(12).mul(USDsInOutRatioPrecision).div(10)) {
+			return 1000; //0.1%
+		} else {
 
-		return 1000;
+			(uint powResWithPrec, uint8 powResPrec) = BancorInstance.power(uint(20), uint(1), uint32(12),uint32(10));
+			return uint(powResWithPrec >> powResPrec).mul(10**4);
+		}
 	}
 
-	function chiTarget(uint chiInit_, uint blockHeight, uint priceUSDs, uint precisionUSDs) internal view returns (uint chiTarget_) {
-		uint chiAdjustmentA = chiAlpha.mul(blockHeight);
+	function chiTarget(uint chiInit_, uint blockHeight, uint priceUSDs, uint precisionUSDs) public view returns (uint chiTarget_) {
+		uint chiAdjustmentA = blockHeight.mul(chiAlpha).div(chiAlpha_Presion);
 		uint chiAdjustmentB;
 		if (priceUSDs > precisionUSDs) {
 			chiAdjustmentB = chiBeta.mul(priceUSDs - precisionUSDs).mul(priceUSDs - precisionUSDs);
@@ -184,8 +191,9 @@ contract VaultCore is VaultStorage, Ownable {
 			swapFeeAmount = USDsAmt.mul(swapFee).div(swapFeePresion);
 		}
 		ISperaxToken(SPATokenAddr).burnFrom(msg.sender, SPABurnAmt);
-		
-		IERC20(collaAddr).safeTransferFrom(msg.sender, collaValut, CollaDepAmt);
+
+		IERC20 collaAddrERC20 = IERC20(collaAddr);
+		collaAddrERC20.safeTransferFrom(msg.sender, collaValut, CollaDepAmt);
 
 		//Mint USDs
 		USDsInstance.mint(msg.sender, USDsAmt);
@@ -208,7 +216,6 @@ contract VaultCore is VaultStorage, Ownable {
 	) internal whenMintRedeemAllowed {
 		uint priceColla = uint(IOracle(oracleAddr).collatPrice(collaAddr));
 		uint precisionColla = IOracle(oracleAddr).collatPricePrecision(collaAddr);
-		//FixedPoint.uq112x112 priceSPAuq = IOracle(oracleAddr).priceSPAuq();
 		uint priceSPA = uint(IOracle(oracleAddr).getSPAPrice());
 		uint precisionSPA = IOracle(oracleAddr).SPAPricePrecision();
 		uint swapFee = calculateSwapFeeOut();
