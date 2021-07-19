@@ -1,11 +1,11 @@
 pragma solidity 0.6.12;
 
-import {SafeMath} from "./SafeERC20.sol";
+import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
 
 import "../interfaces/IBancorFormula.sol";
 
 contract BancorFormula is IBancorFormula {
-    using SafeMath for uint256;
+    using SafeMathUpgradeable for uint256;
 
     uint256 private constant ONE = 1;
     uint32 private constant MAX_WEIGHT = 1000000;
