@@ -1,4 +1,4 @@
-const { deployProxy } = require('@openzeppelin/truffle-upgrades');
+const { deployProxy, upgradeProxy, prepareUpgrade } = require('@openzeppelin/truffle-upgrades');
 
 var USDs = artifacts.require("../contracts/token/USDs.sol");
 var VaultCore = artifacts.require("../contracts/vault/VaultCore.sol");
@@ -11,8 +11,8 @@ module.exports = async function(deployer) {
 	const oracle = await deployProxy(Oracle, ["0x06Ee09fF6f4c83eaB024173f5507515B0f810DB0", usds.address], { deployer });
 	const vaultCore = await deployProxy(VaultCore, [usds.address, oracle.address, "0x0f27662A7e4033eB4549a4E6Bd42a35a96979BdC"], { deployer });
 
-	// let usds = await deployer.deploy(USDs);
-  //   let oracle = await deployer.deploy(Oracle, "0x06Ee09fF6f4c83eaB024173f5507515B0f810DB0", USDs.address);
-  // 	// deploy the Exchange and pass erc20
-	// deployer.deploy(VaultCore, USDs.address, Oracle.address, "0x0f27662A7e4033eB4549a4E6Bd42a35a96979BdC");
+	// Upgrade Proxy Contract
+	// const upgradedUsds = await upgradeProxy("0xc9490D581FF50a17ABC8FAA8e98E74D9E279Fb2c", USDs, { deployer });
+	// const upgradedUsds = await upgradeProxy(usds.address, USDs, { deployer });
+	// console.log(upgradedUsds.address)
 };

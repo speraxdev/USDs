@@ -37,7 +37,7 @@
         "id": 4453,
         "nodeType": "ImportDirective",
         "scope": 4610,
-        "sourceUnit": 8360,
+        "sourceUnit": 8362,
         "src": "26:74:16",
         "symbolAliases": [],
         "unitAlias": ""
@@ -63,10 +63,10 @@
               "id": 4454,
               "name": "SafeMathUpgradeable",
               "nodeType": "UserDefinedTypeName",
-              "referencedDeclaration": 8359,
+              "referencedDeclaration": 8361,
               "src": "279:19:16",
               "typeDescriptions": {
-                "typeIdentifier": "t_contract$_SafeMathUpgradeable_$8359",
+                "typeIdentifier": "t_contract$_SafeMathUpgradeable_$8361",
                 "typeString": "library SafeMathUpgradeable"
               }
             },
@@ -456,7 +456,7 @@
                                 "lValueRequested": false,
                                 "memberName": "div",
                                 "nodeType": "MemberAccess",
-                                "referencedDeclaration": 8264,
+                                "referencedDeclaration": 8266,
                                 "src": "989:5:16",
                                 "typeDescriptions": {
                                   "typeIdentifier": "t_function_internal_pure$_t_uint256_$_t_uint256_$returns$_t_uint256_$bound_to$_t_uint256_$",
@@ -651,7 +651,7 @@
                               "lValueRequested": false,
                               "memberName": "mul",
                               "nodeType": "MemberAccess",
-                              "referencedDeclaration": 8242,
+                              "referencedDeclaration": 8244,
                               "src": "904:5:16",
                               "typeDescriptions": {
                                 "typeIdentifier": "t_function_internal_pure$_t_uint256_$_t_uint256_$returns$_t_uint256_$bound_to$_t_uint256_$",
@@ -1124,7 +1124,7 @@
                       "lValueRequested": false,
                       "memberName": "mul",
                       "nodeType": "MemberAccess",
-                      "referencedDeclaration": 8242,
+                      "referencedDeclaration": 8244,
                       "src": "2300:5:16",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_internal_pure$_t_uint256_$_t_uint256_$returns$_t_uint256_$bound_to$_t_uint256_$",
@@ -1194,7 +1194,7 @@
                       "lValueRequested": false,
                       "memberName": "div",
                       "nodeType": "MemberAccess",
-                      "referencedDeclaration": 8264,
+                      "referencedDeclaration": 8266,
                       "src": "2362:5:16",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_internal_pure$_t_uint256_$_t_uint256_$returns$_t_uint256_$bound_to$_t_uint256_$",
@@ -1453,7 +1453,7 @@
                       "lValueRequested": false,
                       "memberName": "mul",
                       "nodeType": "MemberAccess",
-                      "referencedDeclaration": 8242,
+                      "referencedDeclaration": 8244,
                       "src": "2946:5:16",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_internal_pure$_t_uint256_$_t_uint256_$returns$_t_uint256_$bound_to$_t_uint256_$",
@@ -1565,7 +1565,7 @@
                           "lValueRequested": false,
                           "memberName": "sub",
                           "nodeType": "MemberAccess",
-                          "referencedDeclaration": 8208,
+                          "referencedDeclaration": 8210,
                           "src": "3059:14:16",
                           "typeDescriptions": {
                             "typeIdentifier": "t_function_internal_pure$_t_uint256_$_t_uint256_$returns$_t_uint256_$bound_to$_t_uint256_$",
@@ -1615,7 +1615,7 @@
                       "lValueRequested": false,
                       "memberName": "add",
                       "nodeType": "MemberAccess",
-                      "referencedDeclaration": 8186,
+                      "referencedDeclaration": 8188,
                       "src": "3048:10:16",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_internal_pure$_t_uint256_$_t_uint256_$returns$_t_uint256_$bound_to$_t_uint256_$",
@@ -1685,7 +1685,7 @@
                       "lValueRequested": false,
                       "memberName": "div",
                       "nodeType": "MemberAccess",
-                      "referencedDeclaration": 8264,
+                      "referencedDeclaration": 8266,
                       "src": "3153:8:16",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_internal_pure$_t_uint256_$_t_uint256_$returns$_t_uint256_$bound_to$_t_uint256_$",
@@ -1916,7 +1916,7 @@
                       "lValueRequested": false,
                       "memberName": "mul",
                       "nodeType": "MemberAccess",
-                      "referencedDeclaration": 8242,
+                      "referencedDeclaration": 8244,
                       "src": "3757:5:16",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_internal_pure$_t_uint256_$_t_uint256_$returns$_t_uint256_$bound_to$_t_uint256_$",
@@ -1986,7 +1986,7 @@
                       "lValueRequested": false,
                       "memberName": "div",
                       "nodeType": "MemberAccess",
-                      "referencedDeclaration": 8264,
+                      "referencedDeclaration": 8266,
                       "src": "3827:5:16",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_internal_pure$_t_uint256_$_t_uint256_$returns$_t_uint256_$bound_to$_t_uint256_$",
@@ -2165,7 +2165,7 @@
       },
       {
         "attributes": {
-          "SourceUnit": 8360,
+          "SourceUnit": 8362,
           "absolutePath": "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol",
           "file": "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol",
           "scope": 4610,
@@ -2203,7 +2203,7 @@
                 "attributes": {
                   "contractScope": null,
                   "name": "SafeMathUpgradeable",
-                  "referencedDeclaration": 8359,
+                  "referencedDeclaration": 8361,
                   "type": "library SafeMathUpgradeable"
                 },
                 "id": 4454,
@@ -2511,7 +2511,7 @@
                                           "isPure": false,
                                           "lValueRequested": false,
                                           "member_name": "mul",
-                                          "referencedDeclaration": 8242,
+                                          "referencedDeclaration": 8244,
                                           "type": "function (uint256,uint256) pure returns (uint256)"
                                         },
                                         "children": [
@@ -2769,7 +2769,7 @@
                                               "isPure": false,
                                               "lValueRequested": false,
                                               "member_name": "div",
-                                              "referencedDeclaration": 8264,
+                                              "referencedDeclaration": 8266,
                                               "type": "function (uint256,uint256) pure returns (uint256)"
                                             },
                                             "children": [
@@ -3461,7 +3461,7 @@
                               "isPure": false,
                               "lValueRequested": false,
                               "member_name": "mul",
-                              "referencedDeclaration": 8242,
+                              "referencedDeclaration": 8244,
                               "type": "function (uint256,uint256) pure returns (uint256)"
                             },
                             "children": [
@@ -3542,7 +3542,7 @@
                               "isPure": false,
                               "lValueRequested": false,
                               "member_name": "div",
-                              "referencedDeclaration": 8264,
+                              "referencedDeclaration": 8266,
                               "type": "function (uint256,uint256) pure returns (uint256)"
                             },
                             "children": [
@@ -3787,7 +3787,7 @@
                               "isPure": false,
                               "lValueRequested": false,
                               "member_name": "mul",
-                              "referencedDeclaration": 8242,
+                              "referencedDeclaration": 8244,
                               "type": "function (uint256,uint256) pure returns (uint256)"
                             },
                             "children": [
@@ -3898,7 +3898,7 @@
                               "isPure": false,
                               "lValueRequested": false,
                               "member_name": "add",
-                              "referencedDeclaration": 8186,
+                              "referencedDeclaration": 8188,
                               "type": "function (uint256,uint256) pure returns (uint256)"
                             },
                             "children": [
@@ -3950,7 +3950,7 @@
                                   "isPure": false,
                                   "lValueRequested": false,
                                   "member_name": "sub",
-                                  "referencedDeclaration": 8208,
+                                  "referencedDeclaration": 8210,
                                   "type": "function (uint256,uint256) pure returns (uint256)"
                                 },
                                 "children": [
@@ -4039,7 +4039,7 @@
                               "isPure": false,
                               "lValueRequested": false,
                               "member_name": "div",
-                              "referencedDeclaration": 8264,
+                              "referencedDeclaration": 8266,
                               "type": "function (uint256,uint256) pure returns (uint256)"
                             },
                             "children": [
@@ -4284,7 +4284,7 @@
                               "isPure": false,
                               "lValueRequested": false,
                               "member_name": "mul",
-                              "referencedDeclaration": 8242,
+                              "referencedDeclaration": 8244,
                               "type": "function (uint256,uint256) pure returns (uint256)"
                             },
                             "children": [
@@ -4365,7 +4365,7 @@
                               "isPure": false,
                               "lValueRequested": false,
                               "member_name": "div",
-                              "referencedDeclaration": 8264,
+                              "referencedDeclaration": 8266,
                               "type": "function (uint256,uint256) pure returns (uint256)"
                             },
                             "children": [
@@ -4438,7 +4438,7 @@
   },
   "networks": {},
   "schemaVersion": "3.4.0",
-  "updatedAt": "2021-07-19T10:16:11.253Z",
+  "updatedAt": "2021-07-20T14:26:55.058Z",
   "devdoc": {
     "kind": "dev",
     "methods": {},
