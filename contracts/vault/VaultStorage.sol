@@ -20,17 +20,28 @@ contract VaultStorage {
 	address public USDsFeeValut;
 	address public USDsYieldValut;
 
+	uint public startBlockHeight;
+
 	uint public chiInit = 95000;
-	uint public constant chiPresion = 100000;
-	uint public constant chiAlpha = 200;
-	uint public constant chiAlpha_Presion = 10000;
-	uint public constant chiBeta = 1;
-	uint public constant chiGamma = 1;
+	uint public constant chiPrec = 100000;
+	uint public constant chi_alpha = 5130573085013596;
+	uint public constant chi_alpha_Prec = 10**23;
+	uint public constant chi_beta = 9;
+	uint public constant chi_beta_Prec = 1;
+	uint public constant chi_gamma = 1;
+	uint public constant chi_gamma_Prec = 1;
+
 
 	uint public constant swapFeePresion = 1000000;
-	uint public constant swapFee_P = 995;
-	uint public constant swapFee_PPresion = 1000;
-	uint public constant swapFeeTheta = 50;
+	uint public constant swapFee_p = 99;
+	uint public constant swapFee_p_Prec = 100;
+	uint public constant swapFee_theta = 50;
+	uint public constant swapFee_theta_Prec = 1;
+	uint32 public constant swapFee_a = 12;
+	uint32 public constant swapFee_a_Prec = 10;
+	uint public constant swapFee_A = 20;
+	uint public constant swapFee_A_Prec = 1;
+
 
 	USDs USDsInstance;
 	BancorFormula BancorInstance;

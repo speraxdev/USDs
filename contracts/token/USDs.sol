@@ -290,7 +290,7 @@ contract USDs is Initializable, InitializableERC20Detailed, Ownable {
         }
 
         _totalSupply = _totalSupply.add(_amount);
-        _totalMinted = _totalSupply.add(_amount);
+        _totalMinted = _totalMinted.add(_amount);
 
         require(_totalSupply < MAX_SUPPLY, "Max supply");
 

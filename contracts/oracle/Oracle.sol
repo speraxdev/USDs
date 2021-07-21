@@ -1,4 +1,6 @@
-// Note: 00000000000000000000000006ee09ff6f4c83eab024173f5507515b0f810db0
+
+// To-do:
+// change int()
 pragma solidity ^0.6.12;
 
 import { USDs } from "../token/USDs.sol";
@@ -58,7 +60,7 @@ contract Oracle is IOracle, Ownable {
     uint public override ETHPricePrecision = 10**8;
     uint public USDCPricePrecision = 10**8;
     uint public override USDsPricePrecision = 10**18;
-    uint public override SPAPricePrecision = 10**8 * 2**112;
+    uint public override SPAPricePrecision = 10**8;
 
     //  For swap fee:
     uint[FREQUENCY+1] public USDsInflow;
@@ -136,7 +138,7 @@ contract Oracle is IOracle, Ownable {
     // Core Functions
     //
 
-	function getETHPrice() public view returns (int) {
+	function getETHPrice() public view returns (uint) {
 		(
 			uint80 roundID,
 			int price,
@@ -144,9 +146,9 @@ contract Oracle is IOracle, Ownable {
 			uint timeStamp,
 			uint80 answeredInRound
 		) = priceFeedETH.latestRoundData();
-		return price;
+		return uint(price);
 	}
-	function getUSDCPrice() public view returns (int) {
+	function getUSDCPrice() public view returns (uint) {
 		(
 			uint80 roundID,
 			int price,
@@ -154,19 +156,23 @@ contract Oracle is IOracle, Ownable {
 			uint timeStamp,
 			uint80 answeredInRound
 		) = priceFeedUSDC.latestRoundData();
-		return price;
+		return uint(price);
 	}
 
-	function getSPAPrice() public view override returns (int) {
-		int ETHPrice = getETHPrice();
-		return int(token0PriceMA.mul(uint(ETHPrice)));
+    //to-do
+	function getSPAPrice() public view override returns (uint) {
+		uint ETHPrice = getETHPrice();
+
+        uint token0PriceMA_NoPrec = token0PriceMA.div(2**112);
+        //failing case: 1 ETH > 10^25 SPA or token0PriceMA/2**112 < ETHPrice
+        return ETHPrice.mul(2**112).div(token0PriceMA);
 	}
 
-    function getUSDsPrice() public view override returns (int) {
-		return int(1 * USDsPricePrecision);
+    function getUSDsPrice() public view override returns (uint) {
+		return 1 * USDsPricePrecision;
 	}
 
-	function collatPrice(address tokenAddr) public view override returns (int) {
+	function collatPrice(address tokenAddr) public view override returns (uint) {
 		if (tokenAddr == USDCAddr) {
 			return getUSDCPrice();
 		}
