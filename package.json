@@ -1,8 +1,14 @@
 {
   "dependencies": {
     "@chainlink/contracts": "^0.1.7",
-    "@openzeppelin/contracts": "^4.1.0",
+    "@openzeppelin/contracts": "^3.4.0",
+    "@openzeppelin/contracts-upgradeable": "^3.4.0",
     "@truffle/hdwallet-provider": "^1.4.0",
-    "dotenv": "^10.0.0"
+    "dotenv": "^10.0.0",
+    "truffle-contract-size": "^2.0.1",
+    "truffle-plugin-verify": "^0.5.11"
+  },
+  "devDependencies": {
+    "@openzeppelin/truffle-upgrades": "^1.8.0"
   }
 }

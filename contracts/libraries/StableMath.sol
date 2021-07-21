@@ -1,12 +1,12 @@
 pragma solidity ^0.6.12;
 
-import { SafeMath } from "../libraries/SafeERC20.sol";
+import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
 
 // Based on StableMath from Stability Labs Pty. Ltd.
 // https://github.com/mstable/mStable-contracts/blob/master/contracts/shared/StableMath.sol
 
 library StableMath {
-    using SafeMath for uint256;
+    using SafeMathUpgradeable for uint256;
 
     /**
      * @dev Scaling unit for use in specific calculations,

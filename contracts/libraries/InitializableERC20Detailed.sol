@@ -1,12 +1,12 @@
 pragma solidity ^0.6.12;
 
-import { IERC20 } from "../interfaces/IERC20.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 
 /**
  * @dev Optional functions from the ERC20 standard.
  * Converted from openzeppelin/contracts/token/ERC20/ERC20Detailed.sol
  */
-abstract contract InitializableERC20Detailed is IERC20 {
+abstract contract InitializableERC20Detailed is ERC20Upgradeable {
     // Storage gap to skip storage from prior to OUSD reset
     uint256[100] private _____gap;
 

@@ -28,27 +28,27 @@
       "type": "function"
     }
   ],
-  "metadata": "{\"compiler\":{\"version\":\"0.6.12+commit.27d51765\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[],\"name\":\"decimals\",\"outputs\":[{\"internalType\":\"uint8\",\"name\":\"\",\"type\":\"uint8\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"symbol\",\"outputs\":[{\"internalType\":\"string\",\"name\":\"\",\"type\":\"string\"}],\"stateMutability\":\"view\",\"type\":\"function\"}],\"devdoc\":{\"kind\":\"dev\",\"methods\":{},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{},\"version\":1}},\"settings\":{\"compilationTarget\":{\"/Users/daweizhao/Documents/Sperax/USDs/USDs github/USDs/contracts/interfaces/IBasicToken.sol\":\"IBasicToken\"},\"evmVersion\":\"istanbul\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\"},\"optimizer\":{\"enabled\":false,\"runs\":200},\"remappings\":[]},\"sources\":{\"/Users/daweizhao/Documents/Sperax/USDs/USDs github/USDs/contracts/interfaces/IBasicToken.sol\":{\"keccak256\":\"0x9355475f14f6b4a9ddb537e8a29a51e57b05ea3aaf678c5b830ee20ee0ad05d9\",\"urls\":[\"bzz-raw://7f3ed501a01d49a9dc39fcf42a8a2e287f03f3aae2080c2b0e1897d9953ea23f\",\"dweb:/ipfs/QmckvWPNEkYdHaCRyioroVoNs6TAt9qMFiS8dSPSQNecqH\"]}},\"version\":1}",
+  "metadata": "{\"compiler\":{\"version\":\"0.6.12+commit.27d51765\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[],\"name\":\"decimals\",\"outputs\":[{\"internalType\":\"uint8\",\"name\":\"\",\"type\":\"uint8\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"symbol\",\"outputs\":[{\"internalType\":\"string\",\"name\":\"\",\"type\":\"string\"}],\"stateMutability\":\"view\",\"type\":\"function\"}],\"devdoc\":{\"kind\":\"dev\",\"methods\":{},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{},\"version\":1}},\"settings\":{\"compilationTarget\":{\"/Volumes/Work/Sperax/USDs/contracts/interfaces/IBasicToken.sol\":\"IBasicToken\"},\"evmVersion\":\"istanbul\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\"},\"optimizer\":{\"enabled\":false,\"runs\":200},\"remappings\":[]},\"sources\":{\"/Volumes/Work/Sperax/USDs/contracts/interfaces/IBasicToken.sol\":{\"keccak256\":\"0x9355475f14f6b4a9ddb537e8a29a51e57b05ea3aaf678c5b830ee20ee0ad05d9\",\"urls\":[\"bzz-raw://7f3ed501a01d49a9dc39fcf42a8a2e287f03f3aae2080c2b0e1897d9953ea23f\",\"dweb:/ipfs/QmckvWPNEkYdHaCRyioroVoNs6TAt9qMFiS8dSPSQNecqH\"]}},\"version\":1}",
   "bytecode": "0x",
   "deployedBytecode": "0x",
   "immutableReferences": {},
   "sourceMap": "",
   "deployedSourceMap": "",
   "source": "pragma solidity >=0.5.11;\n\ninterface IBasicToken {\n    function symbol() external view returns (string memory);\n\n    function decimals() external view returns (uint8);\n}\n",
-  "sourcePath": "/Users/daweizhao/Documents/Sperax/USDs/USDs github/USDs/contracts/interfaces/IBasicToken.sol",
+  "sourcePath": "/Volumes/Work/Sperax/USDs/contracts/interfaces/IBasicToken.sol",
   "ast": {
-    "absolutePath": "/Users/daweizhao/Documents/Sperax/USDs/USDs github/USDs/contracts/interfaces/IBasicToken.sol",
+    "absolutePath": "/Volumes/Work/Sperax/USDs/contracts/interfaces/IBasicToken.sol",
     "exportedSymbols": {
       "IBasicToken": [
-        308
+        311
       ]
     },
-    "id": 309,
+    "id": 312,
     "license": null,
     "nodeType": "SourceUnit",
     "nodes": [
       {
-        "id": 297,
+        "id": 300,
         "literals": [
           "solidity",
           ">=",
@@ -56,7 +56,7 @@
           ".11"
         ],
         "nodeType": "PragmaDirective",
-        "src": "0:25:3"
+        "src": "0:25:4"
       },
       {
         "abstract": false,
@@ -65,9 +65,9 @@
         "contractKind": "interface",
         "documentation": null,
         "fullyImplemented": false,
-        "id": 308,
+        "id": 311,
         "linearizedBaseContracts": [
-          308
+          311
         ],
         "name": "IBasicToken",
         "nodeType": "ContractDefinition",
@@ -76,7 +76,7 @@
             "body": null,
             "documentation": null,
             "functionSelector": "95d89b41",
-            "id": 302,
+            "id": 305,
             "implemented": false,
             "kind": "function",
             "modifiers": [],
@@ -84,24 +84,24 @@
             "nodeType": "FunctionDefinition",
             "overrides": null,
             "parameters": {
-              "id": 298,
+              "id": 301,
               "nodeType": "ParameterList",
               "parameters": [],
-              "src": "70:2:3"
+              "src": "70:2:4"
             },
             "returnParameters": {
-              "id": 301,
+              "id": 304,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 300,
+                  "id": 303,
                   "mutability": "mutable",
                   "name": "",
                   "nodeType": "VariableDeclaration",
                   "overrides": null,
-                  "scope": 302,
-                  "src": "96:13:3",
+                  "scope": 305,
+                  "src": "96:13:4",
                   "stateVariable": false,
                   "storageLocation": "memory",
                   "typeDescriptions": {
@@ -109,10 +109,10 @@
                     "typeString": "string"
                   },
                   "typeName": {
-                    "id": 299,
+                    "id": 302,
                     "name": "string",
                     "nodeType": "ElementaryTypeName",
-                    "src": "96:6:3",
+                    "src": "96:6:4",
                     "typeDescriptions": {
                       "typeIdentifier": "t_string_storage_ptr",
                       "typeString": "string"
@@ -122,10 +122,10 @@
                   "visibility": "internal"
                 }
               ],
-              "src": "95:15:3"
+              "src": "95:15:4"
             },
-            "scope": 308,
-            "src": "55:56:3",
+            "scope": 311,
+            "src": "55:56:4",
             "stateMutability": "view",
             "virtual": false,
             "visibility": "external"
@@ -134,7 +134,7 @@
             "body": null,
             "documentation": null,
             "functionSelector": "313ce567",
-            "id": 307,
+            "id": 310,
             "implemented": false,
             "kind": "function",
             "modifiers": [],
@@ -142,24 +142,24 @@
             "nodeType": "FunctionDefinition",
             "overrides": null,
             "parameters": {
-              "id": 303,
+              "id": 306,
               "nodeType": "ParameterList",
               "parameters": [],
-              "src": "134:2:3"
+              "src": "134:2:4"
             },
             "returnParameters": {
-              "id": 306,
+              "id": 309,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 305,
+                  "id": 308,
                   "mutability": "mutable",
                   "name": "",
                   "nodeType": "VariableDeclaration",
                   "overrides": null,
-                  "scope": 307,
-                  "src": "160:5:3",
+                  "scope": 310,
+                  "src": "160:5:4",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -167,10 +167,10 @@
                     "typeString": "uint8"
                   },
                   "typeName": {
-                    "id": 304,
+                    "id": 307,
                     "name": "uint8",
                     "nodeType": "ElementaryTypeName",
-                    "src": "160:5:3",
+                    "src": "160:5:4",
                     "typeDescriptions": {
                       "typeIdentifier": "t_uint8",
                       "typeString": "uint8"
@@ -180,27 +180,27 @@
                   "visibility": "internal"
                 }
               ],
-              "src": "159:7:3"
+              "src": "159:7:4"
             },
-            "scope": 308,
-            "src": "117:50:3",
+            "scope": 311,
+            "src": "117:50:4",
             "stateMutability": "view",
             "virtual": false,
             "visibility": "external"
           }
         ],
-        "scope": 309,
-        "src": "27:142:3"
+        "scope": 312,
+        "src": "27:142:4"
       }
     ],
-    "src": "0:170:3"
+    "src": "0:170:4"
   },
   "legacyAST": {
     "attributes": {
-      "absolutePath": "/Users/daweizhao/Documents/Sperax/USDs/USDs github/USDs/contracts/interfaces/IBasicToken.sol",
+      "absolutePath": "/Volumes/Work/Sperax/USDs/contracts/interfaces/IBasicToken.sol",
       "exportedSymbols": {
         "IBasicToken": [
-          308
+          311
         ]
       },
       "license": null
@@ -215,9 +215,9 @@
             ".11"
           ]
         },
-        "id": 297,
+        "id": 300,
         "name": "PragmaDirective",
-        "src": "0:25:3"
+        "src": "0:25:4"
       },
       {
         "attributes": {
@@ -232,10 +232,10 @@
           "documentation": null,
           "fullyImplemented": false,
           "linearizedBaseContracts": [
-            308
+            311
           ],
           "name": "IBasicToken",
-          "scope": 309
+          "scope": 312
         },
         "children": [
           {
@@ -251,7 +251,7 @@
               ],
               "name": "symbol",
               "overrides": null,
-              "scope": 308,
+              "scope": 311,
               "stateMutability": "view",
               "virtual": false,
               "visibility": "external"
@@ -264,9 +264,9 @@
                   ]
                 },
                 "children": [],
-                "id": 298,
+                "id": 301,
                 "name": "ParameterList",
-                "src": "70:2:3"
+                "src": "70:2:4"
               },
               {
                 "children": [
@@ -276,7 +276,7 @@
                       "mutability": "mutable",
                       "name": "",
                       "overrides": null,
-                      "scope": 302,
+                      "scope": 305,
                       "stateVariable": false,
                       "storageLocation": "memory",
                       "type": "string",
@@ -289,24 +289,24 @@
                           "name": "string",
                           "type": "string"
                         },
-                        "id": 299,
+                        "id": 302,
                         "name": "ElementaryTypeName",
-                        "src": "96:6:3"
+                        "src": "96:6:4"
                       }
                     ],
-                    "id": 300,
+                    "id": 303,
                     "name": "VariableDeclaration",
-                    "src": "96:13:3"
+                    "src": "96:13:4"
                   }
                 ],
-                "id": 301,
+                "id": 304,
                 "name": "ParameterList",
-                "src": "95:15:3"
+                "src": "95:15:4"
               }
             ],
-            "id": 302,
+            "id": 305,
             "name": "FunctionDefinition",
-            "src": "55:56:3"
+            "src": "55:56:4"
           },
           {
             "attributes": {
@@ -321,7 +321,7 @@
               ],
               "name": "decimals",
               "overrides": null,
-              "scope": 308,
+              "scope": 311,
               "stateMutability": "view",
               "virtual": false,
               "visibility": "external"
@@ -334,9 +334,9 @@
                   ]
                 },
                 "children": [],
-                "id": 303,
+                "id": 306,
                 "name": "ParameterList",
-                "src": "134:2:3"
+                "src": "134:2:4"
               },
               {
                 "children": [
@@ -346,7 +346,7 @@
                       "mutability": "mutable",
                       "name": "",
                       "overrides": null,
-                      "scope": 307,
+                      "scope": 310,
                       "stateVariable": false,
                       "storageLocation": "default",
                       "type": "uint8",
@@ -359,42 +359,42 @@
                           "name": "uint8",
                           "type": "uint8"
                         },
-                        "id": 304,
+                        "id": 307,
                         "name": "ElementaryTypeName",
-                        "src": "160:5:3"
+                        "src": "160:5:4"
                       }
                     ],
-                    "id": 305,
+                    "id": 308,
                     "name": "VariableDeclaration",
-                    "src": "160:5:3"
+                    "src": "160:5:4"
                   }
                 ],
-                "id": 306,
+                "id": 309,
                 "name": "ParameterList",
-                "src": "159:7:3"
+                "src": "159:7:4"
               }
             ],
-            "id": 307,
+            "id": 310,
             "name": "FunctionDefinition",
-            "src": "117:50:3"
+            "src": "117:50:4"
           }
         ],
-        "id": 308,
+        "id": 311,
         "name": "ContractDefinition",
-        "src": "27:142:3"
+        "src": "27:142:4"
       }
     ],
-    "id": 309,
+    "id": 312,
     "name": "SourceUnit",
-    "src": "0:170:3"
+    "src": "0:170:4"
   },
   "compiler": {
     "name": "solc",
     "version": "0.6.12+commit.27d51765.Emscripten.clang"
   },
   "networks": {},
-  "schemaVersion": "3.3.4",
-  "updatedAt": "2021-06-11T16:34:24.039Z",
+  "schemaVersion": "3.4.0",
+  "updatedAt": "2021-07-20T14:26:54.977Z",
   "devdoc": {
     "kind": "dev",
     "methods": {},

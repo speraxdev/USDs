@@ -8,13 +8,13 @@ pragma solidity ^0.6.12;
  * @author Origin Protocol Inc
  */
 //import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
-import { SafeMath, Address } from "../libraries/SafeERC20.sol";
-import { Initializable} from "../libraries/Initializable.sol";
-
+import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
 
 import { InitializableERC20Detailed } from "../libraries/InitializableERC20Detailed.sol";
 import { StableMath } from "../libraries/StableMath.sol";
-import "../libraries/Ownable.sol";
 
 /**
  * NOTE that this is an ERC20 token but the invariant that the sum of
@@ -22,8 +22,8 @@ import "../libraries/Ownable.sol";
  * rebasing design. Any integrations with USDs should be aware.
  */
 
-contract USDs is Initializable, InitializableERC20Detailed, Ownable {
-    using SafeMath for uint256;
+contract USDs is Initializable, InitializableERC20Detailed, OwnableUpgradeable {
+    using SafeMathUpgradeable for uint256;
     using StableMath for uint256;
 
     event TotalSupplyUpdated(
@@ -39,7 +39,7 @@ contract USDs is Initializable, InitializableERC20Detailed, Ownable {
     uint256 public _totalMinted;
     uint256 public _totalBurnt;
     mapping(address => mapping(address => uint256)) private _allowances;
-    address public vaultAddress = address(0);
+    address public vaultAddress;
     mapping(address => uint256) private _creditBalances;
     uint256 public rebasingCredits;
     uint256 public rebasingCreditsPerToken;
@@ -55,6 +55,7 @@ contract USDs is Initializable, InitializableERC20Detailed, Ownable {
         address _vaultAddress
     ) external initializer {
         InitializableERC20Detailed._initialize(_nameArg, _symbolArg, 18);
+        OwnableUpgradeable.__Ownable_init();
         rebasingCreditsPerToken = 1e18;
         vaultAddress = _vaultAddress;
     }
@@ -229,6 +230,7 @@ contract USDs is Initializable, InitializableERC20Detailed, Ownable {
      */
     function increaseAllowance(address _spender, uint256 _addedValue)
         public
+        override
         returns (bool)
     {
         _allowances[msg.sender][_spender] = _allowances[msg.sender][_spender]
@@ -244,6 +246,7 @@ contract USDs is Initializable, InitializableERC20Detailed, Ownable {
      */
     function decreaseAllowance(address _spender, uint256 _subtractedValue)
         public
+        override
         returns (bool)
     {
         uint256 oldValue = _allowances[msg.sender][_spender];
@@ -273,7 +276,7 @@ contract USDs is Initializable, InitializableERC20Detailed, Ownable {
      *
      * - `to` cannot be the zero address.
      */
-    function _mint(address _account, uint256 _amount) internal {
+    function _mint(address _account, uint256 _amount) internal override {
         require(_account != address(0), "Mint to the zero address");
 
         bool isNonRebasingAccount = _isNonRebasingAccount(_account);
@@ -315,7 +318,7 @@ contract USDs is Initializable, InitializableERC20Detailed, Ownable {
      * - `_account` cannot be the zero address.
      * - `_account` must have at least `_amount` tokens.
      */
-    function _burn(address _account, uint256 _amount) internal {
+    function _burn(address _account, uint256 _amount) internal override {
         require(_account != address(0), "Burn from the zero address");
         if (_amount == 0) {
             return;
@@ -374,7 +377,7 @@ contract USDs is Initializable, InitializableERC20Detailed, Ownable {
      * @param _account Address of the account.
      */
     function _isNonRebasingAccount(address _account) internal returns (bool) {
-        bool isContract = Address.isContract(_account);
+        bool isContract = AddressUpgradeable.isContract(_account);
         if (isContract && rebaseState[_account] == RebaseOptions.NotSet) {
             _ensureRebasingMigration(_account);
         }

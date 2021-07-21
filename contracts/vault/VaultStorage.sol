@@ -4,16 +4,16 @@ import { USDs } from "../token/USDs.sol";
 import { BancorFormula } from "../libraries/BancorFormula.sol";
 
 contract VaultStorage {
-	bool public mintRedeemAllowed = true;
+	bool public mintRedeemAllowed;
 
-	bool public swapfeeInAllowed = true;
-	bool public swapfeeOutAllowed = true;
+	bool public swapfeeInAllowed;
+	bool public swapfeeOutAllowed;
 
 	mapping(address => bool) supportedCollat;
 	address[] allCollat;
 	address[] allStrategies;
 
-	address public SPATokenAddr = 0xFb931d41A744bE590E8B51e2e343bBE030aC4f93;
+	address public SPATokenAddr;
 	address public oracleAddr;
 	address public collaValut;
 	address public SPAValut;

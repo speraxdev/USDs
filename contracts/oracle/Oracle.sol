@@ -3,13 +3,15 @@
 // change int()
 pragma solidity ^0.6.12;
 
+import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
+
 import { USDs } from "../token/USDs.sol";
 import "../interfaces/AggregatorV3Interface.sol";
-import "../libraries/Ownable.sol";
 import "../interfaces/IOracle.sol";
 import "../interfaces/IUniswapV2Pair.sol";
 import "../libraries/UniswapV2OracleLibrary.sol";
-import "../libraries/SafeERC20.sol";
 
 /**
  * @title Oracle - the oracle contract for Spark
@@ -18,8 +20,8 @@ import "../libraries/SafeERC20.sol";
  * @dev this contract draws insights from "ExampleOracleSimple.sol" by UniswapV2 team
  */
 
-contract Oracle is IOracle, Ownable {
-    using SafeMath for *;
+contract Oracle is Initializable, IOracle, OwnableUpgradeable {
+    using SafeMathUpgradeable for *;
 
     event Update(uint currPriceMA, uint currPricetime);
 
@@ -33,7 +35,6 @@ contract Oracle is IOracle, Ownable {
     // Constants & Immutables
     //
     uint8 public constant FREQUENCY = 24;
-    IUniswapV2Pair private immutable _pair;
 
     //
     // Core State Variables
@@ -41,6 +42,7 @@ contract Oracle is IOracle, Ownable {
     // the moving average price of token0 denominated in token1
     // frequency = 24, default period = 1 hours ==> default timespan is 1 days
     uint public override token0PriceMA;
+    IUniswapV2Pair private _pair;
 
     //
     // Auxilliary State Variables
@@ -51,11 +53,11 @@ contract Oracle is IOracle, Ownable {
     // the timstamp of the lastest price update
     uint32 public override lastUpdateTime;
     // the default period of one price update is 1 hours
-    uint32 public override period = 1 hours;
+    uint32 public override period;
 	AggregatorV3Interface priceFeedETH;
 	AggregatorV3Interface priceFeedUSDC;
 
-	address public USDCAddr = 0xb7a4F3E9097C08dA09517b5aB877F7a917224ede;
+	address public USDCAddr;
 
     uint public override ETHPricePrecision = 10**8;
     uint public USDCPricePrecision = 10**8;
@@ -66,16 +68,27 @@ contract Oracle is IOracle, Ownable {
     uint[FREQUENCY+1] public USDsInflow;
     uint[FREQUENCY+1] public USDsOutflow;
     uint public override USDsInOutRatio;
-    uint public override USDsInOutRatioPrecision = 10000000;
+    uint public override USDsInOutRatioPrecision;
     USDs public USDsInstance;
 
-
-
     //
-    // Constructor
+    // Initializer
     //
-    constructor(address pair_, address USDsToken_) public {
-		priceFeedETH = AggregatorV3Interface(0x9326BFA02ADD2366b30bacB125260Af641031331);
+    function initialize(
+        address pair_, address USDsToken_
+    ) public initializer {
+        OwnableUpgradeable.__Ownable_init();
+
+        // Initialize variables
+        period = 1 hours;
+        USDCAddr = 0xb7a4F3E9097C08dA09517b5aB877F7a917224ede;
+        ETHPricePrecision = 10**8;
+        USDCPricePrecision = 10**8;
+        USDsPricePrecision = 10**18;
+        SPAPricePrecision = 10**8 * 2**112;
+        USDsInOutRatioPrecision = 10000000;
+
+        priceFeedETH = AggregatorV3Interface(0x9326BFA02ADD2366b30bacB125260Af641031331);
         priceFeedUSDC = AggregatorV3Interface(0x9211c6b3BF41A10F78539810Cf5c64e1BB78Ec60);
         uint32 constructTime = uint32(now % 2 ** 32);
         _pair = IUniswapV2Pair(pair_);
@@ -106,7 +119,6 @@ contract Oracle is IOracle, Ownable {
             USDsInflow[i] = 0;
             USDsOutflow[i] = 0;
         }
-
     }
 
     //

@@ -1,17 +1,23 @@
 //To-do: fix presion
 
 pragma solidity ^0.6.12;
+
+import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/SafeERC20Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
+
 import "./VaultStorage.sol";
-import "../libraries/Ownable.sol";
-import "../libraries/SafeERC20.sol";
 import "../libraries/MyMath.sol";
 import "../libraries/Helpers.sol";
 import "../interfaces/IOracle.sol";
 import "../interfaces/ISperaxToken.sol";
 
-contract VaultCore is VaultStorage, Ownable {
-	using SafeERC20 for IERC20;
-	using SafeMath for uint;
+contract VaultCore is Initializable, VaultStorage, OwnableUpgradeable {
+	using SafeERC20Upgradeable for ERC20Upgradeable;
+	using SafeMathUpgradeable for uint;
 	using MyMath for uint;
 
 	modifier whenMintRedeemAllowed {
@@ -19,7 +25,15 @@ contract VaultCore is VaultStorage, Ownable {
 		_;
 	}
 
-	constructor(address USDsToken_, address oracleAddr_, address BancorFormulaAddr_) public {
+	function initialize(address USDsToken_, address oracleAddr_, address BancorFormulaAddr_) public initializer {
+		OwnableUpgradeable.__Ownable_init();
+		// Initialize variables
+		mintRedeemAllowed = true;
+		swapfeeInAllowed = true;
+		swapfeeOutAllowed = true;
+		SPATokenAddr = 0xFb931d41A744bE590E8B51e2e343bBE030aC4f93;
+		chiInit = 95000;
+
 		collaValut = address(this);
 		SPAValut = address(this);
 		USDsFeeValut = address(this);
@@ -388,7 +402,7 @@ contract VaultCore is VaultStorage, Ownable {
         view
         returns (uint256 balance)
     {
-        IERC20 asset = IERC20(_asset);
+        ERC20Upgradeable asset = ERC20Upgradeable(_asset);
         balance = asset.balanceOf(address(this));
         // for (uint256 i = 0; i < allStrategies.length; i++) {
         //     IStrategy strategy = IStrategy(allStrategies[i]);
