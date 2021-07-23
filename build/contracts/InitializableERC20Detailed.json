@@ -308,7 +308,7 @@
         "id": 4357,
         "nodeType": "ImportDirective",
         "scope": 4425,
-        "sourceUnit": 8958,
+        "sourceUnit": 9239,
         "src": "26:78:14",
         "symbolAliases": [],
         "unitAlias": ""
@@ -323,10 +323,10 @@
               "id": 4359,
               "name": "ERC20Upgradeable",
               "nodeType": "UserDefinedTypeName",
-              "referencedDeclaration": 8957,
+              "referencedDeclaration": 9238,
               "src": "285:16:14",
               "typeDescriptions": {
-                "typeIdentifier": "t_contract$_ERC20Upgradeable_$8957",
+                "typeIdentifier": "t_contract$_ERC20Upgradeable_$9238",
                 "typeString": "contract ERC20Upgradeable"
               }
             },
@@ -336,10 +336,10 @@
           }
         ],
         "contractDependencies": [
-          8427,
-          8957,
-          9035,
-          9537
+          8708,
+          9238,
+          9316,
+          9818
         ],
         "contractKind": "contract",
         "documentation": {
@@ -352,10 +352,10 @@
         "id": 4424,
         "linearizedBaseContracts": [
           4424,
-          8957,
-          9035,
-          9537,
-          8427
+          9238,
+          9316,
+          9818,
+          8708
         ],
         "name": "InitializableERC20Detailed",
         "nodeType": "ContractDefinition",
@@ -763,7 +763,7 @@
           },
           {
             "baseFunctions": [
-              8511
+              8792
             ],
             "body": {
               "id": 4402,
@@ -859,7 +859,7 @@
           },
           {
             "baseFunctions": [
-              8520
+              8801
             ],
             "body": {
               "id": 4412,
@@ -955,7 +955,7 @@
           },
           {
             "baseFunctions": [
-              8529
+              8810
             ],
             "body": {
               "id": 4422,
@@ -1082,7 +1082,7 @@
       },
       {
         "attributes": {
-          "SourceUnit": 8958,
+          "SourceUnit": 9239,
           "absolutePath": "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol",
           "file": "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol",
           "scope": 4425,
@@ -1099,19 +1099,19 @@
         "attributes": {
           "abstract": true,
           "contractDependencies": [
-            8427,
-            8957,
-            9035,
-            9537
+            8708,
+            9238,
+            9316,
+            9818
           ],
           "contractKind": "contract",
           "fullyImplemented": true,
           "linearizedBaseContracts": [
             4424,
-            8957,
-            9035,
-            9537,
-            8427
+            9238,
+            9316,
+            9818,
+            8708
           ],
           "name": "InitializableERC20Detailed",
           "scope": 4425
@@ -1134,7 +1134,7 @@
                 "attributes": {
                   "contractScope": null,
                   "name": "ERC20Upgradeable",
-                  "referencedDeclaration": 8957,
+                  "referencedDeclaration": 9238,
                   "type": "contract ERC20Upgradeable"
                 },
                 "id": 4359,
@@ -1579,7 +1579,7 @@
           {
             "attributes": {
               "baseFunctions": [
-                8511
+                8792
               ],
               "functionSelector": "06fdde03",
               "implemented": true,
@@ -1698,7 +1698,7 @@
           {
             "attributes": {
               "baseFunctions": [
-                8520
+                8801
               ],
               "functionSelector": "95d89b41",
               "implemented": true,
@@ -1817,7 +1817,7 @@
           {
             "attributes": {
               "baseFunctions": [
-                8529
+                8810
               ],
               "functionSelector": "313ce567",
               "implemented": true,
@@ -1949,7 +1949,7 @@
   },
   "networks": {},
   "schemaVersion": "3.4.0",
-  "updatedAt": "2021-07-20T14:26:55.054Z",
+  "updatedAt": "2021-07-22T17:47:48.459Z",
   "devdoc": {
     "details": "Optional functions from the ERC20 standard. Converted from openzeppelin/contracts/token/ERC20/ERC20Detailed.sol",
     "kind": "dev",

@@ -59,10 +59,10 @@ contract Oracle is Initializable, IOracle, OwnableUpgradeable {
 
 	address public USDCAddr;
 
-    uint public override ETHPricePrecision = 10**8;
-    uint public USDCPricePrecision = 10**8;
-    uint public override USDsPricePrecision = 10**18;
-    uint public override SPAPricePrecision = 10**8;
+    uint public override ETHPricePrecision;
+    uint public USDCPricePrecision;
+    uint public override USDsPricePrecision;
+    uint public override SPAPricePrecision;
 
     //  For swap fee:
     uint[FREQUENCY+1] public USDsInflow;
@@ -85,7 +85,7 @@ contract Oracle is Initializable, IOracle, OwnableUpgradeable {
         ETHPricePrecision = 10**8;
         USDCPricePrecision = 10**8;
         USDsPricePrecision = 10**18;
-        SPAPricePrecision = 10**8 * 2**112;
+        SPAPricePrecision = 10**8;
         USDsInOutRatioPrecision = 10000000;
 
         priceFeedETH = AggregatorV3Interface(0x9326BFA02ADD2366b30bacB125260Af641031331);

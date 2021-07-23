@@ -22,7 +22,7 @@ contract VaultStorage {
 
 	uint public startBlockHeight;
 
-	uint public chiInit = 95000;
+	uint public chiInit;
 	uint public constant chiPrec = 100000;
 	uint public constant chi_alpha = 5130573085013596;
 	uint public constant chi_alpha_Prec = 10**23;

@@ -228,7 +228,7 @@ contract VaultCore is Initializable, VaultStorage, OwnableUpgradeable {
 			swapFeeAmount = USDsAmt.mul(swapFee).div(swapFeePresion);
 		}
 
-		IERC20 collaAddrERC20 = IERC20(collaAddr);
+		ERC20Upgradeable collaAddrERC20 = ERC20Upgradeable(collaAddr);
 		uint collaAddrDecimal = uint(collaAddrERC20.decimals());
 		CollaDepAmtCorrected = CollaDepAmt.div(10**(uint(18).sub(collaAddrDecimal)));
 	}
@@ -240,7 +240,7 @@ contract VaultCore is Initializable, VaultStorage, OwnableUpgradeable {
 	) internal whenMintRedeemAllowed {
 		(uint SPABurnAmt, uint CollaDepAmtCorrected, uint USDsAmt, uint swapFeeAmount) = mintView(collaAddr, valueAmt, valueType);
 		ISperaxToken(SPATokenAddr).burnFrom(msg.sender, SPABurnAmt);
-		IERC20(collaAddr).safeTransferFrom(msg.sender, collaValut, CollaDepAmtCorrected);
+		ERC20Upgradeable(collaAddr).safeTransferFrom(msg.sender, collaValut, CollaDepAmtCorrected);
 		USDsInstance.mint(msg.sender, USDsAmt);
 		USDsInstance.mint(USDsFeeValut, swapFeeAmount);
 
@@ -275,7 +275,7 @@ contract VaultCore is Initializable, VaultStorage, OwnableUpgradeable {
 		if (swapFee > 0) {
 			CollaUnlockAmt = CollaUnlockAmt.sub(CollaUnlockAmt.mul(swapFee).div(swapFeePresion));
 		}
-		uint collaAddrDecimal = uint(IERC20(collaAddr).decimals());
+		uint collaAddrDecimal = uint(ERC20Upgradeable(collaAddr).decimals());
 		CollaUnlockAmtCorrect =  CollaUnlockAmt.div(10**(uint(18).sub(collaAddrDecimal)));
 
 		//Burn USDs
@@ -288,8 +288,8 @@ contract VaultCore is Initializable, VaultStorage, OwnableUpgradeable {
 		uint USDsAmt
 	) internal whenMintRedeemAllowed {
 		(uint SPAMintAmt, uint CollaUnlockAmtCorrect, uint USDsBurntAmt, uint swapFeeAmount) = redeemView(collaAddr, USDsAmt);
-		IERC20(collaAddr).safeTransferFrom(SPAValut, msg.sender, SPAMintAmt);
-		IERC20(collaAddr).safeTransferFrom(collaValut, msg.sender, CollaUnlockAmtCorrect);
+		ERC20Upgradeable(collaAddr).safeTransferFrom(SPAValut, msg.sender, SPAMintAmt);
+		ERC20Upgradeable(collaAddr).safeTransferFrom(collaValut, msg.sender, CollaUnlockAmtCorrect);
 		USDsInstance.burn(msg.sender, USDsBurntAmt);
 		USDsInstance.transferFrom(msg.sender, USDsFeeValut, swapFeeAmount);
 
@@ -351,7 +351,7 @@ contract VaultCore is Initializable, VaultStorage, OwnableUpgradeable {
      */
     function _totalValueInVault() internal view returns (uint256 value) {
         // for (uint256 y = 0; y < allCollat.length; y++) {
-        //     IERC20 asset = IERC20(allCollat[y]);
+        //     ERC20Upgradeable asset = ERC20Upgradeable(allCollat[y]);
         //     uint256 assetDecimals = Helpers.getDecimals(allCollat[y]);
         //     uint256 balance = asset.balanceOf(address(this));
         //     if (balance > 0) {
