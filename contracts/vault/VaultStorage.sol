@@ -9,7 +9,7 @@ contract VaultStorage {
 	bool public swapfeeInAllowed;
 	bool public swapfeeOutAllowed;
 
-	mapping(address => bool) supportedCollat;
+	mapping(address => uint256) supportedCollat;
 	address[] allCollat;
 	address[] allStrategies;
 

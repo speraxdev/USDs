@@ -55,12 +55,8 @@ contract Oracle is Initializable, IOracle, OwnableUpgradeable {
     // the default period of one price update is 1 hours
     uint32 public override period;
 	AggregatorV3Interface priceFeedETH;
-	AggregatorV3Interface priceFeedUSDC;
-
-	address public USDCAddr;
 
     uint public override ETHPricePrecision;
-    uint public USDCPricePrecision;
     uint public override USDsPricePrecision;
     uint public override SPAPricePrecision;
 
@@ -70,6 +66,22 @@ contract Oracle is Initializable, IOracle, OwnableUpgradeable {
     uint public override USDsInOutRatio;
     uint public override USDsInOutRatioPrecision;
     USDs public USDsInstance;
+
+    address[] public tokenAddresses;
+    mapping(address => uint256) public tokenAddressIndex;
+    mapping(address => AggregatorV3Interface) public priceFeeds;
+    mapping(address => uint256) public pricePrecisions;
+
+	// AggregatorV3Interface priceFeedUSDC;
+	// AggregatorV3Interface priceFeedUSDT;
+	// AggregatorV3Interface priceFeedDAI;
+
+	// address public USDCAddr;
+	// address public USDTAddr;
+	// address public DAIAddr;
+    // uint public USDCPricePrecision;
+    // uint public USDTPricePrecision;
+    // uint public DAIPricePrecision;
 
     //
     // Initializer
@@ -81,15 +93,15 @@ contract Oracle is Initializable, IOracle, OwnableUpgradeable {
 
         // Initialize variables
         period = 1 hours;
-        USDCAddr = 0xb7a4F3E9097C08dA09517b5aB877F7a917224ede;
+        // USDCAddr = 0xb7a4F3E9097C08dA09517b5aB877F7a917224ede;
+        // USDCPricePrecision = 10**8;
+        // priceFeedUSDC = AggregatorV3Interface(0x9211c6b3BF41A10F78539810Cf5c64e1BB78Ec60);
         ETHPricePrecision = 10**8;
-        USDCPricePrecision = 10**8;
         USDsPricePrecision = 10**18;
         SPAPricePrecision = 10**8;
         USDsInOutRatioPrecision = 10000000;
 
         priceFeedETH = AggregatorV3Interface(0x9326BFA02ADD2366b30bacB125260Af641031331);
-        priceFeedUSDC = AggregatorV3Interface(0x9211c6b3BF41A10F78539810Cf5c64e1BB78Ec60);
         uint32 constructTime = uint32(now % 2 ** 32);
         _pair = IUniswapV2Pair(pair_);
         lastUpdateTime = constructTime;
@@ -145,6 +157,17 @@ contract Oracle is Initializable, IOracle, OwnableUpgradeable {
         period = newPeriod;
     }
 
+    /**
+        Update price list
+     */
+    function updatePriceList(address assetAddress, address aggregatorAddress, uint256 precision) external onlyOwner {
+        if (tokenAddressIndex[assetAddress] == 0) {
+            tokenAddresses.push(assetAddress);
+            tokenAddressIndex[assetAddress] = tokenAddresses.length;
+        }
+        priceFeeds[assetAddress] = AggregatorV3Interface(aggregatorAddress);
+        pricePrecisions[assetAddress] = 10 ** precision;
+    }
 
     //
     // Core Functions
@@ -160,19 +183,20 @@ contract Oracle is Initializable, IOracle, OwnableUpgradeable {
 		) = priceFeedETH.latestRoundData();
 		return uint(price);
 	}
-	function getUSDCPrice() public view returns (uint) {
+
+	function getAssetPrice(address assetAddress) public view returns (uint) {
 		(
 			uint80 roundID,
 			int price,
 			uint startedAt,
 			uint timeStamp,
 			uint80 answeredInRound
-		) = priceFeedUSDC.latestRoundData();
+		) = priceFeeds[assetAddress].latestRoundData();
 		return uint(price);
 	}
 
     //to-do
-	function getSPAPrice() public view override returns (uint) {
+	function getSPAPrice() external view override returns (uint) {
 		uint ETHPrice = getETHPrice();
 
         uint token0PriceMA_NoPrec = token0PriceMA.div(2**112);
@@ -180,20 +204,16 @@ contract Oracle is Initializable, IOracle, OwnableUpgradeable {
         return ETHPrice.mul(2**112).div(token0PriceMA);
 	}
 
-    function getUSDsPrice() public view override returns (uint) {
+    function getUSDsPrice() external view override returns (uint) {
 		return 1 * USDsPricePrecision;
 	}
 
-	function collatPrice(address tokenAddr) public view override returns (uint) {
-		if (tokenAddr == USDCAddr) {
-			return getUSDCPrice();
-		}
+	function collatPrice(address tokenAddr) external view override returns (uint) {
+		return getAssetPrice(tokenAddr);
 	}
 
-    function collatPricePrecision(address tokenAddr) public view override returns (uint) {
-		if (tokenAddr == USDCAddr) {
-			return USDCPricePrecision;
-		}
+    function collatPricePrecision(address tokenAddr) external view override returns (uint) {
+        return pricePrecisions[tokenAddr];
 	}
 
 

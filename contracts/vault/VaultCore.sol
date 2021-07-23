@@ -38,11 +38,24 @@ contract VaultCore is Initializable, VaultStorage, OwnableUpgradeable {
 		SPAValut = address(this);
 		USDsFeeValut = address(this);
 		USDsYieldValut = address(this);
-		supportedCollat[0xb7a4F3E9097C08dA09517b5aB877F7a917224ede] = true;
+		supportedCollat[0xb7a4F3E9097C08dA09517b5aB877F7a917224ede] = 1;
+		allCollat.push(0xb7a4F3E9097C08dA09517b5aB877F7a917224ede);
 		USDsInstance = USDs(USDsToken_);
 		oracleAddr = oracleAddr_;
 		BancorInstance = BancorFormula(BancorFormulaAddr_);
 		startBlockHeight = block.number;
+		// DAI
+		// 0x4f96fe3b7a6cf9725f59d353f723c1bdb64ca6aa
+		// 0x777A68032a88E5A84678A77Af2CD65A7b3c0775a
+		// 8
+		// USDC
+		// 0xb7a4F3E9097C08dA09517b5aB877F7a917224ede
+		// 0x9211c6b3BF41A10F78539810Cf5c64e1BB78Ec60
+		// 8
+		// USDT
+		// 0x07de306ff27a2b630b1141956844eb1552b956b5
+		// 0x2ca5A90D34cA333661083F89D831f757A9A50148
+		// 8
 	}
 
 
@@ -121,7 +134,7 @@ contract VaultCore is Initializable, VaultStorage, OwnableUpgradeable {
 		public
 		whenMintRedeemAllowed
 	{
-		require(supportedCollat[collaAddr], "Collateral not supported");
+		require(supportedCollat[collaAddr] > 0, "Collateral not supported");
 		require(USDsMintAmt > 0, "Amount needs to be greater than 0");
 		_mint(collaAddr, USDsMintAmt, 0);
 	}
@@ -130,7 +143,7 @@ contract VaultCore is Initializable, VaultStorage, OwnableUpgradeable {
 		public
 		whenMintRedeemAllowed
 	{
-		require(supportedCollat[collaAddr], "Collateral not supported");
+		require(supportedCollat[collaAddr] > 0, "Collateral not supported");
 		require(SPAAmt > 0, "Amount needs to be greater than 0");
 		_mint(collaAddr, SPAAmt, 1);
 	}
@@ -139,7 +152,7 @@ contract VaultCore is Initializable, VaultStorage, OwnableUpgradeable {
 		public
 		whenMintRedeemAllowed
 	{
-		require(supportedCollat[collaAddr], "Collateral not supported");
+		require(supportedCollat[collaAddr] > 0, "Collateral not supported");
 		require(CollaAmt > 0, "Amount needs to be greater than 0");
 		_mint(collaAddr, CollaAmt, 2);
 	}
@@ -150,7 +163,7 @@ contract VaultCore is Initializable, VaultStorage, OwnableUpgradeable {
 	function mintWithUSDsView(address collaAddr, uint USDsMintAmt)
 		public view returns (uint SPABurnAmt, uint CollaDepAmtCorrected, uint USDsAmt, uint swapFeeAmount)
 	{
-		require(supportedCollat[collaAddr], "Collateral not supported");
+		require(supportedCollat[collaAddr] > 0, "Collateral not supported");
 		require(USDsMintAmt > 0, "Amount needs to be greater than 0");
 		(SPABurnAmt, CollaDepAmtCorrected, USDsAmt, swapFeeAmount) = mintView(collaAddr, USDsMintAmt, 0);
 	}
@@ -158,7 +171,7 @@ contract VaultCore is Initializable, VaultStorage, OwnableUpgradeable {
 	function mintWithSPAView(address collaAddr, uint SPAAmt)
 		public view returns (uint SPABurnAmt, uint CollaDepAmtCorrected, uint USDsAmt, uint swapFeeAmount)
 	{
-		require(supportedCollat[collaAddr], "Collateral not supported");
+		require(supportedCollat[collaAddr] > 0, "Collateral not supported");
 		require(SPAAmt > 0, "Amount needs to be greater than 0");
 		(SPABurnAmt, CollaDepAmtCorrected, USDsAmt, swapFeeAmount)  = mintView(collaAddr, SPAAmt, 1);
 	}
@@ -166,7 +179,7 @@ contract VaultCore is Initializable, VaultStorage, OwnableUpgradeable {
 	function mintWithCollaView(address collaAddr, uint CollaAmt)
 		public view returns (uint SPABurnAmt, uint CollaDepAmtCorrected, uint USDsAmt, uint swapFeeAmount)
 	{
-		require(supportedCollat[collaAddr], "Collateral not supported");
+		require(supportedCollat[collaAddr] > 0, "Collateral not supported");
 		require(CollaAmt > 0, "Amount needs to be greater than 0");
 		(SPABurnAmt, CollaDepAmtCorrected, USDsAmt, swapFeeAmount) = mintView(collaAddr, CollaAmt, 2);
 	}
@@ -250,7 +263,7 @@ contract VaultCore is Initializable, VaultStorage, OwnableUpgradeable {
 		public
 		whenMintRedeemAllowed
 	{
-		require(supportedCollat[collaAddr], "Collateral not supported");
+		require(supportedCollat[collaAddr] > 0, "Collateral not supported");
 		require(USDsAmt > 0, "Amount needs to be greater than 0");
 		_redeem(collaAddr, USDsAmt);
 	}
@@ -422,5 +435,18 @@ contract VaultCore is Initializable, VaultStorage, OwnableUpgradeable {
 
     function toggleSwapfeeOutAllowed(bool newAllowance) external onlyOwner {
       swapfeeOutAllowed = newAllowance;
+    }
+
+    function updateCollateralList(address collatAddress, bool allowance) external onlyOwner {
+			if (allowance) {
+				require(supportedCollat[collatAddress] == 0, "Collateral already allowed");
+				allCollat.push(collatAddress);
+				supportedCollat[collatAddress] = allCollat.length;
+			} else {
+				require(supportedCollat[collatAddress] > 0, "Collateral not allowed");
+				allCollat[supportedCollat[collatAddress] - 1] = allCollat[allCollat.length - 1];
+				allCollat.pop();
+				delete supportedCollat[collatAddress];
+			}
     }
 }
