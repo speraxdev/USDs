@@ -157,6 +157,10 @@ contract VaultCore is Initializable, VaultStorage, OwnableUpgradeable {
 		_mint(collaAddr, CollaAmt, 2);
 	}
 
+	function mintWithEth() public payable whenMintRedeemAllowed {
+    require(msg.value > 0, "Need to pay Ether");
+		_mint(address(0), msg.value, 3);
+	}
 
 	//View functions
 
@@ -188,14 +192,27 @@ contract VaultCore is Initializable, VaultStorage, OwnableUpgradeable {
 	// CollaDepAmt precision: 10^collaAddrDecimal
 	// USDsAmt precision: 10^18
 	// swapFeeAmount precision: swapFeePresion
+	function mintWithEthView(uint CollaAmt)
+		public view returns (uint SPABurnAmt, uint CollaDepAmt, uint USDsAmt, uint swapFeeAmount)
+	{
+		require(CollaAmt > 0, "Amount needs to be greater than 0");
+		(SPABurnAmt, CollaDepAmt, USDsAmt, swapFeeAmount) = mintView(address(0), CollaAmt, 2);
+	}
 
 	function mintView(
 		address collaAddr,
 		uint valueAmt,
 		uint8 valueType
 	) public view returns (uint SPABurnAmt, uint CollaDepAmt, uint USDsAmt, uint swapFeeAmount) {
-		uint priceColla = IOracle(oracleAddr).collatPrice(collaAddr);
-		uint precisionColla = IOracle(oracleAddr).collatPricePrecision(collaAddr);
+		uint priceColla = 0;
+		uint precisionColla = 0;
+		if (valueType == 3) {
+			priceColla = IOracle(oracleAddr).getETHPrice();
+			precisionColla = IOracle(oracleAddr).ETHPricePrecision();
+		} else {
+			priceColla = IOracle(oracleAddr).collatPrice(collaAddr);
+			precisionColla = IOracle(oracleAddr).collatPricePrecision(collaAddr);
+		}
 		uint priceSPA = IOracle(oracleAddr).getSPAPrice();
 		uint precisionSPA = IOracle(oracleAddr).SPAPricePrecision();
 		uint swapFee = calculateSwapFeeIn();
@@ -234,7 +251,7 @@ contract VaultCore is Initializable, VaultStorage, OwnableUpgradeable {
 			}
 
 			swapFeeAmount = USDsAmt.mul(swapFee).div(swapFeePresion);
-		} else if (valueType == 2) {
+		} else if (valueType == 2 || valueType == 3) {
 			CollaDepAmt = valueAmt;
 			uint CollaDepAmt_18 = CollaDepAmt.mul(10**(uint(18).sub(collaAddrDecimal)));
 			USDsAmt = CollaDepAmt_18.mul(chiPrec.mul(priceColla)).div(precisionColla).div(chiMint());
@@ -246,8 +263,6 @@ contract VaultCore is Initializable, VaultStorage, OwnableUpgradeable {
 
 			swapFeeAmount = USDsAmt.mul(swapFee).div(swapFeePresion);
 		}
-
-
 	}
 
 	function _mint(
@@ -257,10 +272,11 @@ contract VaultCore is Initializable, VaultStorage, OwnableUpgradeable {
 	) internal whenMintRedeemAllowed {
 		(uint SPABurnAmt, uint CollaDepAmt, uint USDsAmt, uint swapFeeAmount) = mintView(collaAddr, valueAmt, valueType);
 		ISperaxToken(SPATokenAddr).burnFrom(msg.sender, SPABurnAmt);
-		ERC20Upgradeable(collaAddr).safeTransferFrom(msg.sender, collaValut, CollaDepAmt);
+		if (valueType != 3) {
+			ERC20Upgradeable(collaAddr).safeTransferFrom(msg.sender, collaValut, CollaDepAmt);
+		}
 		USDsInstance.mint(msg.sender, USDsAmt);
 		USDsInstance.mint(USDsFeeValut, swapFeeAmount);
-
 	}
 
 	function redeem(address collaAddr, uint USDsAmt)

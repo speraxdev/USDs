@@ -10,6 +10,7 @@ interface IOracle {
     function collatPrice(address tokenAddr) external view returns (uint);
     function getSPAPrice() external view returns (uint);
     function getUSDsPrice() external view returns (uint);
+    function getETHPrice() external view returns (uint);
     function ETHPricePrecision() external view returns (uint);
     function collatPricePrecision(address tokenAddr) external view returns (uint);
     function SPAPricePrecision() external view returns (uint);
