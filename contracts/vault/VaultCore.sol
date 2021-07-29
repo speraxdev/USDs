@@ -161,52 +161,57 @@ contract VaultCore is Initializable, VaultStorage, OwnableUpgradeable {
 	//View functions
 
 	function mintWithUSDsView(address collaAddr, uint USDsMintAmt)
-		public view returns (uint SPABurnAmt, uint CollaDepAmtCorrected, uint USDsAmt, uint swapFeeAmount)
+		public view returns (uint SPABurnAmt, uint CollaDepAmt, uint USDsAmt, uint swapFeeAmount)
 	{
 		require(supportedCollat[collaAddr] > 0, "Collateral not supported");
 		require(USDsMintAmt > 0, "Amount needs to be greater than 0");
-		(SPABurnAmt, CollaDepAmtCorrected, USDsAmt, swapFeeAmount) = mintView(collaAddr, USDsMintAmt, 0);
+		(SPABurnAmt, CollaDepAmt, USDsAmt, swapFeeAmount) = mintView(collaAddr, USDsMintAmt, 0);
 	}
 
 	function mintWithSPAView(address collaAddr, uint SPAAmt)
-		public view returns (uint SPABurnAmt, uint CollaDepAmtCorrected, uint USDsAmt, uint swapFeeAmount)
+		public view returns (uint SPABurnAmt, uint CollaDepAmt, uint USDsAmt, uint swapFeeAmount)
 	{
 		require(supportedCollat[collaAddr] > 0, "Collateral not supported");
 		require(SPAAmt > 0, "Amount needs to be greater than 0");
-		(SPABurnAmt, CollaDepAmtCorrected, USDsAmt, swapFeeAmount)  = mintView(collaAddr, SPAAmt, 1);
+		(SPABurnAmt, CollaDepAmt, USDsAmt, swapFeeAmount)  = mintView(collaAddr, SPAAmt, 1);
 	}
 
 	function mintWithCollaView(address collaAddr, uint CollaAmt)
-		public view returns (uint SPABurnAmt, uint CollaDepAmtCorrected, uint USDsAmt, uint swapFeeAmount)
+		public view returns (uint SPABurnAmt, uint CollaDepAmt, uint USDsAmt, uint swapFeeAmount)
 	{
 		require(supportedCollat[collaAddr] > 0, "Collateral not supported");
 		require(CollaAmt > 0, "Amount needs to be greater than 0");
-		(SPABurnAmt, CollaDepAmtCorrected, USDsAmt, swapFeeAmount) = mintView(collaAddr, CollaAmt, 2);
+		(SPABurnAmt, CollaDepAmt, USDsAmt, swapFeeAmount) = mintView(collaAddr, CollaAmt, 2);
 	}
+
+	// SPABurnAmt precision: 10^18
+	// CollaDepAmt precision: 10^collaAddrDecimal
+	// USDsAmt precision: 10^18
+	// swapFeeAmount precision: swapFeePresion
 
 	function mintView(
 		address collaAddr,
 		uint valueAmt,
 		uint8 valueType
-	) public view returns (uint SPABurnAmt, uint CollaDepAmtCorrected, uint USDsAmt, uint swapFeeAmount) {
+	) public view returns (uint SPABurnAmt, uint CollaDepAmt, uint USDsAmt, uint swapFeeAmount) {
 		uint priceColla = IOracle(oracleAddr).collatPrice(collaAddr);
 		uint precisionColla = IOracle(oracleAddr).collatPricePrecision(collaAddr);
 		uint priceSPA = IOracle(oracleAddr).getSPAPrice();
 		uint precisionSPA = IOracle(oracleAddr).SPAPricePrecision();
 		uint swapFee = calculateSwapFeeIn();
-		uint chi = chiMint();
-		uint CollaDepAmt;
+		uint collaAddrDecimal = uint(ERC20Upgradeable(collaAddr).decimals());
+
 
 		if (valueType == 0) {
 			USDsAmt = valueAmt;
-
-			SPABurnAmt = USDsAmt.mul(chiPrec - chi).mul(precisionSPA).div(priceSPA.mul(chiPrec));
+			SPABurnAmt = USDsAmt.mul(chiPrec - chiMint()).mul(precisionSPA).div(priceSPA.mul(chiPrec));
 			if (swapFee > 0) {
 				SPABurnAmt = SPABurnAmt.add(SPABurnAmt.mul(swapFee).div(swapFeePresion));
 			}
 
 			//Deposit collaeral
-			CollaDepAmt = USDsAmt.mul(chi).mul(precisionColla).div(chiPrec.mul(priceColla));
+			uint CollaDepAmt_18 = USDsAmt.mul(chiMint()).mul(precisionColla).div(chiPrec.mul(priceColla));
+			CollaDepAmt = CollaDepAmt_18.div(10**(uint(18).sub(collaAddrDecimal)));
 			if (swapFee > 0) {
 				CollaDepAmt = CollaDepAmt.add(CollaDepAmt.mul(swapFee).div(swapFeePresion));
 			}
@@ -219,10 +224,11 @@ contract VaultCore is Initializable, VaultStorage, OwnableUpgradeable {
 			if (swapFee > 0) {
 				USDsAmt = USDsAmt.div(1 + swapFee.div(swapFeePresion));
 			}
-			USDsAmt = USDsAmt.mul(chiPrec).mul(priceSPA).div(precisionSPA.mul(chiPrec - chi));
+			USDsAmt = USDsAmt.mul(chiPrec).mul(priceSPA).div(precisionSPA.mul(chiPrec - chiMint()));
 
 			//Deposit collaeral
-			CollaDepAmt = USDsAmt.mul(chi).mul(precisionColla).div(chiPrec.mul(priceColla));
+			uint CollaDepAmt_18 = USDsAmt.mul(chiMint()).mul(precisionColla).div(chiPrec.mul(priceColla));
+			CollaDepAmt = CollaDepAmt_18.div(10**(uint(18).sub(collaAddrDecimal)));
 			if (swapFee > 0) {
 				CollaDepAmt = CollaDepAmt.add(CollaDepAmt.mul(swapFee).div(swapFeePresion));
 			}
@@ -230,10 +236,10 @@ contract VaultCore is Initializable, VaultStorage, OwnableUpgradeable {
 			swapFeeAmount = USDsAmt.mul(swapFee).div(swapFeePresion);
 		} else if (valueType == 2) {
 			CollaDepAmt = valueAmt;
+			uint CollaDepAmt_18 = CollaDepAmt.mul(10**(uint(18).sub(collaAddrDecimal)));
+			USDsAmt = CollaDepAmt_18.mul(chiPrec.mul(priceColla)).div(precisionColla).div(chiMint());
 
-			USDsAmt = CollaDepAmt.mul(chiPrec.mul(priceColla)).div(precisionColla).div(chi);
-
-			SPABurnAmt = USDsAmt.mul(chiPrec - chi).mul(precisionSPA).div(priceSPA.mul(chiPrec));
+			SPABurnAmt = USDsAmt.mul(chiPrec - chiMint()).mul(precisionSPA).div(priceSPA.mul(chiPrec));
 			if (swapFee > 0) {
 				SPABurnAmt = SPABurnAmt.add(SPABurnAmt.mul(swapFee).div(swapFeePresion));
 			}
@@ -241,9 +247,7 @@ contract VaultCore is Initializable, VaultStorage, OwnableUpgradeable {
 			swapFeeAmount = USDsAmt.mul(swapFee).div(swapFeePresion);
 		}
 
-		ERC20Upgradeable collaAddrERC20 = ERC20Upgradeable(collaAddr);
-		uint collaAddrDecimal = uint(collaAddrERC20.decimals());
-		CollaDepAmtCorrected = CollaDepAmt.div(10**(uint(18).sub(collaAddrDecimal)));
+
 	}
 
 	function _mint(
@@ -251,9 +255,9 @@ contract VaultCore is Initializable, VaultStorage, OwnableUpgradeable {
 		uint valueAmt,
 		uint8 valueType
 	) internal whenMintRedeemAllowed {
-		(uint SPABurnAmt, uint CollaDepAmtCorrected, uint USDsAmt, uint swapFeeAmount) = mintView(collaAddr, valueAmt, valueType);
+		(uint SPABurnAmt, uint CollaDepAmt, uint USDsAmt, uint swapFeeAmount) = mintView(collaAddr, valueAmt, valueType);
 		ISperaxToken(SPATokenAddr).burnFrom(msg.sender, SPABurnAmt);
-		ERC20Upgradeable(collaAddr).safeTransferFrom(msg.sender, collaValut, CollaDepAmtCorrected);
+		ERC20Upgradeable(collaAddr).safeTransferFrom(msg.sender, collaValut, CollaDepAmt);
 		USDsInstance.mint(msg.sender, USDsAmt);
 		USDsInstance.mint(USDsFeeValut, swapFeeAmount);
 
