@@ -20,6 +20,40 @@ contract VaultCore is Initializable, VaultStorage, OwnableUpgradeable {
 	using SafeMathUpgradeable for uint;
 	using MyMath for uint;
 
+	event USDSMinted(
+		address indexed wallet,
+		uint256 indexed USDsAmt,
+		uint256 indexed SPAsAmt,
+		uint256 feeAmt
+	);
+
+	event USDSRedeemed(
+		address indexed wallet,
+		uint256 indexed USDsAmt,
+		uint256 indexed SPAsAmt,
+		uint256 feeAmt
+	);
+
+	event TotalSupplyChanged(
+		uint256 indexed oldSupply,
+		uint256 indexed newSupply
+	);
+
+	event SwapFeeInAllowed(
+		bool indexed allowance,
+		uint256 time
+	);
+
+	event SwapFeeOutAllowed(
+		bool indexed allowance,
+		uint256 time
+	);
+
+	event CollateralUpdated(
+		address indexed token,
+		bool indexed allowance
+	);
+
 	modifier whenMintRedeemAllowed {
 		require(mintRedeemAllowed, "Mint & redeem paused");
 		_;
@@ -277,6 +311,8 @@ contract VaultCore is Initializable, VaultStorage, OwnableUpgradeable {
 		}
 		USDsInstance.mint(msg.sender, USDsAmt);
 		USDsInstance.mint(USDsFeeValut, swapFeeAmount);
+
+		emit USDSMinted(msg.sender, USDsAmt, SPABurnAmt, swapFeeAmount);
 	}
 
 	function redeem(address collaAddr, uint USDsAmt)
@@ -326,6 +362,7 @@ contract VaultCore is Initializable, VaultStorage, OwnableUpgradeable {
 		USDsInstance.burn(msg.sender, USDsBurntAmt);
 		USDsInstance.transferFrom(msg.sender, USDsFeeValut, swapFeeAmount);
 
+		emit USDSRedeemed(msg.sender, USDsBurntAmt, SPAMintAmt, swapFeeAmount);
 	}
 
 	/**
@@ -347,6 +384,8 @@ contract VaultCore is Initializable, VaultStorage, OwnableUpgradeable {
 
 		if (vaultValue > totalSupply && totalSupply != 0) {
 			USDsInstance.changeSupply(vaultValue);
+
+			emit TotalSupplyChanged(totalSupply, vaultValue);
 		}
 	}
 
@@ -451,10 +490,14 @@ contract VaultCore is Initializable, VaultStorage, OwnableUpgradeable {
 
     function toggleSwapfeeInAllowed(bool newAllowance) external onlyOwner {
       swapfeeInAllowed = newAllowance;
+
+			emit SwapFeeInAllowed(newAllowance, block.timestamp);
     }
 
     function toggleSwapfeeOutAllowed(bool newAllowance) external onlyOwner {
       swapfeeOutAllowed = newAllowance;
+
+			emit SwapFeeOutAllowed(newAllowance, block.timestamp);
     }
 
     function updateCollateralList(address collatAddress, bool allowance) external onlyOwner {
@@ -468,5 +511,7 @@ contract VaultCore is Initializable, VaultStorage, OwnableUpgradeable {
 				allCollat.pop();
 				delete supportedCollat[collatAddress];
 			}
+
+			emit CollateralUpdated(collatAddress, allowance);
     }
 }

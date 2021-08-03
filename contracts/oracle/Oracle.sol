@@ -25,6 +25,18 @@ contract Oracle is Initializable, IOracle, OwnableUpgradeable {
 
     event Update(uint currPriceMA, uint currPricetime);
 
+	event PriceListUpdated(
+		address indexed token,
+		address indexed aggregator,
+        uint256 precision
+	);
+
+	event PeriodUpdated(
+		uint256 indexed oldPeriod,
+        uint256 indexed newPeriod,
+        uint256 timestamp
+	);
+
     struct token0Pricetime {
        uint32 timestamp;
        uint price0Cumulative;
@@ -154,6 +166,8 @@ contract Oracle is Initializable, IOracle, OwnableUpgradeable {
      * @param newPeriod new minimal period in between two updates
      */
     function changePeriod(uint32 newPeriod) external onlyOwner {
+        emit PeriodUpdated(period, newPeriod, block.timestamp);
+
         period = newPeriod;
     }
 
@@ -167,13 +181,15 @@ contract Oracle is Initializable, IOracle, OwnableUpgradeable {
         }
         priceFeeds[assetAddress] = AggregatorV3Interface(aggregatorAddress);
         pricePrecisions[assetAddress] = 10 ** precision;
+
+        emit PriceListUpdated(assetAddress, aggregatorAddress, precision);
     }
 
     //
     // Core Functions
     //
 
-	function getETHPrice() public view returns (uint) {
+	function getETHPrice() public view override returns (uint) {
 		(
 			uint80 roundID,
 			int price,
