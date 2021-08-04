@@ -9,6 +9,7 @@
     "truffle-plugin-verify": "^0.5.11"
   },
   "devDependencies": {
-    "@openzeppelin/truffle-upgrades": "^1.8.0"
+    "@openzeppelin/truffle-upgrades": "^1.8.0",
+    "eth-gas-reporter": "^0.2.22"
   }
 }
