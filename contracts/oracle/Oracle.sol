@@ -247,7 +247,7 @@ contract Oracle is Initializable, IOracle, OwnableUpgradeable {
         uint24 fee = 3000;
         uint160 sqrtPriceLimitX96 = 0;
 
-        (uint256 amountIn) = uniswapQuoter.quoteExactOutputSingle(
+        uint256 amountIn = uniswapQuoter.quoteExactOutputSingle(
             tokenIn,
             tokenOut,
             fee,
@@ -256,7 +256,7 @@ contract Oracle is Initializable, IOracle, OwnableUpgradeable {
         );
 
 		uint ETHPrice = getETHPrice();
-		return amountIn.mul(ETHPricePrecision).div(ETHPrice).mul(USDsPricePrecision);
+		return amountIn.mul(ETHPricePrecision).mul(USDsPricePrecision).div(ETHPrice);
 	}
 
 	function collatPrice(address tokenAddr) external view override returns (uint) {
