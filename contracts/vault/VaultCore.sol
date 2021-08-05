@@ -93,7 +93,7 @@ contract VaultCore is Initializable, VaultStorage, OwnableUpgradeable {
 	}
 
 
-	function calculateSwapFeeIn() public view returns (uint) {
+	function calculateSwapFeeIn() public returns (uint) {
 		if (!swapfeeInAllowed) {
 			return 0;
 		}
@@ -142,14 +142,14 @@ contract VaultCore is Initializable, VaultStorage, OwnableUpgradeable {
 		}
 	}
 
-	function chiMint() public view returns (uint)  {
+	function chiMint() public returns (uint)  {
 		uint priceUSDs = uint(IOracle(oracleAddr).getUSDsPrice());
 		uint precisionUSDs = IOracle(oracleAddr).USDsPricePrecision();
 		uint blockPassed = uint(block.number).sub(startBlockHeight);
 		return chiTarget(chiInit, blockPassed, priceUSDs, precisionUSDs);
 	}
 
-	function chiRedeem() public view returns (uint chiRedeem_) {
+	function chiRedeem() public returns (uint chiRedeem_) {
 		uint priceUSDs = uint(IOracle(oracleAddr).getUSDsPrice());
 		uint precisionUSDs = IOracle(oracleAddr).USDsPricePrecision();
 		uint blockPassed = uint(block.number).sub(startBlockHeight);
@@ -199,7 +199,7 @@ contract VaultCore is Initializable, VaultStorage, OwnableUpgradeable {
 	//View functions
 
 	function mintWithUSDsView(address collaAddr, uint USDsMintAmt)
-		public view returns (uint SPABurnAmt, uint CollaDepAmt, uint USDsAmt, uint swapFeeAmount)
+		public returns (uint SPABurnAmt, uint CollaDepAmt, uint USDsAmt, uint swapFeeAmount)
 	{
 		require(supportedCollat[collaAddr] > 0, "Collateral not supported");
 		require(USDsMintAmt > 0, "Amount needs to be greater than 0");
@@ -207,7 +207,7 @@ contract VaultCore is Initializable, VaultStorage, OwnableUpgradeable {
 	}
 
 	function mintWithSPAView(address collaAddr, uint SPAAmt)
-		public view returns (uint SPABurnAmt, uint CollaDepAmt, uint USDsAmt, uint swapFeeAmount)
+		public returns (uint SPABurnAmt, uint CollaDepAmt, uint USDsAmt, uint swapFeeAmount)
 	{
 		require(supportedCollat[collaAddr] > 0, "Collateral not supported");
 		require(SPAAmt > 0, "Amount needs to be greater than 0");
@@ -215,7 +215,7 @@ contract VaultCore is Initializable, VaultStorage, OwnableUpgradeable {
 	}
 
 	function mintWithCollaView(address collaAddr, uint CollaAmt)
-		public view returns (uint SPABurnAmt, uint CollaDepAmt, uint USDsAmt, uint swapFeeAmount)
+		public returns (uint SPABurnAmt, uint CollaDepAmt, uint USDsAmt, uint swapFeeAmount)
 	{
 		require(supportedCollat[collaAddr] > 0, "Collateral not supported");
 		require(CollaAmt > 0, "Amount needs to be greater than 0");
@@ -227,7 +227,7 @@ contract VaultCore is Initializable, VaultStorage, OwnableUpgradeable {
 	// USDsAmt precision: 10^18
 	// swapFeeAmount precision: swapFeePresion
 	function mintWithEthView(uint CollaAmt)
-		public view returns (uint SPABurnAmt, uint CollaDepAmt, uint USDsAmt, uint swapFeeAmount)
+		public returns (uint SPABurnAmt, uint CollaDepAmt, uint USDsAmt, uint swapFeeAmount)
 	{
 		require(CollaAmt > 0, "Amount needs to be greater than 0");
 		(SPABurnAmt, CollaDepAmt, USDsAmt, swapFeeAmount) = mintView(address(0), CollaAmt, 2);
@@ -237,7 +237,7 @@ contract VaultCore is Initializable, VaultStorage, OwnableUpgradeable {
 		address collaAddr,
 		uint valueAmt,
 		uint8 valueType
-	) public view returns (uint SPABurnAmt, uint CollaDepAmt, uint USDsAmt, uint swapFeeAmount) {
+	) public returns (uint SPABurnAmt, uint CollaDepAmt, uint USDsAmt, uint swapFeeAmount) {
 		uint priceColla = 0;
 		uint precisionColla = 0;
 		if (valueType == 3) {
@@ -328,7 +328,7 @@ contract VaultCore is Initializable, VaultStorage, OwnableUpgradeable {
 	function redeemView(
 		address collaAddr,
 		uint USDsAmt
-	) public view returns (uint SPAMintAmt, uint CollaUnlockAmtCorrect, uint USDsBurntAmt, uint swapFeeAmount) {
+	) public returns (uint SPAMintAmt, uint CollaUnlockAmtCorrect, uint USDsBurntAmt, uint swapFeeAmount) {
 		uint priceColla = IOracle(oracleAddr).collatPrice(collaAddr);
 		uint precisionColla = IOracle(oracleAddr).collatPricePrecision(collaAddr);
 		uint priceSPA = IOracle(oracleAddr).getSPAPrice();

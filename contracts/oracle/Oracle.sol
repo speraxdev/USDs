@@ -1,7 +1,9 @@
-
+// SPDX-License-Identifier: MIT
 // To-do:
 // change int()
 pragma solidity ^0.6.12;
+pragma experimental ABIEncoderV2;
+
 
 import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
@@ -12,6 +14,7 @@ import "../interfaces/AggregatorV3Interface.sol";
 import "../interfaces/IOracle.sol";
 import "../interfaces/IUniswapV2Pair.sol";
 import "../libraries/UniswapV2OracleLibrary.sol";
+import "../interfaces/IQuoter.sol";
 
 /**
  * @title Oracle - the oracle contract for Spark
@@ -84,6 +87,9 @@ contract Oracle is Initializable, IOracle, OwnableUpgradeable {
     mapping(address => AggregatorV3Interface) public priceFeeds;
     mapping(address => uint256) public pricePrecisions;
 
+    IQuoter public uniswapQuoter;
+    address private USDsToken;
+    address private WETH9;
 	// AggregatorV3Interface priceFeedUSDC;
 	// AggregatorV3Interface priceFeedUSDT;
 	// AggregatorV3Interface priceFeedDAI;
@@ -143,6 +149,10 @@ contract Oracle is Initializable, IOracle, OwnableUpgradeable {
             USDsInflow[i] = 0;
             USDsOutflow[i] = 0;
         }
+
+        uniswapQuoter = IQuoter(0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6);
+        USDsToken = USDsToken_;
+        WETH9 = 0xd0A1E359811322d97991E03f863a0C30C2cF029C;
     }
 
     //
@@ -185,6 +195,17 @@ contract Oracle is Initializable, IOracle, OwnableUpgradeable {
         emit PriceListUpdated(assetAddress, aggregatorAddress, precision);
     }
 
+    /**
+        Update USDs Uniswap V3 pair
+     */
+    function updateUSDsPair(address USDsToken_, address WETH9_, address quoterAddress_) external onlyOwner {
+        uniswapQuoter = IQuoter(quoterAddress_);
+        USDsToken = USDsToken_;
+        WETH9 = WETH9_;
+
+        emit PriceListUpdated(USDsToken_, quoterAddress_, 18);
+    }
+
     //
     // Core Functions
     //
@@ -220,8 +241,22 @@ contract Oracle is Initializable, IOracle, OwnableUpgradeable {
         return ETHPrice.mul(2**112).div(token0PriceMA);
 	}
 
-    function getUSDsPrice() external view override returns (uint) {
-		return 1 * USDsPricePrecision;
+    function getUSDsPrice() external override returns (uint) {
+        address tokenIn = USDsToken;
+        address tokenOut = WETH9;
+        uint24 fee = 3000;
+        uint160 sqrtPriceLimitX96 = 0;
+
+        (uint256 amountIn) = uniswapQuoter.quoteExactOutputSingle(
+            tokenIn,
+            tokenOut,
+            fee,
+            1,
+            sqrtPriceLimitX96
+        );
+
+		uint ETHPrice = getETHPrice();
+		return amountIn.mul(ETHPricePrecision).div(ETHPrice).mul(USDsPricePrecision);
 	}
 
 	function collatPrice(address tokenAddr) external view override returns (uint) {
@@ -231,7 +266,6 @@ contract Oracle is Initializable, IOracle, OwnableUpgradeable {
     function collatPricePrecision(address tokenAddr) external view override returns (uint) {
         return pricePrecisions[tokenAddr];
 	}
-
 
     /**
      * @notice update the price of token0 to the latest
