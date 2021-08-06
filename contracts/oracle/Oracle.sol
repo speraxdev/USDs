@@ -131,6 +131,8 @@ contract Oracle is Initializable, IOracle, OwnableUpgradeable {
             USDsInflow[i] = 0;
             USDsOutflow[i] = 0;
         }
+
+
     }
 
     //
@@ -173,7 +175,7 @@ contract Oracle is Initializable, IOracle, OwnableUpgradeable {
     // Core Functions
     //
 
-	function getETHPrice() public view returns (uint) {
+	function getETHPrice() public view override returns (uint) {
 		(
 			uint80 roundID,
 			int price,
@@ -184,7 +186,7 @@ contract Oracle is Initializable, IOracle, OwnableUpgradeable {
 		return uint(price);
 	}
 
-	function getAssetPrice(address assetAddress) public view returns (uint) {
+	function getAssetPrice(address assetAddress) public view override returns (uint) {
 		(
 			uint80 roundID,
 			int price,
@@ -203,7 +205,7 @@ contract Oracle is Initializable, IOracle, OwnableUpgradeable {
         //failing case: 1 ETH > 10^25 SPA or token0PriceMA/2**112 < ETHPrice
         return ETHPrice.mul(2**112).div(token0PriceMA);
 	}
-
+    //From Uniswap V3: USDs - USDC pool to get the price of USDs
     function getUSDsPrice() external view override returns (uint) {
 		return 1 * USDsPricePrecision;
 	}
