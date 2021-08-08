@@ -65,7 +65,7 @@ contract VaultCore is Initializable, VaultStorage, OwnableUpgradeable {
 		mintRedeemAllowed = true;
 		swapfeeInAllowed = true;
 		swapfeeOutAllowed = true;
-		SPATokenAddr = 0xFb931d41A744bE590E8B51e2e343bBE030aC4f93;
+		SPATokenAddr = 0x2B607b664A1012aD658b430E03603be1DC83EeCc;
 		chiInit = 95000;
 
 		collaValut = address(this);
@@ -328,24 +328,25 @@ contract VaultCore is Initializable, VaultStorage, OwnableUpgradeable {
 	function redeemView(
 		address collaAddr,
 		uint USDsAmt
-	) public returns (uint SPAMintAmt, uint CollaUnlockAmtCorrect, uint USDsBurntAmt, uint swapFeeAmount) {
+	) public returns (uint SPAMintAmt, uint CollaUnlockAmt, uint USDsBurntAmt, uint swapFeeAmount) {
 		uint priceColla = IOracle(oracleAddr).collatPrice(collaAddr);
 		uint precisionColla = IOracle(oracleAddr).collatPricePrecision(collaAddr);
 		uint priceSPA = IOracle(oracleAddr).getSPAPrice();
 		uint precisionSPA = IOracle(oracleAddr).SPAPricePrecision();
 		uint swapFee = calculateSwapFeeOut();
-		SPAMintAmt = USDsAmt.mul(chiPrec - chiRedeem()).mul(precisionSPA).div(priceSPA.mul(chiPrec));
+		uint collaAddrDecimal = uint(ERC20Upgradeable(collaAddr).decimals());
+		SPAMintAmt = USDsAmt.mul((chiPrec - chiRedeem()).mul(precisionSPA)).div(priceSPA.mul(chiPrec));
 		if (swapFee > 0) {
 			SPAMintAmt = SPAMintAmt.sub(SPAMintAmt.mul(swapFee).div(swapFeePresion));
 		}
 
 		//Unlock collaeral
-		uint CollaUnlockAmt = USDsAmt.mul(chiRedeem().mul(precisionColla)).div(chiPrec.mul(priceColla));
+		uint CollaUnlockAmt_18 = USDsAmt.mul(chiMint().mul(precisionColla)).div(chiPrec.mul(priceColla));
+		CollaUnlockAmt = CollaUnlockAmt_18.div(10**(uint(18).sub(collaAddrDecimal)));
 		if (swapFee > 0) {
 			CollaUnlockAmt = CollaUnlockAmt.sub(CollaUnlockAmt.mul(swapFee).div(swapFeePresion));
 		}
-		uint collaAddrDecimal = uint(ERC20Upgradeable(collaAddr).decimals());
-		CollaUnlockAmtCorrect =  CollaUnlockAmt.div(10**(uint(18).sub(collaAddrDecimal)));
+
 
 		//Burn USDs
 		swapFeeAmount = USDsAmt.mul(swapFee).div(swapFeePresion);
@@ -356,9 +357,10 @@ contract VaultCore is Initializable, VaultStorage, OwnableUpgradeable {
 		address collaAddr,
 		uint USDsAmt
 	) internal whenMintRedeemAllowed {
-		(uint SPAMintAmt, uint CollaUnlockAmtCorrect, uint USDsBurntAmt, uint swapFeeAmount) = redeemView(collaAddr, USDsAmt);
-		ERC20Upgradeable(collaAddr).safeTransferFrom(SPAValut, msg.sender, SPAMintAmt);
-		ERC20Upgradeable(collaAddr).safeTransferFrom(collaValut, msg.sender, CollaUnlockAmtCorrect);
+		(uint SPAMintAmt, uint CollaUnlockAmt, uint USDsBurntAmt, uint swapFeeAmount) = redeemView(collaAddr, USDsAmt);
+
+		ISperaxToken(SPATokenAddr).mintForUSDs(msg.sender, SPAMintAmt);
+		ERC20Upgradeable(collaAddr).safeTransfer(msg.sender, CollaUnlockAmt);
 		USDsInstance.burn(msg.sender, USDsBurntAmt);
 		USDsInstance.transferFrom(msg.sender, USDsFeeValut, swapFeeAmount);
 

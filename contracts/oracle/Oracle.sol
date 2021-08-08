@@ -221,7 +221,7 @@ contract Oracle is Initializable, IOracle, OwnableUpgradeable {
 		return uint(price);
 	}
 
-	function getAssetPrice(address assetAddress) public view returns (uint) {
+	function getAssetPrice(address assetAddress) public view override returns (uint) {
 		(
 			uint80 roundID,
 			int price,
