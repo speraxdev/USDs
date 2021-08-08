@@ -516,4 +516,12 @@ contract VaultCore is Initializable, VaultStorage, OwnableUpgradeable {
 
 			emit CollateralUpdated(collatAddress, allowance);
     }
+
+		function pauseMintBurn() external onlyOwner {
+			mintRedeemAllowed = false;
+		}
+		
+		function unpauseMintBurn() external onlyOwner {
+			mintRedeemAllowed = true;
+		}
 }
