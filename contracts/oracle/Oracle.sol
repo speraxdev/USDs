@@ -242,21 +242,22 @@ contract Oracle is Initializable, IOracle, OwnableUpgradeable {
 	}
 
     function getUSDsPrice() external override returns (uint) {
-        address tokenIn = USDsToken;
-        address tokenOut = WETH9;
-        uint24 fee = 3000;
-        uint160 sqrtPriceLimitX96 = 0;
+        // address tokenIn = USDsToken;
+        // address tokenOut = WETH9;
+        // uint24 fee = 3000;
+        // uint160 sqrtPriceLimitX96 = 0;
 
-        uint256 amountIn = uniswapQuoter.quoteExactOutputSingle(
-            tokenIn,
-            tokenOut,
-            fee,
-            1,
-            sqrtPriceLimitX96
-        );
+        // uint256 amountIn = uniswapQuoter.quoteExactOutputSingle(
+        //     tokenIn,
+        //     tokenOut,
+        //     fee,
+        //     1,
+        //     sqrtPriceLimitX96
+        // );
 
-		uint ETHPrice = getETHPrice();
-		return amountIn.mul(ETHPricePrecision).mul(USDsPricePrecision).div(ETHPrice);
+		// uint ETHPrice = getETHPrice();
+		// return amountIn.mul(ETHPricePrecision).mul(USDsPricePrecision).div(ETHPrice);
+        return 1 * USDsPricePrecision;
 	}
 
 	function collatPrice(address tokenAddr) external view override returns (uint) {

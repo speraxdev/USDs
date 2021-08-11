@@ -230,7 +230,7 @@ contract VaultCore is Initializable, VaultStorage, OwnableUpgradeable {
 		public returns (uint SPABurnAmt, uint CollaDepAmt, uint USDsAmt, uint swapFeeAmount)
 	{
 		require(CollaAmt > 0, "Amount needs to be greater than 0");
-		(SPABurnAmt, CollaDepAmt, USDsAmt, swapFeeAmount) = mintView(address(0), CollaAmt, 2);
+		(SPABurnAmt, CollaDepAmt, USDsAmt, swapFeeAmount) = mintView(address(0), CollaAmt, 3);
 	}
 
 	function mintView(
@@ -273,7 +273,7 @@ contract VaultCore is Initializable, VaultStorage, OwnableUpgradeable {
 
 			USDsAmt = SPABurnAmt;
 			if (swapFee > 0) {
-				USDsAmt = USDsAmt.div(1 + swapFee.div(swapFeePresion));
+				USDsAmt = USDsAmt.mul(swapFeePresion).div(swapFeePresion.add(swapFee));
 			}
 			USDsAmt = USDsAmt.mul(chiPrec).mul(priceSPA).div(precisionSPA.mul(chiPrec - chiMint()));
 
@@ -287,7 +287,12 @@ contract VaultCore is Initializable, VaultStorage, OwnableUpgradeable {
 			swapFeeAmount = USDsAmt.mul(swapFee).div(swapFeePresion);
 		} else if (valueType == 2 || valueType == 3) {
 			CollaDepAmt = valueAmt;
-			uint CollaDepAmt_18 = CollaDepAmt.mul(10**(uint(18).sub(collaAddrDecimal)));
+			USDsAmt = CollaDepAmt;
+
+			if (swapFee > 0) {
+				USDsAmt = USDsAmt.mul(swapFeePresion).div(swapFeePresion.add(swapFee));
+			}
+			uint CollaDepAmt_18 = USDsAmt.mul(10**(uint(18).sub(collaAddrDecimal)));
 			USDsAmt = CollaDepAmt_18.mul(chiPrec.mul(priceColla)).div(precisionColla).div(chiMint());
 
 			SPABurnAmt = USDsAmt.mul(chiPrec - chiMint()).mul(precisionSPA).div(priceSPA.mul(chiPrec));
