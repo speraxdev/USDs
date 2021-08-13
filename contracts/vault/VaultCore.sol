@@ -1,5 +1,7 @@
-//To-do: fix presion
-
+//TO-DO: check source file of SafeMathUpgradeable regarding trySub() (and the usage of "unchecked")
+//TO-DO: check ERC20Upgradeable vs ERC20Upgradeable
+// Note: assuming when exponentWithPrec >= 2^32, toReturn >= swapFeePresion () (TO-DO: work out the number)
+//TO-DO: AAVE in progress
 pragma solidity ^0.6.12;
 
 import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
@@ -9,44 +11,96 @@ import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/SafeERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 
-import "./VaultStorage.sol";
 import "../libraries/MyMath.sol";
 import "../libraries/Helpers.sol";
 import "../interfaces/IOracle.sol";
 import "../interfaces/ISperaxToken.sol";
+import "../interfaces/IStrategy.sol";
+import "../interfaces/IVault.sol";
+import "../libraries/StableMath.sol";
+import { USDs } from "../token/USDs.sol";
+import { BancorFormula } from "../libraries/BancorFormula.sol";
 
-contract VaultCore is Initializable, VaultStorage, OwnableUpgradeable {
+contract VaultCore is Initializable, OwnableUpgradeable {
 	using SafeERC20Upgradeable for ERC20Upgradeable;
 	using SafeMathUpgradeable for uint;
 	using MyMath for uint;
+	using StableMath for uint;
+
+	bool public mintRedeemAllowed;
+	bool public capitalAllowed;
+
+	bool public swapfeeInAllowed;
+	bool public swapfeeOutAllowed;
+
+	mapping(address => uint) public supportedCollatAmount;
+	mapping(address => uint) public supportedCollat;
+	mapping(address => address) public assetDefaultStrategies;
+	address[] allCollat;
+	address[] allStrategies;
+	uint public vaultBuffer;
+
+	address public SPATokenAddr;
+	address public oracleAddr;
+	address public collaValut;
+	address public SPAValut;
+	address public USDsFeeValut;
+	address public USDsYieldValut;
+
+	uint public startBlockHeight;
+
+
+	uint public constant chi_alpha = 513;
+	uint public constant chi_alpha_Prec = 10**12;
+	uint public constant chiPrec = chi_alpha_Prec;
+	uint public chiInit = chiPrec * 100 / 95;
+	uint public constant chi_beta = 9;
+	uint public constant chi_beta_Prec = 1;
+	uint public constant chi_gamma = 1;
+	uint public constant chi_gamma_Prec = 1;
+
+
+	uint public constant swapFeePresion = 1000000;
+	uint public constant swapFee_p = 99;
+	uint public constant swapFee_p_Prec = 100;
+	uint public constant swapFee_theta = 50;
+	uint public constant swapFee_theta_Prec = 1;
+	uint32 public constant swapFee_a = 12;
+	uint32 public constant swapFee_a_Prec = 10;
+	uint public constant swapFee_A = 20;
+	uint public constant swapFee_A_Prec = 1;
+
+
+	USDs USDsInstance;
+	BancorFormula BancorInstance;
 
 	event USDSMinted(
 		address indexed wallet,
-		uint256 indexed USDsAmt,
-		uint256 indexed SPAsAmt,
-		uint256 feeAmt
+		uint indexed USDsAmt,
+		uint indexed SPAsAmt,
+		uint feeAmt
 	);
 
 	event USDSRedeemed(
 		address indexed wallet,
-		uint256 indexed USDsAmt,
-		uint256 indexed SPAsAmt,
-		uint256 feeAmt
+		uint indexed USDsAmt,
+		uint indexed SPAsAmt,
+		uint feeAmt
 	);
 
 	event TotalSupplyChanged(
-		uint256 indexed oldSupply,
-		uint256 indexed newSupply
+		uint indexed oldSupply,
+		uint indexed newSupply
 	);
 
 	event SwapFeeInAllowed(
 		bool indexed allowance,
-		uint256 time
+		uint time
 	);
 
 	event SwapFeeOutAllowed(
 		bool indexed allowance,
-		uint256 time
+		uint time
 	);
 
 	event CollateralUpdated(
@@ -54,10 +108,51 @@ contract VaultCore is Initializable, VaultStorage, OwnableUpgradeable {
 		bool indexed allowance
 	);
 
+
+
 	modifier whenMintRedeemAllowed {
 		require(mintRedeemAllowed, "Mint & redeem paused");
 		_;
 	}
+
+	modifier whenNotCapitalPaused {
+		require(capitalAllowed, "Allocate paused");
+		_;
+	}
+
+	function pauseMintBurn() external onlyOwner {
+		mintRedeemAllowed = false;
+	}
+	function unpauseMintBurn() external onlyOwner {
+		mintRedeemAllowed = true;
+	}
+	function pauseAllocate() external onlyOwner {
+		capitalAllowed = false;
+	}
+	function unpauseAllocate() external onlyOwner {
+		capitalAllowed = true;
+	}
+	function pauseSwapInFee() external onlyOwner {
+		swapfeeInAllowed = false;
+	}
+	function unpauseSwapInFee() external onlyOwner {
+		swapfeeInAllowed = true;
+	}
+	function pauseSwapOutFee() external onlyOwner {
+		swapfeeOutAllowed = false;
+	}
+	function unpauseSwapOutFee() external onlyOwner {
+		swapfeeOutAllowed = true;
+	}
+
+    function supportAsset(address _asset) external onlyOwner {
+        require(supportedCollat[_asset] == 0, "Asset already supported");
+		supportedCollat[_asset] = 1;
+		allCollat.push(_asset);
+		// TO-DO: add Oracle support here;
+    }
+
+
 
 	function initialize(address USDsToken_, address oracleAddr_, address BancorFormulaAddr_) public initializer {
 		OwnableUpgradeable.__Ownable_init();
@@ -65,8 +160,8 @@ contract VaultCore is Initializable, VaultStorage, OwnableUpgradeable {
 		mintRedeemAllowed = true;
 		swapfeeInAllowed = true;
 		swapfeeOutAllowed = true;
+		capitalAllowed = true;
 		SPATokenAddr = 0x2B607b664A1012aD658b430E03603be1DC83EeCc;
-		chiInit = 95000;
 
 		collaValut = address(this);
 		SPAValut = address(this);
@@ -74,12 +169,16 @@ contract VaultCore is Initializable, VaultStorage, OwnableUpgradeable {
 		USDsYieldValut = address(this);
 		supportedCollat[0xb7a4F3E9097C08dA09517b5aB877F7a917224ede] = 1;
 		allCollat.push(0xb7a4F3E9097C08dA09517b5aB877F7a917224ede);
+		supportedCollat[0x4F96Fe3b7A6Cf9725f59d353F723c1bDb64CA6Aa] = 1;
+		allCollat.push(0x4F96Fe3b7A6Cf9725f59d353F723c1bDb64CA6Aa);
+		supportedCollat[0x07de306FF27a2B630B1141956844eB1552B956B5] = 1;
+		allCollat.push(0x07de306FF27a2B630B1141956844eB1552B956B5);
 		USDsInstance = USDs(USDsToken_);
 		oracleAddr = oracleAddr_;
 		BancorInstance = BancorFormula(BancorFormulaAddr_);
 		startBlockHeight = block.number;
 		// DAI
-		// 0x4f96fe3b7a6cf9725f59d353f723c1bdb64ca6aa
+		// 0x4F96Fe3b7A6Cf9725f59d353F723c1bDb64CA6Aa
 		// 0x777A68032a88E5A84678A77Af2CD65A7b3c0775a
 		// 8
 		// USDC
@@ -87,7 +186,7 @@ contract VaultCore is Initializable, VaultStorage, OwnableUpgradeable {
 		// 0x9211c6b3BF41A10F78539810Cf5c64e1BB78Ec60
 		// 8
 		// USDT
-		// 0x07de306ff27a2b630b1141956844eb1552b956b5
+		// 0x07de306FF27a2B630B1141956844eB1552B956B5
 		// 0x2ca5A90D34cA333661083F89D831f757A9A50148
 		// 8
 	}
@@ -98,21 +197,27 @@ contract VaultCore is Initializable, VaultStorage, OwnableUpgradeable {
 			return 0;
 		}
 
-		uint priceUSDs = uint(IOracle(oracleAddr).getUSDsPrice()); //TODO: change to 3 days average
+		uint priceUSDs_Average = IOracle(oracleAddr).getUSDsPrice_Average(); //TODO: change to 3 days average
 		uint precisionUSDs = IOracle(oracleAddr).USDsPricePrecision();
 		uint smallPwithPrecision = swapFee_p.mul(precisionUSDs).div(swapFee_p_Prec);
-		if (smallPwithPrecision < priceUSDs) {
+		if (smallPwithPrecision < priceUSDs_Average) {
 			return swapFeePresion / 1000; // 0.1%
 		} else {
-			uint temp = (smallPwithPrecision - priceUSDs).mul(swapFee_theta).div(swapFee_theta_Prec); //precision: precisionUSDs
+			uint temp = (smallPwithPrecision - priceUSDs_Average).mul(swapFee_theta).div(swapFee_theta_Prec); //precision: precisionUSDs
 			uint temp2 = temp.mul(temp); //precision: precisionUSDs^2
 			uint temp3 = temp2.mul(swapFeePresion).div(precisionUSDs).div(precisionUSDs);
 			uint temp4 = temp3.div(100);
-			return swapFeePresion / 1000 + temp4;
+			uint temp5 =  swapFeePresion / 1000 + temp4;
+			if (temp5 >= swapFeePresion) {
+				return swapFeePresion;
+			} else {
+				return temp5;
+			}
 		}
 
 	}
-
+	// Note: need to be less than (2^32 - 1)
+	// Note: assuming when exponentWithPrec >= 2^32, toReturn >= swapFeePresion () (TO-DO: work out the number)
 	function calculateSwapFeeOut() public view returns (uint) {
 		if (!swapfeeOutAllowed) {
 			return 0;
@@ -120,26 +225,34 @@ contract VaultCore is Initializable, VaultStorage, OwnableUpgradeable {
 		uint USDsInOutRatio = IOracle(oracleAddr).USDsInOutRatio();
 		uint USDsInOutRatioPrecision = IOracle(oracleAddr).USDsInOutRatioPrecision();
 		if (USDsInOutRatio <= uint(12).mul(USDsInOutRatioPrecision).div(10)) {
-			return 1000; //0.1%
+			return swapFeePresion / 1000; //0.1%
 		} else {
-
-			(uint powResWithPrec, uint8 powResPrec) = BancorInstance.power(uint(swapFee_A), uint(swapFee_A_Prec), swapFee_a, swapFee_a_Prec);
-			return uint(powResWithPrec >> powResPrec).mul(10**4);
+			uint exponentWithPrec = USDsInOutRatio - uint(12).mul(USDsInOutRatioPrecision).div(10);
+			if (exponentWithPrec >= 2^32) {
+				return swapFeePresion;
+			}
+			(uint powResWithPrec, uint8 powResPrec) = BancorInstance.power(swapFee_A, swapFee_A_Prec, uint32(exponentWithPrec), uint32(USDsInOutRatioPrecision));
+			uint toReturn = uint(powResWithPrec >> powResPrec).mul(swapFeePresion).div(100);
+			if (toReturn >= swapFeePresion) {
+				return swapFeePresion;
+			} else {
+				return toReturn;
+			}
 		}
 	}
-
+	// chi_alpha_Prec = chiPrec
 	function chiTarget(uint chiInit_, uint blockPassed, uint priceUSDs, uint precisionUSDs) public view returns (uint chiTarget_) {
-		uint chiAdjustmentA = blockPassed.mul(chi_alpha).div(chi_alpha_Prec);
+		uint chiAdjustmentA = blockPassed.mul(chiPrec).mul(chi_alpha).div(chi_alpha_Prec);
 		uint chiAdjustmentB;
-		if (priceUSDs > precisionUSDs) {
-			chiAdjustmentB = chi_beta.mul(priceUSDs - precisionUSDs).mul(priceUSDs - precisionUSDs).div(chi_beta_Prec);
-			chiTarget_ = chiInit_.sub(chiAdjustmentA).add(chiAdjustmentB);
-		} else if (priceUSDs < precisionUSDs) {
-			chiAdjustmentB = chi_beta.mul(precisionUSDs - priceUSDs).mul(precisionUSDs - priceUSDs).div(chi_beta_Prec);
-			chiTarget_ = chiInit_.sub(chiAdjustmentA).sub(chiAdjustmentB);
+		uint afterB;
+		if (priceUSDs >= precisionUSDs) {
+			chiAdjustmentB = chi_beta.mul(chiPrec).mul(priceUSDs - precisionUSDs).mul(priceUSDs - precisionUSDs).div(chi_beta_Prec);
+			afterB = chiInit_.add(chiAdjustmentB);
 		} else {
-			chiTarget_ = chiInit_.sub(chiAdjustmentA);
+			chiAdjustmentB = chi_beta.mul(chiPrec).mul(precisionUSDs - priceUSDs).mul(precisionUSDs - priceUSDs).div(chi_beta_Prec);
+			(, afterB) = chiInit_.trySub(chiAdjustmentB);
 		}
+		(, chiTarget_) = afterB.trySub(chiAdjustmentA);
 	}
 
 	function chiMint() public returns (uint)  {
@@ -154,8 +267,7 @@ contract VaultCore is Initializable, VaultStorage, OwnableUpgradeable {
 		uint precisionUSDs = IOracle(oracleAddr).USDsPricePrecision();
 		uint blockPassed = uint(block.number).sub(startBlockHeight);
 		uint chiTarget_ = chiTarget(chiInit, blockPassed, priceUSDs, precisionUSDs);
-		//uint collateralRatio_ = collateralRatio();
-		uint collateralRatio_ = chiTarget_;
+		uint collateralRatio_ = collateralRatio();
 		if (chiTarget_ > collateralRatio_) {
 			chiRedeem_ = chiTarget_.add(chi_gamma.mul(chiTarget_ - collateralRatio_).div(chi_gamma_Prec));
 		} else {
@@ -317,6 +429,7 @@ contract VaultCore is Initializable, VaultStorage, OwnableUpgradeable {
 		USDsInstance.mint(msg.sender, USDsAmt);
 		USDsInstance.mint(USDsFeeValut, swapFeeAmount);
 
+		supportedCollatAmount[collaAddr] = supportedCollatAmount[collaAddr].add(CollaDepAmt);
 		emit USDSMinted(msg.sender, USDsAmt, SPABurnAmt, swapFeeAmount);
 	}
 
@@ -366,6 +479,7 @@ contract VaultCore is Initializable, VaultStorage, OwnableUpgradeable {
 
 		ISperaxToken(SPATokenAddr).mintForUSDs(msg.sender, SPAMintAmt);
 		ERC20Upgradeable(collaAddr).safeTransfer(msg.sender, CollaUnlockAmt);
+		supportedCollatAmount[collaAddr] = supportedCollatAmount[collaAddr].sub(CollaUnlockAmt);
 		USDsInstance.burn(msg.sender, USDsBurntAmt);
 		USDsInstance.transferFrom(msg.sender, USDsFeeValut, swapFeeAmount);
 
@@ -386,8 +500,8 @@ contract VaultCore is Initializable, VaultStorage, OwnableUpgradeable {
 	 *      portion of the yield to the trustee.
 	 */
 	function _rebase() internal {
-		uint256 totalSupply = USDsInstance.totalSupply();
-		uint256 vaultValue = _totalValue();
+		uint totalSupply = USDsInstance.totalSupply();
+		uint vaultValue = _totalValue();
 
 		if (vaultValue > totalSupply && totalSupply != 0) {
 			USDsInstance.changeSupply(vaultValue);
@@ -395,138 +509,206 @@ contract VaultCore is Initializable, VaultStorage, OwnableUpgradeable {
 			emit TotalSupplyChanged(totalSupply, vaultValue);
 		}
 	}
-
-	/**
-	 * @dev  Precision: same as chi
-	 */
-
-	function collateralRatio() public view returns (uint256 ratio) {
+	//
+	// /**
+	//  * @dev  Precision: same as chi (chiPrec)
+	//  */
+	//
+	function collateralRatio() public returns (uint ratio) {
         uint totalValue = _totalValue();
 		uint USDsSupply =  USDsInstance.totalSupply();
-		ratio = totalValue.mul(chiPrec).div(USDsSupply);
+		uint priceUSDs = uint(IOracle(oracleAddr).getUSDsPrice());
+		uint precisionUSDs = IOracle(oracleAddr).USDsPricePrecision();
+		uint USDsValue = USDsSupply.mul(priceUSDs).div(precisionUSDs);
+		ratio = totalValue.mul(chiPrec).div(USDsValue);
     }
 
-	/**
-     * @dev Determine the total value of assets held by the vault and its
-     *         strategies.
-     * @return value Total value in USD (1e18)
-     */
-    function totalValue() external view returns (uint256 value) {
-        value = _totalValue();
+    function totalValueLocked() external view returns (uint value) {
+        value = _totalValueLocked();
     }
 
-    /**
-     * @dev Internal Calculate the total value of the assets held by the
-     *         vault and its strategies.
-     * @return value Total value in USD (1e18)
-     */
-    function _totalValue() internal view returns (uint256 value) {
-        return _totalValueInVault().add(_totalValueInStrategies());
-    }
-
-    /**
-     * @dev Internal to calculate total value of all assets held in Vault.
-     * @return value in ETH (1e18)
-     */
-    function _totalValueInVault() internal view returns (uint256 value) {
-        // for (uint256 y = 0; y < allCollat.length; y++) {
-        //     ERC20Upgradeable asset = ERC20Upgradeable(allCollat[y]);
-        //     uint256 assetDecimals = Helpers.getDecimals(allCollat[y]);
-        //     uint256 balance = asset.balanceOf(address(this));
-        //     if (balance > 0) {
-        //         value = value.add(balance.scaleBy(int8(18 - assetDecimals)));
-        //     }
-        // }
-    }
-
-    /**
-     * @dev Internal to calculate total value of all assets held in Strategies.
-     * @return value in ETH (1e18)
-     */
-    function _totalValueInStrategies() internal view returns (uint256 value) {
-        for (uint256 i = 0; i < allStrategies.length; i++) {
-            value = value.add(_totalValueInStrategy(allStrategies[i]));
+    function _totalValueLocked() internal view returns (uint value) {
+		value = 0;
+		address collaAddr;
+		uint priceColla = 0;
+		uint precisionColla = 0;
+		uint collaAddrDecimal = 0;
+		uint collaTotalValue = 0;
+		uint collaTotalValue_18 = 0;
+		for (uint y = 0; y < allCollat.length; y++) {
+			collaAddr = allCollat[y];
+			priceColla = IOracle(oracleAddr).collatPrice(collaAddr);
+			precisionColla = IOracle(oracleAddr).collatPricePrecision(collaAddr);
+			collaAddrDecimal = uint(ERC20Upgradeable(collaAddr).decimals());
+			collaTotalValue = supportedCollatAmount[collaAddr].mul(priceColla).div(precisionColla);
+			collaTotalValue_18 = collaTotalValue.mul(10**(uint(18).sub(collaAddrDecimal)));
+			value = value.add(collaTotalValue_18);
         }
     }
 
-    /**
-     * @dev Internal to calculate total value of all assets held by strategy.
-     * @param _strategyAddr Address of the strategy
-     * @return value in ETH (1e18)
-     */
-    function _totalValueInStrategy(address _strategyAddr)
-        internal
-        view
-        returns (uint256 value)
+	function totalValueInVault() external view returns (uint value) {
+		value = _totalValueInVault();
+	}
+
+	function _totalValueInVault() internal view returns (uint value) {
+		value = 0;
+		address collaAddr;
+		uint priceColla = 0;
+		uint precisionColla = 0;
+		uint collaAddrDecimal = 0;
+		uint collaTotalValue = 0;
+		uint collaTotalValue_18 = 0;
+		for (uint y = 0; y < allCollat.length; y++) {
+			collaAddr = allCollat[y];
+			priceColla = IOracle(oracleAddr).collatPrice(collaAddr);
+			precisionColla = IOracle(oracleAddr).collatPricePrecision(collaAddr);
+			collaAddrDecimal = uint(ERC20Upgradeable(collaAddr).decimals());
+			collaTotalValueInVault = ERC20Upgradeable(collaAddr).balanceOf(address(this)).mul(priceColla).div(precisionColla);
+			collaTotalValueInVault_18 = collaTotalValueInVault.mul(10**(uint(18).sub(collaAddrDecimal)));
+			value = value.add(collaTotalValueInVault_18);
+		}
+	}
+
+	function totalValueInStrategies() external view returns (uint value) {
+		value = _totalValueInStrategies();
+	}
+	function _totalValueInStrategies() internal view returns (uint value) {
+		value = _totalValueLocked().sub(_totalValueInVault);
+	}
+
+
+	function harvest(address _strategyAddr)
+        external
+        onlyOwner
+        returns (uint256[] memory)
     {
-        value = 0;
+        return _harvest(_strategyAddr);
     }
+
+    /**
+     * @dev Collect reward tokens from a single strategy and swap them for a
+     *      supported stablecoin via Uniswap
+     * @param _strategyAddr Address of the strategy to collect rewards from
+     */
+    function _harvest(address _strategyAddr)
+        internal
+    {
+        IStrategy strategy = IStrategy(_strategyAddr);
+        address rewardTokenAddress = strategy.rewardTokenAddress();
+        if (rewardTokenAddress == address(0)) {
+			return;
+        }
+		//collect Atoken
+		strategy.collectRewardToken();
+		ERC20Upgradeable rewardToken = ERC20Upgradeable(strategy.rewardTokenAddress());
+		uint rewardTokenAmount = rewardToken.balanceOf(address(this));
+		strategy.withdraw(address(this), )
+
+
+
+
+    }
+
 
 	/**
-     * @notice Get the balance of an asset held in Vault and all strategies.
-     * @param _asset Address of asset
-     * @return uint256 Balance of asset in decimals of asset
-     */
-    function checkBalance(address _asset) external view returns (uint256) {
-        return _checkBalance(_asset);
+     * @notice Allocate unallocated funds on Vault to strategies.
+     * @dev Allocate unallocated funds on Vault to strategies.
+     **/
+    function allocate() public whenNotCapitalPaused {
+        _allocate();
     }
 
     /**
-     * @notice Get the balance of an asset held in Vault and all strategies.
-     * @param _asset Address of asset
-     * @return balance Balance of asset in decimals of asset
-     */
-    function _checkBalance(address _asset)
-        internal
-        view
-        returns (uint256 balance)
-    {
-        ERC20Upgradeable asset = ERC20Upgradeable(_asset);
-        balance = asset.balanceOf(address(this));
-        // for (uint256 i = 0; i < allStrategies.length; i++) {
-        //     IStrategy strategy = IStrategy(allStrategies[i]);
-        //     if (strategy.supportsAsset(_asset)) {
-        //         balance = balance.add(strategy.checkBalance(_asset));
-        //     }
-        // }
+     * @notice Allocate unallocated funds on Vault to strategies.
+     * @dev Allocate unallocated funds on Vault to strategies.
+     **/
+    function _allocate() internal {
+        uint totalValueInVault = _totalValueInVault();
+		uint totalValueLocked = _totalValueLocked();
+        if (totalValueInVault == 0) return;
+        uint totalValueInStrategies = _totalValueInStrategies();
+
+
+        // We want to maintain a buffer on the Vault so calculate a percentage
+        // modifier to multiply each amount being allocated by to enforce the
+        // vault buffer
+        uint vaultBufferModifier;
+        if (strategiesValue == 0) {
+            // Nothing in Strategies, allocate 100% minus the vault buffer to
+            // strategies
+            vaultBufferModifier = uint(1e18).sub(vaultBuffer);
+        } else {
+            vaultBufferModifier = vaultBuffer.mul(calculatedTotalValue).div(
+                vaultValue
+            );
+            if (1e18 > vaultBufferModifier) {
+                // E.g. 1e18 - (1e17 * 10e18)/5e18 = 8e17
+                // (5e18 * 8e17) / 1e18 = 4e18 allocated from Vault
+                vaultBufferModifier = uint(1e18).sub(vaultBufferModifier);
+            } else {
+                // We need to let the buffer fill
+                return;
+            }
+        }
+        if (vaultBufferModifier == 0) return;
+
+        // Iterate over all assets in the Vault and allocate the the appropriate
+        // strategy
+        for (uint i = 0; i < allCollat.length; i++) {
+            ERC20Upgradeable asset = ERC20Upgradeable(allCollat[i]);
+            uint assetBalance = asset.balanceOf(address(this));
+            // No balance, nothing to do here
+            if (assetBalance == 0) continue;
+
+            // Multiply the balance by the vault buffer modifier and truncate
+            // to the scale of the asset decimals
+            uint allocateAmount = assetBalance.mulTruncate(
+                vaultBufferModifier
+            );
+
+            address depositStrategyAddr = assetDefaultStrategies[address(
+                asset
+            )];
+
+            if (depositStrategyAddr != address(0) && allocateAmount > 0) {
+                IStrategy strategy = IStrategy(depositStrategyAddr);
+                // Transfer asset to Strategy and call deposit method to
+                // mint or take required action
+                asset.safeTransfer(address(strategy), allocateAmount);
+                strategy.deposit(address(asset), allocateAmount);
+            }
+        }
+
+
+        // Harvest for all reward tokens above reward liquidation threshold
+        for (uint i = 0; i < allStrategies.length; i++) {
+            IStrategy strategy = IStrategy(allStrategies[i]);
+            address rewardTokenAddress = strategy.rewardTokenAddress();
+            if (rewardTokenAddress != address(0)) {
+                uint liquidationThreshold = strategy
+                    .rewardLiquidationThreshold();
+                if (liquidationThreshold == 0) {
+                    // No threshold set, always harvest from strategy
+                    IVault(address(this)).harvest(allStrategies[i]);
+                } else {
+                    // Check balance against liquidation threshold
+                    // Note some strategies don't hold the reward token balance
+                    // on their contract so the liquidation threshold should be
+                    // set to 0
+                    ERC20Upgradeable rewardToken = ERC20Upgradeable(rewardTokenAddress);
+                    uint rewardTokenAmount = rewardToken.balanceOf(
+                        allStrategies[i]
+                    );
+                    if (rewardTokenAmount >= liquidationThreshold) {
+                        IVault(address(this)).harvest(allStrategies[i]);
+                    }
+                }
+            }
+        }
+        //IBuyback(trusteeAddress).swap();
     }
 
-    //
-    // Owner Only Function: change swap fee allowance
-    //
 
-    function toggleSwapfeeInAllowed(bool newAllowance) external onlyOwner {
-      swapfeeInAllowed = newAllowance;
 
-			emit SwapFeeInAllowed(newAllowance, block.timestamp);
-    }
 
-    function toggleSwapfeeOutAllowed(bool newAllowance) external onlyOwner {
-      swapfeeOutAllowed = newAllowance;
-
-			emit SwapFeeOutAllowed(newAllowance, block.timestamp);
-    }
-
-    function updateCollateralList(address collatAddress, bool allowance) external onlyOwner {
-			if (allowance) {
-				require(supportedCollat[collatAddress] == 0, "Collateral already allowed");
-				allCollat.push(collatAddress);
-				supportedCollat[collatAddress] = allCollat.length;
-			} else {
-				require(supportedCollat[collatAddress] > 0, "Collateral not allowed");
-				allCollat[supportedCollat[collatAddress] - 1] = allCollat[allCollat.length - 1];
-				allCollat.pop();
-				delete supportedCollat[collatAddress];
-			}
-
-			emit CollateralUpdated(collatAddress, allowance);
-    }
-
-		function pauseMintBurn() external onlyOwner {
-			mintRedeemAllowed = false;
-		}
-		
-		function unpauseMintBurn() external onlyOwner {
-			mintRedeemAllowed = true;
-		}
 }

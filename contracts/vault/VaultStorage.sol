@@ -1,17 +1,22 @@
 pragma solidity ^0.6.12;
 
+import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
 import { USDs } from "../token/USDs.sol";
 import { BancorFormula } from "../libraries/BancorFormula.sol";
 
-contract VaultStorage {
+contract VaultStorage is Initializable {
+	event AssetSupported(address _asset);
 	bool public mintRedeemAllowed;
+	bool public capitalAllowed;
 
 	bool public swapfeeInAllowed;
 	bool public swapfeeOutAllowed;
 
 	mapping(address => uint256) supportedCollat;
+	mapping(address => address) public assetDefaultStrategies;
 	address[] allCollat;
 	address[] allStrategies;
+	uint256 public vaultBuffer;
 
 	address public SPATokenAddr;
 	address public oracleAddr;

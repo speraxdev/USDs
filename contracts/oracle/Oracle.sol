@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
-// To-do:
-// change int()
+
+//TO-DO: have getUSDsPrice_Average() returns USDs price over longer period;
 pragma solidity ^0.6.12;
-pragma experimental ABIEncoderV2;
+pragma experimental ABIEncoderV2; //What's this for?
 
 
 import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
@@ -117,7 +117,7 @@ contract Oracle is Initializable, IOracle, OwnableUpgradeable {
         ETHPricePrecision = 10**8;
         USDsPricePrecision = 10**18;
         SPAPricePrecision = 10**8;
-        USDsInOutRatioPrecision = 10000000;
+        USDsInOutRatioPrecision = 10000000; // Note: need to be less than (2^32 - 1)
 
         priceFeedETH = AggregatorV3Interface(0x9326BFA02ADD2366b30bacB125260Af641031331);
         uint32 constructTime = uint32(now % 2 ** 32);
@@ -258,6 +258,25 @@ contract Oracle is Initializable, IOracle, OwnableUpgradeable {
 		// uint ETHPrice = getETHPrice();
 		// return amountIn.mul(ETHPricePrecision).mul(USDsPricePrecision).div(ETHPrice);
         return 1 * USDsPricePrecision;
+	}
+
+    //TO-DO: have getUSDsPrice_Average() returns USDs price over longer period;
+    function getUSDsPrice_Average() external override returns (uint) {
+        address tokenIn = USDsToken;
+        address tokenOut = WETH9;
+        uint24 fee = 3000;
+        uint160 sqrtPriceLimitX96 = 0;
+
+        uint256 amountIn = uniswapQuoter.quoteExactOutputSingle(
+            tokenIn,
+            tokenOut,
+            fee,
+            1,
+            sqrtPriceLimitX96
+        );
+
+		uint ETHPrice = getETHPrice();
+		return amountIn.mul(ETHPricePrecision).mul(USDsPricePrecision).div(ETHPrice);
 	}
 
 	function collatPrice(address tokenAddr) external view override returns (uint) {
