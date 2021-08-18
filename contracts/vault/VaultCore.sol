@@ -2,6 +2,7 @@
 //TO-DO: check ERC20Upgradeable vs ERC20Upgradeable
 // Note: assuming when exponentWithPrec >= 2^32, toReturn >= swapFeePresion () (TO-DO: work out the number)
 //TO-DO: AAVE in progress
+//TO-DO: deal with assetDefaultStrategies
 pragma solidity ^0.6.12;
 
 import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
@@ -38,7 +39,7 @@ contract VaultCore is Initializable, OwnableUpgradeable {
 	mapping(address => address) public assetDefaultStrategies;
 	address[] allCollat;
 	address[] allStrategies;
-	uint public vaultBuffer;
+	mapping (address => mapping (address => uint)) public strategiesAllocatedAmt;
 
 	address public SPATokenAddr;
 	address public oracleAddr;
@@ -70,45 +71,49 @@ contract VaultCore is Initializable, OwnableUpgradeable {
 	uint public constant swapFee_A = 20;
 	uint public constant swapFee_A_Prec = 1;
 
+	uint public allocatePrecentage = 8;
+	uint public allocatePrecentage_Prec = 10;
+
 
 	USDs USDsInstance;
 	BancorFormula BancorInstance;
 
-	event USDSMinted(
-		address indexed wallet,
-		uint indexed USDsAmt,
-		uint indexed SPAsAmt,
-		uint feeAmt
-	);
+	// event USDSMinted(
+	// 	address indexed wallet,
+	// 	uint indexed USDsAmt,
+	// 	uint indexed SPAsAmt,
+	// 	uint feeAmt
+	// );
+	//
+	// event USDSRedeemed(
+	// 	address indexed wallet,
+	// 	uint indexed USDsAmt,
+	// 	uint indexed SPAsAmt,
+	// 	uint feeAmt
+	// );
+	//
+	// event TotalSupplyChanged(
+	// 	uint indexed oldSupply,
+	// 	uint indexed newSupply
+	// );
+	//
+	// event SwapFeeInAllowed(
+	// 	bool indexed allowance,
+	// 	uint time
+	// );
+	//
+	// event SwapFeeOutAllowed(
+	// 	bool indexed allowance,
+	// 	uint time
+	// );
+	//
+	// event CollateralUpdated(
+	// 	address indexed token,
+	// 	bool indexed allowance
+	// );
 
-	event USDSRedeemed(
-		address indexed wallet,
-		uint indexed USDsAmt,
-		uint indexed SPAsAmt,
-		uint feeAmt
-	);
 
-	event TotalSupplyChanged(
-		uint indexed oldSupply,
-		uint indexed newSupply
-	);
-
-	event SwapFeeInAllowed(
-		bool indexed allowance,
-		uint time
-	);
-
-	event SwapFeeOutAllowed(
-		bool indexed allowance,
-		uint time
-	);
-
-	event CollateralUpdated(
-		address indexed token,
-		bool indexed allowance
-	);
-
-
+	// ADMIN
 
 	modifier whenMintRedeemAllowed {
 		require(mintRedeemAllowed, "Mint & redeem paused");
@@ -152,7 +157,7 @@ contract VaultCore is Initializable, OwnableUpgradeable {
 		// TO-DO: add Oracle support here;
     }
 
-
+	//INITIALIZER
 
 	function initialize(address USDsToken_, address oracleAddr_, address BancorFormulaAddr_) public initializer {
 		OwnableUpgradeable.__Ownable_init();
@@ -177,18 +182,6 @@ contract VaultCore is Initializable, OwnableUpgradeable {
 		oracleAddr = oracleAddr_;
 		BancorInstance = BancorFormula(BancorFormulaAddr_);
 		startBlockHeight = block.number;
-		// DAI
-		// 0x4F96Fe3b7A6Cf9725f59d353F723c1bDb64CA6Aa
-		// 0x777A68032a88E5A84678A77Af2CD65A7b3c0775a
-		// 8
-		// USDC
-		// 0xb7a4F3E9097C08dA09517b5aB877F7a917224ede
-		// 0x9211c6b3BF41A10F78539810Cf5c64e1BB78Ec60
-		// 8
-		// USDT
-		// 0x07de306FF27a2B630B1141956844eB1552B956B5
-		// 0x2ca5A90D34cA333661083F89D831f757A9A50148
-		// 8
 	}
 
 
@@ -216,6 +209,7 @@ contract VaultCore is Initializable, OwnableUpgradeable {
 		}
 
 	}
+
 	// Note: need to be less than (2^32 - 1)
 	// Note: assuming when exponentWithPrec >= 2^32, toReturn >= swapFeePresion () (TO-DO: work out the number)
 	function calculateSwapFeeOut() public view returns (uint) {
@@ -241,7 +235,7 @@ contract VaultCore is Initializable, OwnableUpgradeable {
 		}
 	}
 	// chi_alpha_Prec = chiPrec
-	function chiTarget(uint chiInit_, uint blockPassed, uint priceUSDs, uint precisionUSDs) public view returns (uint chiTarget_) {
+	function chiTarget(uint chiInit_, uint blockPassed, uint priceUSDs, uint precisionUSDs) public pure returns (uint chiTarget_) {
 		uint chiAdjustmentA = blockPassed.mul(chiPrec).mul(chi_alpha).div(chi_alpha_Prec);
 		uint chiAdjustmentB;
 		uint afterB;
@@ -311,45 +305,45 @@ contract VaultCore is Initializable, OwnableUpgradeable {
 	//View functions
 
 	function mintWithUSDsView(address collaAddr, uint USDsMintAmt)
-		public returns (uint SPABurnAmt, uint CollaDepAmt, uint USDsAmt, uint swapFeeAmount)
+		public returns (uint SPABurnAmt, uint collaDepAmt, uint USDsAmt, uint swapFeeAmount)
 	{
 		require(supportedCollat[collaAddr] > 0, "Collateral not supported");
 		require(USDsMintAmt > 0, "Amount needs to be greater than 0");
-		(SPABurnAmt, CollaDepAmt, USDsAmt, swapFeeAmount) = mintView(collaAddr, USDsMintAmt, 0);
+		(SPABurnAmt, collaDepAmt, USDsAmt, swapFeeAmount) = mintView(collaAddr, USDsMintAmt, 0);
 	}
 
 	function mintWithSPAView(address collaAddr, uint SPAAmt)
-		public returns (uint SPABurnAmt, uint CollaDepAmt, uint USDsAmt, uint swapFeeAmount)
+		public returns (uint SPABurnAmt, uint collaDepAmt, uint USDsAmt, uint swapFeeAmount)
 	{
 		require(supportedCollat[collaAddr] > 0, "Collateral not supported");
 		require(SPAAmt > 0, "Amount needs to be greater than 0");
-		(SPABurnAmt, CollaDepAmt, USDsAmt, swapFeeAmount)  = mintView(collaAddr, SPAAmt, 1);
+		(SPABurnAmt, collaDepAmt, USDsAmt, swapFeeAmount)  = mintView(collaAddr, SPAAmt, 1);
 	}
 
 	function mintWithCollaView(address collaAddr, uint CollaAmt)
-		public returns (uint SPABurnAmt, uint CollaDepAmt, uint USDsAmt, uint swapFeeAmount)
+		public returns (uint SPABurnAmt, uint collaDepAmt, uint USDsAmt, uint swapFeeAmount)
 	{
 		require(supportedCollat[collaAddr] > 0, "Collateral not supported");
 		require(CollaAmt > 0, "Amount needs to be greater than 0");
-		(SPABurnAmt, CollaDepAmt, USDsAmt, swapFeeAmount) = mintView(collaAddr, CollaAmt, 2);
+		(SPABurnAmt, collaDepAmt, USDsAmt, swapFeeAmount) = mintView(collaAddr, CollaAmt, 2);
 	}
 
 	// SPABurnAmt precision: 10^18
-	// CollaDepAmt precision: 10^collaAddrDecimal
+	// collaDepAmt precision: 10^collaAddrDecimal
 	// USDsAmt precision: 10^18
 	// swapFeeAmount precision: swapFeePresion
 	function mintWithEthView(uint CollaAmt)
-		public returns (uint SPABurnAmt, uint CollaDepAmt, uint USDsAmt, uint swapFeeAmount)
+		public returns (uint SPABurnAmt, uint collaDepAmt, uint USDsAmt, uint swapFeeAmount)
 	{
 		require(CollaAmt > 0, "Amount needs to be greater than 0");
-		(SPABurnAmt, CollaDepAmt, USDsAmt, swapFeeAmount) = mintView(address(0), CollaAmt, 3);
+		(SPABurnAmt, collaDepAmt, USDsAmt, swapFeeAmount) = mintView(address(0), CollaAmt, 3);
 	}
 
 	function mintView(
 		address collaAddr,
 		uint valueAmt,
 		uint8 valueType
-	) public returns (uint SPABurnAmt, uint CollaDepAmt, uint USDsAmt, uint swapFeeAmount) {
+	) public returns (uint SPABurnAmt, uint collaDepAmt, uint USDsAmt, uint swapFeeAmount) {
 		uint priceColla = 0;
 		uint precisionColla = 0;
 		if (valueType == 3) {
@@ -373,10 +367,10 @@ contract VaultCore is Initializable, OwnableUpgradeable {
 			}
 
 			//Deposit collaeral
-			uint CollaDepAmt_18 = USDsAmt.mul(chiMint()).mul(precisionColla).div(chiPrec.mul(priceColla));
-			CollaDepAmt = CollaDepAmt_18.div(10**(uint(18).sub(collaAddrDecimal)));
+			uint collaDepAmt_18 = USDsAmt.mul(chiMint()).mul(precisionColla).div(chiPrec.mul(priceColla));
+			collaDepAmt = collaDepAmt_18.div(10**(uint(18).sub(collaAddrDecimal)));
 			if (swapFee > 0) {
-				CollaDepAmt = CollaDepAmt.add(CollaDepAmt.mul(swapFee).div(swapFeePresion));
+				collaDepAmt = collaDepAmt.add(collaDepAmt.mul(swapFee).div(swapFeePresion));
 			}
 
 			swapFeeAmount = USDsAmt.mul(swapFee).div(swapFeePresion);
@@ -390,16 +384,16 @@ contract VaultCore is Initializable, OwnableUpgradeable {
 			USDsAmt = USDsAmt.mul(chiPrec).mul(priceSPA).div(precisionSPA.mul(chiPrec - chiMint()));
 
 			//Deposit collaeral
-			uint CollaDepAmt_18 = USDsAmt.mul(chiMint()).mul(precisionColla).div(chiPrec.mul(priceColla));
-			CollaDepAmt = CollaDepAmt_18.div(10**(uint(18).sub(collaAddrDecimal)));
+			uint collaDepAmt_18 = USDsAmt.mul(chiMint()).mul(precisionColla).div(chiPrec.mul(priceColla));
+			collaDepAmt = collaDepAmt_18.div(10**(uint(18).sub(collaAddrDecimal)));
 			if (swapFee > 0) {
-				CollaDepAmt = CollaDepAmt.add(CollaDepAmt.mul(swapFee).div(swapFeePresion));
+				collaDepAmt = collaDepAmt.add(collaDepAmt.mul(swapFee).div(swapFeePresion));
 			}
 
 			swapFeeAmount = USDsAmt.mul(swapFee).div(swapFeePresion);
 		} else if (valueType == 2 || valueType == 3) {
-			CollaDepAmt = valueAmt;
-			USDsAmt = CollaDepAmt;
+			collaDepAmt = valueAmt;
+			USDsAmt = collaDepAmt;
 
 			if (swapFee > 0) {
 				USDsAmt = USDsAmt.mul(swapFeePresion).div(swapFeePresion.add(swapFee));
@@ -421,16 +415,16 @@ contract VaultCore is Initializable, OwnableUpgradeable {
 		uint valueAmt,
 		uint8 valueType
 	) internal whenMintRedeemAllowed {
-		(uint SPABurnAmt, uint CollaDepAmt, uint USDsAmt, uint swapFeeAmount) = mintView(collaAddr, valueAmt, valueType);
+		(uint SPABurnAmt, uint collaDepAmt, uint USDsAmt, uint swapFeeAmount) = mintView(collaAddr, valueAmt, valueType);
 		ISperaxToken(SPATokenAddr).burnFrom(msg.sender, SPABurnAmt);
 		if (valueType != 3) {
-			ERC20Upgradeable(collaAddr).safeTransferFrom(msg.sender, collaValut, CollaDepAmt);
+			ERC20Upgradeable(collaAddr).safeTransferFrom(msg.sender, collaValut, collaDepAmt);
 		}
 		USDsInstance.mint(msg.sender, USDsAmt);
 		USDsInstance.mint(USDsFeeValut, swapFeeAmount);
 
-		supportedCollatAmount[collaAddr] = supportedCollatAmount[collaAddr].add(CollaDepAmt);
-		emit USDSMinted(msg.sender, USDsAmt, SPABurnAmt, swapFeeAmount);
+		supportedCollatAmount[collaAddr] = supportedCollatAmount[collaAddr].add(collaDepAmt);
+		//emit USDSMinted(msg.sender, USDsAmt, SPABurnAmt, swapFeeAmount);
 	}
 
 	function redeem(address collaAddr, uint USDsAmt)
@@ -446,7 +440,7 @@ contract VaultCore is Initializable, OwnableUpgradeable {
 	function redeemView(
 		address collaAddr,
 		uint USDsAmt
-	) public returns (uint SPAMintAmt, uint CollaUnlockAmt, uint USDsBurntAmt, uint swapFeeAmount) {
+	) public returns (uint SPAMintAmt, uint collaUnlockAmt, uint USDsBurntAmt, uint swapFeeAmount) {
 		uint priceColla = IOracle(oracleAddr).collatPrice(collaAddr);
 		uint precisionColla = IOracle(oracleAddr).collatPricePrecision(collaAddr);
 		uint priceSPA = IOracle(oracleAddr).getSPAPrice();
@@ -459,10 +453,10 @@ contract VaultCore is Initializable, OwnableUpgradeable {
 		}
 
 		//Unlock collaeral
-		uint CollaUnlockAmt_18 = USDsAmt.mul(chiMint().mul(precisionColla)).div(chiPrec.mul(priceColla));
-		CollaUnlockAmt = CollaUnlockAmt_18.div(10**(uint(18).sub(collaAddrDecimal)));
+		uint collaUnlockAmt_18 = USDsAmt.mul(chiMint().mul(precisionColla)).div(chiPrec.mul(priceColla));
+		collaUnlockAmt = collaUnlockAmt_18.div(10**(uint(18).sub(collaAddrDecimal)));
 		if (swapFee > 0) {
-			CollaUnlockAmt = CollaUnlockAmt.sub(CollaUnlockAmt.mul(swapFee).div(swapFeePresion));
+			collaUnlockAmt = collaUnlockAmt.sub(collaUnlockAmt.mul(swapFee).div(swapFeePresion));
 		}
 
 
@@ -475,22 +469,22 @@ contract VaultCore is Initializable, OwnableUpgradeable {
 		address collaAddr,
 		uint USDsAmt
 	) internal whenMintRedeemAllowed {
-		(uint SPAMintAmt, uint CollaUnlockAmt, uint USDsBurntAmt, uint swapFeeAmount) = redeemView(collaAddr, USDsAmt);
+		(uint SPAMintAmt, uint collaUnlockAmt, uint USDsBurntAmt, uint swapFeeAmount) = redeemView(collaAddr, USDsAmt);
 
 		ISperaxToken(SPATokenAddr).mintForUSDs(msg.sender, SPAMintAmt);
-		ERC20Upgradeable(collaAddr).safeTransfer(msg.sender, CollaUnlockAmt);
-		supportedCollatAmount[collaAddr] = supportedCollatAmount[collaAddr].sub(CollaUnlockAmt);
+		ERC20Upgradeable(collaAddr).safeTransfer(msg.sender, collaUnlockAmt);
+		supportedCollatAmount[collaAddr] = supportedCollatAmount[collaAddr].sub(collaUnlockAmt);
 		USDsInstance.burn(msg.sender, USDsBurntAmt);
 		USDsInstance.transferFrom(msg.sender, USDsFeeValut, swapFeeAmount);
 
-		emit USDSRedeemed(msg.sender, USDsBurntAmt, SPAMintAmt, swapFeeAmount);
+		//emit USDSRedeemed(msg.sender, USDsBurntAmt, SPAMintAmt, swapFeeAmount);
 	}
 
 	/**
 	 * @dev Calculate the total value of assets held by the Vault and all
 	 *      strategies and update the supply of USDs.
 	 */
-	function rebase() public {
+	function rebase() external onlyOwner {
 		_rebase();
 	}
 
@@ -500,14 +494,34 @@ contract VaultCore is Initializable, OwnableUpgradeable {
 	 *      portion of the yield to the trustee.
 	 */
 	function _rebase() internal {
-		uint totalSupply = USDsInstance.totalSupply();
-		uint vaultValue = _totalValue();
-
-		if (vaultValue > totalSupply && totalSupply != 0) {
-			USDsInstance.changeSupply(vaultValue);
-
-			emit TotalSupplyChanged(totalSupply, vaultValue);
+		address _strategyAddr;
+		IStrategy strategy;
+		address collaAddr;
+		uint allocatedAmt;
+		uint newTokensAmt;
+		uint USDsSupplyIncrement;
+		uint USDsSupplyIncrementTotal;
+		for (uint y = 0; y < allCollat.length; y++) {
+			collaAddr = allCollat[y];
+			for (uint i = 0; i < allStrategies.length; i++) {
+				_strategyAddr = allStrategies[i];
+				strategy = IStrategy(_strategyAddr);
+				allocatedAmt = strategiesAllocatedAmt[collaAddr][_strategyAddr] ;
+				(, newTokensAmt) = strategy.checkBalance(collaAddr).trySub(allocatedAmt);
+				if (newTokensAmt > 0) {
+					strategy.withdraw(address(this), collaAddr, newTokensAmt);
+					(uint SPABurnAmt, uint collaDepAmt, uint USDsAmt, uint swapFeeAmount) = mintView(collaAddr, newTokensAmt, 2);
+					//strategy.withdraw(address(this), collaAddr, collaDepAmt);
+					ISperaxToken(SPATokenAddr).burnFrom(SPAValut, SPABurnAmt);
+					USDsSupplyIncrement = USDsInstance._totalSupply().add(USDsAmt).add(swapFeeAmount);
+					USDsSupplyIncrementTotal = USDsSupplyIncrementTotal.add(USDsSupplyIncrement);
+				}
+				USDsInstance.changeSupply(USDsSupplyIncrementTotal);
+		   }
 		}
+
+
+
 	}
 	//
 	// /**
@@ -515,12 +529,12 @@ contract VaultCore is Initializable, OwnableUpgradeable {
 	//  */
 	//
 	function collateralRatio() public returns (uint ratio) {
-        uint totalValue = _totalValue();
+        uint totalValueLocked = _totalValueLocked();
 		uint USDsSupply =  USDsInstance.totalSupply();
 		uint priceUSDs = uint(IOracle(oracleAddr).getUSDsPrice());
 		uint precisionUSDs = IOracle(oracleAddr).USDsPricePrecision();
 		uint USDsValue = USDsSupply.mul(priceUSDs).div(precisionUSDs);
-		ratio = totalValue.mul(chiPrec).div(USDsValue);
+		ratio = totalValueLocked.mul(chiPrec).div(USDsValue);
     }
 
     function totalValueLocked() external view returns (uint value) {
@@ -528,22 +542,7 @@ contract VaultCore is Initializable, OwnableUpgradeable {
     }
 
     function _totalValueLocked() internal view returns (uint value) {
-		value = 0;
-		address collaAddr;
-		uint priceColla = 0;
-		uint precisionColla = 0;
-		uint collaAddrDecimal = 0;
-		uint collaTotalValue = 0;
-		uint collaTotalValue_18 = 0;
-		for (uint y = 0; y < allCollat.length; y++) {
-			collaAddr = allCollat[y];
-			priceColla = IOracle(oracleAddr).collatPrice(collaAddr);
-			precisionColla = IOracle(oracleAddr).collatPricePrecision(collaAddr);
-			collaAddrDecimal = uint(ERC20Upgradeable(collaAddr).decimals());
-			collaTotalValue = supportedCollatAmount[collaAddr].mul(priceColla).div(precisionColla);
-			collaTotalValue_18 = collaTotalValue.mul(10**(uint(18).sub(collaAddrDecimal)));
-			value = value.add(collaTotalValue_18);
-        }
+		value = _totalValueInVault().add(_totalValueInStrategies());
     }
 
 	function totalValueInVault() external view returns (uint value) {
@@ -551,13 +550,12 @@ contract VaultCore is Initializable, OwnableUpgradeable {
 	}
 
 	function _totalValueInVault() internal view returns (uint value) {
-		value = 0;
 		address collaAddr;
 		uint priceColla = 0;
 		uint precisionColla = 0;
 		uint collaAddrDecimal = 0;
-		uint collaTotalValue = 0;
-		uint collaTotalValue_18 = 0;
+		uint collaTotalValueInVault = 0;
+		uint collaTotalValueInVault_18 = 0;
 		for (uint y = 0; y < allCollat.length; y++) {
 			collaAddr = allCollat[y];
 			priceColla = IOracle(oracleAddr).collatPrice(collaAddr);
@@ -572,49 +570,42 @@ contract VaultCore is Initializable, OwnableUpgradeable {
 	function totalValueInStrategies() external view returns (uint value) {
 		value = _totalValueInStrategies();
 	}
+
 	function _totalValueInStrategies() internal view returns (uint value) {
-		value = _totalValueLocked().sub(_totalValueInVault);
+		for (uint i = 0; i < allStrategies.length; i++) {
+		   value = value.add(_totalValueInStrategy(allStrategies[i]));
+	   }
 	}
 
 
-	function harvest(address _strategyAddr)
-        external
-        onlyOwner
-        returns (uint256[] memory)
-    {
-        return _harvest(_strategyAddr);
-    }
+	function _totalValueInStrategy(address _strategyAddr) internal view returns (uint value) {
+		IStrategy strategy = IStrategy(_strategyAddr);
+		address collaAddr;
+		uint priceColla = 0;
+		uint precisionColla = 0;
+		uint collaAddrDecimal = 0;
+		uint collaTotalValueInStrategy = 0;
+		uint collaTotalValueInStrategy_18 = 0;
+		for (uint y = 0; y < allCollat.length; y++) {
+			collaAddr = allCollat[y];
+			if (strategy.supportsAsset(collaAddr)) {
+				priceColla = IOracle(oracleAddr).collatPrice(collaAddr);
+				precisionColla = IOracle(oracleAddr).collatPricePrecision(collaAddr);
+				collaAddrDecimal = uint(ERC20Upgradeable(collaAddr).decimals());
+				collaTotalValueInStrategy = strategy.checkBalance(allCollat[y]).mul(priceColla).div(precisionColla);
+				collaTotalValueInStrategy_18 = collaTotalValueInStrategy.mul(10**(uint(18).sub(collaAddrDecimal)));
+				value = value.add(collaTotalValueInStrategy_18);
+			}
+		}
+	}
 
-    /**
-     * @dev Collect reward tokens from a single strategy and swap them for a
-     *      supported stablecoin via Uniswap
-     * @param _strategyAddr Address of the strategy to collect rewards from
-     */
-    function _harvest(address _strategyAddr)
-        internal
-    {
-        IStrategy strategy = IStrategy(_strategyAddr);
-        address rewardTokenAddress = strategy.rewardTokenAddress();
-        if (rewardTokenAddress == address(0)) {
-			return;
-        }
-		//collect Atoken
-		strategy.collectRewardToken();
-		ERC20Upgradeable rewardToken = ERC20Upgradeable(strategy.rewardTokenAddress());
-		uint rewardTokenAmount = rewardToken.balanceOf(address(this));
-		strategy.withdraw(address(this), )
-
-
-
-
-    }
 
 
 	/**
      * @notice Allocate unallocated funds on Vault to strategies.
      * @dev Allocate unallocated funds on Vault to strategies.
      **/
-    function allocate() public whenNotCapitalPaused {
+    function allocate() external whenNotCapitalPaused {
         _allocate();
     }
 
@@ -623,89 +614,24 @@ contract VaultCore is Initializable, OwnableUpgradeable {
      * @dev Allocate unallocated funds on Vault to strategies.
      **/
     function _allocate() internal {
-        uint totalValueInVault = _totalValueInVault();
-		uint totalValueLocked = _totalValueLocked();
-        if (totalValueInVault == 0) return;
-        uint totalValueInStrategies = _totalValueInStrategies();
-
-
-        // We want to maintain a buffer on the Vault so calculate a percentage
-        // modifier to multiply each amount being allocated by to enforce the
-        // vault buffer
-        uint vaultBufferModifier;
-        if (strategiesValue == 0) {
-            // Nothing in Strategies, allocate 100% minus the vault buffer to
-            // strategies
-            vaultBufferModifier = uint(1e18).sub(vaultBuffer);
-        } else {
-            vaultBufferModifier = vaultBuffer.mul(calculatedTotalValue).div(
-                vaultValue
-            );
-            if (1e18 > vaultBufferModifier) {
-                // E.g. 1e18 - (1e17 * 10e18)/5e18 = 8e17
-                // (5e18 * 8e17) / 1e18 = 4e18 allocated from Vault
-                vaultBufferModifier = uint(1e18).sub(vaultBufferModifier);
-            } else {
-                // We need to let the buffer fill
-                return;
-            }
-        }
-        if (vaultBufferModifier == 0) return;
-
         // Iterate over all assets in the Vault and allocate the the appropriate
         // strategy
         for (uint i = 0; i < allCollat.length; i++) {
-            ERC20Upgradeable asset = ERC20Upgradeable(allCollat[i]);
-            uint assetBalance = asset.balanceOf(address(this));
-            // No balance, nothing to do here
-            if (assetBalance == 0) continue;
+			address collateralAddr = allCollat[i];
+            ERC20Upgradeable collateralERC20 = ERC20Upgradeable(collateralAddr);
+            uint collatInVault = collateralERC20.balanceOf(address(this));
+			uint collatInVaultTotal = supportedCollatAmount[allCollat[i]];
+			(,uint allocateAmount) = collatInVaultTotal.mul(allocatePrecentage).div(allocatePrecentage_Prec).trySub(collatInVault);
 
-            // Multiply the balance by the vault buffer modifier and truncate
-            // to the scale of the asset decimals
-            uint allocateAmount = assetBalance.mulTruncate(
-                vaultBufferModifier
-            );
-
-            address depositStrategyAddr = assetDefaultStrategies[address(
-                asset
-            )];
+            address depositStrategyAddr = assetDefaultStrategies[collateralAddr];
 
             if (depositStrategyAddr != address(0) && allocateAmount > 0) {
                 IStrategy strategy = IStrategy(depositStrategyAddr);
-                // Transfer asset to Strategy and call deposit method to
-                // mint or take required action
-                asset.safeTransfer(address(strategy), allocateAmount);
-                strategy.deposit(address(asset), allocateAmount);
+                collateralERC20.safeTransfer(address(strategy), allocateAmount);
+                strategy.deposit(collateralAddr, allocateAmount);
+				strategiesAllocatedAmt[collateralAddr][depositStrategyAddr] = strategiesAllocatedAmt[collateralAddr][depositStrategyAddr].add(allocateAmount);
             }
         }
-
-
-        // Harvest for all reward tokens above reward liquidation threshold
-        for (uint i = 0; i < allStrategies.length; i++) {
-            IStrategy strategy = IStrategy(allStrategies[i]);
-            address rewardTokenAddress = strategy.rewardTokenAddress();
-            if (rewardTokenAddress != address(0)) {
-                uint liquidationThreshold = strategy
-                    .rewardLiquidationThreshold();
-                if (liquidationThreshold == 0) {
-                    // No threshold set, always harvest from strategy
-                    IVault(address(this)).harvest(allStrategies[i]);
-                } else {
-                    // Check balance against liquidation threshold
-                    // Note some strategies don't hold the reward token balance
-                    // on their contract so the liquidation threshold should be
-                    // set to 0
-                    ERC20Upgradeable rewardToken = ERC20Upgradeable(rewardTokenAddress);
-                    uint rewardTokenAmount = rewardToken.balanceOf(
-                        allStrategies[i]
-                    );
-                    if (rewardTokenAmount >= liquidationThreshold) {
-                        IVault(address(this)).harvest(allStrategies[i]);
-                    }
-                }
-            }
-        }
-        //IBuyback(trusteeAddress).swap();
     }
 
 

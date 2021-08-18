@@ -11,9 +11,9 @@ import { Governable } from "../governance/Governable.sol";
 import "./IAave.sol";
 
 
-contract InitializableAbstractStrategy is Initializable, Governable {
+abstract contract InitializableAbstractStrategy is Initializable, Governable {
     using SafeERC20Upgradeable for ERC20Upgradeable;
-	using SafeMathUpgradeable for uint;
+    using SafeMathUpgradeable for uint;
 
     event PTokenAdded(address indexed _asset, address _pToken);
     event PTokenRemoved(address indexed _asset, address _pToken);
@@ -161,37 +161,6 @@ contract InitializableAbstractStrategy is Initializable, Governable {
         emit PTokenRemoved(asset, pToken);
     }
 
-
-
-    /**
-     * @dev Get the current address of the Aave lending pool core, which stores all the
-     *      reserve tokens in its vault.
-     * @return Current lending pool core address
-     */
-    function _getLendingPoolCore() internal view returns (address payable) {
-        address payable lendingPoolCore = ILendingPoolAddressesProvider(
-            platformAddress
-        )
-            .getLendingPoolCore();
-        require(
-            lendingPoolCore != address(uint160(address(0))),
-            "Lending pool core does not exist"
-        );
-        return lendingPoolCore;
-    }
-
-    /**
-     * @dev Internal method to respond to the addition of new asset / aTokens
-     *      We need to approve the aToken and give it permission to spend the asset
-     * @param _asset Address of the asset to approve
-     * @param _aToken This aToken has the approval approval
-     */
-    function _abstractSetPToken(address _asset, address _aToken) internal {
-        address lendingPoolVault = _getLendingPoolCore();
-        ERC20Upgradeable(_asset).safeApprove(lendingPoolVault, 0);
-        ERC20Upgradeable(_asset).safeApprove(lendingPoolVault, uint256(-1));
-    }
-
     /**
      * @dev Provide support for asset by passing its pToken address.
      *      Add to internal mappings and execute the platform specific,
@@ -227,17 +196,59 @@ contract InitializableAbstractStrategy is Initializable, Governable {
         ERC20Upgradeable(_asset).safeTransfer(governor(), _amount);
     }
 
+    /***************************************
+                 Abstract
+    ****************************************/
+
+    function _abstractSetPToken(address _asset, address _pToken) internal virtual;
+
+    function safeApproveAllTokens() external virtual;
+
     /**
-     * @dev Get the current address of the Aave lending pool, which is the gateway to
-     *      depositing.
-     * @return Current lending pool implementation
+     * @dev Deposit a amount of asset into the platform
+     * @param _asset               Address for the asset
+     * @param _amount              Units of asset to deposit
      */
-    function _getLendingPool() internal view returns (IAaveLendingPool) {
-        address lendingPool = ILendingPoolAddressesProvider(platformAddress)
-            .getLendingPool();
-        require(lendingPool != address(0), "Lending pool does not exist");
-        return IAaveLendingPool(lendingPool);
-    }
+    function deposit(address _asset, uint256 _amount) external virtual;
 
+    /**
+     * @dev Deposit balance of all supported assets into the platform
+     */
+    function depositAll() external virtual;
 
+    /**
+     * @dev Withdraw an amount of asset from the platform.
+     * @param _recipient         Address to which the asset should be sent
+     * @param _asset             Address of the asset
+     * @param _amount            Units of asset to withdraw
+     */
+    function withdraw(
+        address _recipient,
+        address _asset,
+        uint256 _amount
+    ) external virtual;
+
+    /**
+     * @dev Withdraw all assets from strategy sending assets to Vault.
+     */
+    function withdrawAll() external virtual;
+
+    /**
+     * @dev Get the total asset value held in the platform.
+     *      This includes any interest that was generated since depositing.
+     * @param _asset      Address of the asset
+     * @return balance    Total value of the asset in the platform
+     */
+    function checkBalance(address _asset)
+        external
+        view
+        virtual
+        returns (uint256 balance);
+
+    /**
+     * @dev Check if an asset is supported.
+     * @param _asset    Address of the asset
+     * @return bool     Whether asset is supported
+     */
+    function supportsAsset(address _asset) external view virtual returns (bool);
 }

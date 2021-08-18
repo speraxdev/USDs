@@ -23,6 +23,7 @@ contract AaveStrategy is InitializableAbstractStrategy {
         external
         onlyVault
         nonReentrant
+        override
     {
         _deposit(_asset, _amount);
     }
@@ -42,7 +43,7 @@ contract AaveStrategy is InitializableAbstractStrategy {
     /**
      * @dev Deposit the entire balance of any supported asset into Aave
      */
-    function depositAll() external onlyVault nonReentrant {
+    function depositAll() external onlyVault nonReentrant override {
         for (uint256 i = 0; i < assetsMapped.length; i++) {
             uint256 balance = ERC20Upgradeable(assetsMapped[i]).balanceOf(address(this));
             if (balance > 0) {
@@ -61,7 +62,7 @@ contract AaveStrategy is InitializableAbstractStrategy {
         address _recipient,
         address _asset,
         uint256 _amount
-    ) external onlyVault nonReentrant {
+    ) external onlyVault nonReentrant override {
         require(_amount > 0, "Must withdraw something");
         require(_recipient != address(0), "Must specify recipient");
 
@@ -74,7 +75,7 @@ contract AaveStrategy is InitializableAbstractStrategy {
     /**
      * @dev Remove all assets from platform and send them to Vault contract.
      */
-    function withdrawAll() external onlyVaultOrGovernor nonReentrant {
+    function withdrawAll() external onlyVaultOrGovernor nonReentrant override {
         for (uint256 i = 0; i < assetsMapped.length; i++) {
             // Redeem entire balance of aToken
             IAaveAToken aToken = _getATokenFor(assetsMapped[i]);
@@ -99,6 +100,7 @@ contract AaveStrategy is InitializableAbstractStrategy {
     function checkBalance(address _asset)
         external
         view
+        override
         returns (uint256 balance)
     {
         // Balance is always with token aToken decimals
@@ -110,7 +112,7 @@ contract AaveStrategy is InitializableAbstractStrategy {
      * @dev Retuns bool indicating whether asset is supported by strategy
      * @param _asset Address of the asset
      */
-    function supportsAsset(address _asset) external view returns (bool) {
+    function supportsAsset(address _asset) external view override returns (bool) {
         return assetToPToken[_asset] != address(0);
     }
 
@@ -118,7 +120,7 @@ contract AaveStrategy is InitializableAbstractStrategy {
      * @dev Approve the spending of all assets by their corresponding aToken,
      *      if for some reason is it necessary.
      */
-    function safeApproveAllTokens() external onlyGovernor nonReentrant {
+    function safeApproveAllTokens() external onlyGovernor nonReentrant override {
         uint256 assetCount = assetsMapped.length;
         address lendingPoolVault = _getLendingPoolCore();
         // approve the pool to spend the bAsset
@@ -130,7 +132,17 @@ contract AaveStrategy is InitializableAbstractStrategy {
         }
     }
 
-
+    /**
+     * @dev Internal method to respond to the addition of new asset / aTokens
+     *      We need to approve the aToken and give it permission to spend the asset
+     * @param _asset Address of the asset to approve
+     * @param _aToken This aToken has the approval approval
+     */
+    function _abstractSetPToken(address _asset, address _aToken) internal override {
+        address lendingPoolVault = _getLendingPoolCore();
+        ERC20Upgradeable(_asset).safeApprove(lendingPoolVault, 0);
+        ERC20Upgradeable(_asset).safeApprove(lendingPoolVault, uint256(-1));
+    }
 
     /**
      * @dev Get the aToken wrapped in the ICERC20 interface for this asset.
@@ -144,5 +156,32 @@ contract AaveStrategy is InitializableAbstractStrategy {
         return IAaveAToken(aToken);
     }
 
+    /**
+     * @dev Get the current address of the Aave lending pool, which is the gateway to
+     *      depositing.
+     * @return Current lending pool implementation
+     */
+    function _getLendingPool() internal view returns (IAaveLendingPool) {
+        address lendingPool = ILendingPoolAddressesProvider(platformAddress)
+            .getLendingPool();
+        require(lendingPool != address(0), "Lending pool does not exist");
+        return IAaveLendingPool(lendingPool);
+    }
 
+    /**
+     * @dev Get the current address of the Aave lending pool core, which stores all the
+     *      reserve tokens in its vault.
+     * @return Current lending pool core address
+     */
+    function _getLendingPoolCore() internal view returns (address payable) {
+        address payable lendingPoolCore = ILendingPoolAddressesProvider(
+            platformAddress
+        )
+            .getLendingPoolCore();
+        require(
+            lendingPoolCore != address(uint160(address(0))),
+            "Lending pool core does not exist"
+        );
+        return lendingPoolCore;
+    }
 }
