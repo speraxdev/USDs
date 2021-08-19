@@ -54,7 +54,7 @@ contract VaultCore is Initializable, OwnableUpgradeable {
 	uint public constant chi_alpha = 513;
 	uint public constant chi_alpha_Prec = 10**12;
 	uint public constant chiPrec = chi_alpha_Prec;
-	uint public chiInit = chiPrec * 100 / 95;
+	uint public constant chiInit = chiPrec * 100 / 95;
 	uint public constant chi_beta = 9;
 	uint public constant chi_beta_Prec = 1;
 	uint public constant chi_gamma = 1;
@@ -71,8 +71,8 @@ contract VaultCore is Initializable, OwnableUpgradeable {
 	uint public constant swapFee_A = 20;
 	uint public constant swapFee_A_Prec = 1;
 
-	uint public allocatePrecentage = 8;
-	uint public allocatePrecentage_Prec = 10;
+	uint public constant allocatePrecentage = 8;
+	uint public constant allocatePrecentage_Prec = 10;
 
 
 	USDs USDsInstance;
