@@ -1,3 +1,8 @@
+/**
+    Questions:
+    1. in changeSupply, why we need to first check if _totalSupply > 0?
+ */ 
+
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.6.12;
 
@@ -35,19 +40,23 @@ contract USDs is Initializable, InitializableERC20Detailed, OwnableUpgradeable {
     enum RebaseOptions { NotSet, OptOut, OptIn }
 
     uint256 private constant MAX_SUPPLY = ~uint128(0); // (2^128) - 1
-    uint256 public _totalSupply;
-    uint256 public _totalMinted;
-    uint256 public _totalBurnt;
+    uint256 public _totalSupply;    // the total supply of USDs
+    uint256 public _totalMinted;    // the total num of USDs minted so far
+    uint256 public _totalBurnt;     // the total num of USDs burnt so far
     mapping(address => mapping(address => uint256)) private _allowances;
-    address public vaultAddress;
-    mapping(address => uint256) private _creditBalances;
+    address public vaultAddress;    // the address where (i) all collaterals of USDs protocol reside, e.g. USDT, USDC, ETH, etc and (ii) major actions like USDs minting are initiated
+    // an user's balance of USDs is based on her balance of "credits." 
+    // in a rebase process, her USDs balance will change according to her credit balance and the rebase ratio
+    mapping(address => uint256) private _creditBalances; 
+    // the total number of credits of the USDs protocol
     uint256 public rebasingCredits;
+    // the rebase ratio = num of credits / num of USDs
     uint256 public rebasingCreditsPerToken;
     // Frozen address/credits are non rebasing (value is held in contracts which
     // do not receive yield unless they explicitly opt in)
-    uint256 public nonRebasingSupply;
-    mapping(address => uint256) public nonRebasingCreditsPerToken;
-    mapping(address => RebaseOptions) public rebaseState;
+    uint256 public nonRebasingSupply;   // num of USDs that are not affected by rebase
+    mapping(address => uint256) public nonRebasingCreditsPerToken; // the rebase ratio of non-rebasing accounts just before they opt out
+    mapping(address => RebaseOptions) public rebaseState;          // the rebase state of each account, i.e. opt in or opt out 
 
     function initialize(
         string calldata _nameArg,
@@ -60,6 +69,10 @@ contract USDs is Initializable, InitializableERC20Detailed, OwnableUpgradeable {
         vaultAddress = _vaultAddress;
     }
 
+    /**
+     * @dev change the vault address
+     * @param newVault the new vault address
+     */
     function changeVault(address newVault) external onlyOwner {
         vaultAddress = newVault;
     }
@@ -73,6 +86,7 @@ contract USDs is Initializable, InitializableERC20Detailed, OwnableUpgradeable {
     }
 
     /**
+     * @dev check the current total supply of USDs
      * @return The total supply of USDs.
      */
     function totalSupply() public view override returns (uint256) {
@@ -80,7 +94,7 @@ contract USDs is Initializable, InitializableERC20Detailed, OwnableUpgradeable {
     }
 
     /**
-     * @dev Gets the balance of the specified address.
+     * @dev Gets the USDs balance of the specified address.
      * @param _account Address to query the balance of.
      * @return A uint256 representing the _amount of base units owned by the
      *         specified address.
@@ -139,6 +153,7 @@ contract USDs is Initializable, InitializableERC20Detailed, OwnableUpgradeable {
         require(_to != address(0), "Transfer to zero address");
         require(_value <= balanceOf(_from), "Transfer greater than balance");
 
+        // notice: allowance balnce check depends on "sub" non-negative check
         _allowances[_from][msg.sender] = _allowances[_from][msg.sender].sub(
             _value
         );
@@ -175,6 +190,7 @@ contract USDs is Initializable, InitializableERC20Detailed, OwnableUpgradeable {
         );
         _creditBalances[_to] = _creditBalances[_to].add(creditsCredited);
 
+        // update global stats
         if (isNonRebasingTo && !isNonRebasingFrom) {
             // Transfer to non-rebasing account from rebasing account, credits
             // are removed from the non rebasing tally
@@ -260,7 +276,9 @@ contract USDs is Initializable, InitializableERC20Detailed, OwnableUpgradeable {
     }
 
     /**
-     * @dev Mints new tokens, increasing totalSupply.
+     * @dev Mints new USDs tokens, increasing totalSupply.
+     * @param _account the account address the newly minted USDs will be attributed to
+     * @param _amount the amount of USDs that will be minted
      */
     function mint(address _account, uint256 _amount) external onlyVault {
         _mint(_account, _amount);
@@ -275,6 +293,8 @@ contract USDs is Initializable, InitializableERC20Detailed, OwnableUpgradeable {
      * Requirements
      *
      * - `to` cannot be the zero address.
+     * @param _account the account address the newly minted USDs will be attributed to
+     * @param _amount the amount of USDs that will be minted
      */
     function _mint(address _account, uint256 _amount) internal override {
         require(_account != address(0), "Mint to the zero address");
@@ -284,8 +304,10 @@ contract USDs is Initializable, InitializableERC20Detailed, OwnableUpgradeable {
         uint256 creditAmount = _amount.mulTruncate(_creditsPerToken(_account));
         _creditBalances[_account] = _creditBalances[_account].add(creditAmount);
 
-        // If the account is non rebasing and doesn't have a set creditsPerToken
-        // then set it i.e. this is a mint from a fresh contract
+        // notice: If the account is non rebasing and doesn't have a set creditsPerToken
+        //          then set it i.e. this is a mint from a fresh contract
+
+        // update global stats
         if (isNonRebasingAccount) {
             nonRebasingSupply = nonRebasingSupply.add(_amount);
         } else {
@@ -447,7 +469,7 @@ contract USDs is Initializable, InitializableERC20Detailed, OwnableUpgradeable {
     }
 
     /**
-     * @dev Modify the supply without minting new tokens. This uses a change in
+     * @dev The rebase function. Modify the supply without minting new tokens. This uses a change in
      *      the exchange rate between "credits" and USDs tokens to change balances.
      * @param _newTotalSupply New total supply of USDs.
      */
@@ -455,8 +477,9 @@ contract USDs is Initializable, InitializableERC20Detailed, OwnableUpgradeable {
         external
         onlyVault
     {
-        require(_totalSupply > 0, "Cannot increase 0 supply");
+        require(_totalSupply > 0, "Cannot increase 0 supply"); 
 
+        // special case: if the total supply remains the same
         if (_totalSupply == _newTotalSupply) {
             emit TotalSupplyUpdated(
                 _totalSupply,
@@ -466,16 +489,18 @@ contract USDs is Initializable, InitializableERC20Detailed, OwnableUpgradeable {
             return;
         }
 
+        // check if the new total supply surpasses the MAX
         _totalSupply = _newTotalSupply > MAX_SUPPLY
             ? MAX_SUPPLY
             : _newTotalSupply;
-
+        // calculate the new rebase ratio, i.e. credits per token
         rebasingCreditsPerToken = rebasingCredits.divPrecisely(
             _totalSupply.sub(nonRebasingSupply)
         );
 
         require(rebasingCreditsPerToken > 0, "Invalid change in supply");
 
+        // re-calculate the total supply to accomodate precision error
         _totalSupply = rebasingCredits
             .divPrecisely(rebasingCreditsPerToken)
             .add(nonRebasingSupply);
