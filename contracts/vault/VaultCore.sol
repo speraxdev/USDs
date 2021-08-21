@@ -549,23 +549,41 @@ contract VaultCore is Initializable, OwnableUpgradeable {
 		}
 	}
 
+	/**
+	 * @dev the generic, internal mint function
+	 * @param collaAddr the address of the collateral
+	 * @param valueAmt the amount of tokens (the specific meaning depends on valueType)
+	 * @param valueType the type of tokens (specific meanings are listed below)
+	 *		valueType = 0: mintWithUSDs
+	 *		valueType = 1: mintWithSPA
+	 *		valueType = 2: mintWithColla
+	 *		valueType = 3: mintWithETH
+	 */
 	function _mint(
 		address collaAddr,
 		uint valueAmt,
 		uint8 valueType
 	) internal whenMintRedeemAllowed {
+		// calculate all necessary related quantities based on user inputs
 		(uint SPABurnAmt, uint collaDepAmt, uint USDsAmt, uint swapFeeAmount) = mintView(collaAddr, valueAmt, valueType);
+		// burn SPA tokens
 		ISperaxToken(SPATokenAddr).burnFrom(msg.sender, SPABurnAmt);
+		// if it it not mintWithETH, stake collaterals
 		if (valueType != 3) {
 			ERC20Upgradeable(collaAddr).safeTransferFrom(msg.sender, collaValut, collaDepAmt);
 		}
+		// mint USDs and collect swapIn fees
 		USDsInstance.mint(msg.sender, USDsAmt);
 		USDsInstance.mint(USDsFeeValut, swapFeeAmount);
-
+		// update global stats
 		supportedCollatAmount[collaAddr] = supportedCollatAmount[collaAddr].add(collaDepAmt);
+		//TO DO
 		//emit USDSMinted(msg.sender, USDsAmt, SPABurnAmt, swapFeeAmount);
 	}
 
+	/**
+	 *
+	 */
 	function redeem(address collaAddr, uint USDsAmt)
 		public
 		whenMintRedeemAllowed
