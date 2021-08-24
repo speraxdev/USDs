@@ -135,62 +135,45 @@ contract VaultCore is Initializable, OwnableUpgradeable {
 	/**
 	 * @dev disable USDs mint & redeem
 	 */
-	function pauseMintBurn() external onlyOwner {
-		mintRedeemAllowed = false;
-	}
-	/**
-	 * @dev enable USDs mint & redeem
-	 */
-	function unpauseMintBurn() external onlyOwner {
-		mintRedeemAllowed = true;
+	function updateMintBurn(bool _mintRedeemAllowed) external onlyOwner {
+		mintRedeemAllowed = _mintRedeemAllowed;
 	}
 	/**
 	 * @dev disable collateral re-investment
 	 */
-	function pauseAllocate() external onlyOwner {
-		capitalAllowed = false;
-	}
-	/**
-	 * @dev enable collateral re-investment
-	 */
-	function unpauseAllocate() external onlyOwner {
-		capitalAllowed = true;
+	function updateCapitalAllowance(bool _capitalAllowed) external onlyOwner {
+		capitalAllowed = _capitalAllowed;
 	}
 	/**
 	 * @dev disable swapInFee, i.e. mint becomes free
 	 */
-	function pauseSwapInFee() external onlyOwner {
-		swapfeeInAllowed = false;
-	}
-	/**
-	 * @dev enable swapInFee, i.e. mint becomes non-free
-	 */
-	function unpauseSwapInFee() external onlyOwner {
-		swapfeeInAllowed = true;
+	function updateSwapInFee(bool _swapfeeInAllowed) external onlyOwner {
+		swapfeeInAllowed = _swapfeeInAllowed;
 	}
 	/**
 	 * @dev disable swapOutFee, i.e. redeem becomes free
 	 */
-	function pauseSwapOutFee() external onlyOwner {
-		swapfeeOutAllowed = false;
-	}
-	/**
-	 * @dev enable swapOutFee, i.e. redeem becomes non-free
-	 */
-	function unpauseSwapOutFee() external onlyOwner {
-		swapfeeOutAllowed = true;
+	function updateSwapOutFee(bool _swapfeeOutAllowed) external onlyOwner {
+		swapfeeOutAllowed = _swapfeeOutAllowed;
 	}
 
 	/**
 	 * @dev add a new supported collateral
 	 * @param _asset the address of the new supported collateral
 	 */
-    function supportAsset(address _asset) external onlyOwner {
-        require(supportedCollat[_asset] == 0, "Asset already supported");
-		supportedCollat[_asset] = 1;
-		allCollat.push(_asset);
+	function supportAsset(address _asset, bool _flag) external onlyOwner {
+		if (_flag) {
+			require(supportedCollat[_asset] == 0, "Asset already supported");
+			allCollat.push(_asset);
+			supportedCollat[_asset] = allCollat.length;
+		} else {
+			require(supportedCollat[_asset] > 0, "Asset already removed");
+			allCollat[supportedCollat[_asset] - 1] = allCollat[allCollat.length - 1];
+			allCollat.pop();
+			supportedCollat[_asset] = 0;
+		}
 		// TO-DO: add Oracle support here;
-    }
+	}
 
 	//INITIALIZER
 
@@ -209,9 +192,9 @@ contract VaultCore is Initializable, OwnableUpgradeable {
 		USDsYieldValut = address(this);	// TO DELETE
 		supportedCollat[0xb7a4F3E9097C08dA09517b5aB877F7a917224ede] = 1;	// USDC on Kovan
 		allCollat.push(0xb7a4F3E9097C08dA09517b5aB877F7a917224ede);
-		supportedCollat[0x4F96Fe3b7A6Cf9725f59d353F723c1bDb64CA6Aa] = 1;	// Dai on Kovan
+		supportedCollat[0x4F96Fe3b7A6Cf9725f59d353F723c1bDb64CA6Aa] = 2;	// Dai on Kovan
 		allCollat.push(0x4F96Fe3b7A6Cf9725f59d353F723c1bDb64CA6Aa);
-		supportedCollat[0x07de306FF27a2B630B1141956844eB1552B956B5] = 1;	// USDT on Kovan
+		supportedCollat[0x07de306FF27a2B630B1141956844eB1552B956B5] = 3;	// USDT on Kovan
 		allCollat.push(0x07de306FF27a2B630B1141956844eB1552B956B5);
 		USDsInstance = USDs(USDsToken_);
 		oracleAddr = oracleAddr_;
@@ -290,7 +273,7 @@ contract VaultCore is Initializable, OwnableUpgradeable {
 	 * @param blockPassed the number of blocks that have passed since USDs is launched, i.e. "Block Height"
 	 * @param priceUSDs the price of USDs, i.e. "USDs Price"
 	 * @param precisionUSDs the precision used in the variable "priceUSDs"
-	 * @return the value of chiTarget
+	 * @return chiTarget_ the value of chiTarget
 	 */
 	function chiTarget(uint chiInit_, uint blockPassed, uint priceUSDs, uint precisionUSDs) public pure returns (uint chiTarget_) {
 		uint chiAdjustmentA = blockPassed.mul(chiPrec).mul(chi_alpha).div(chi_alpha_Prec);
@@ -319,7 +302,7 @@ contract VaultCore is Initializable, OwnableUpgradeable {
 
 	/**
 	 * @dev calculate chiRedeem based on the formula at the end of section 2.2
-	 * @return chiRedeem
+	 * @return chiRedeem_
 	 */
 	function chiRedeem() public returns (uint chiRedeem_) {
 		// calculate chiTarget
@@ -394,10 +377,10 @@ contract VaultCore is Initializable, OwnableUpgradeable {
 	 * @dev view related quantities for minting USDs with USDs amount
 	 * @param collaAddr the address of user's chosen collateral
 	 * @param USDsMintAmt the amount of USDs to mint
-	 * @return  the amount of SPA to burn
-	 *			the amount of collateral to stake
-	 *			the amount of USDs to mint
-	 *			the amount of Inswapfee to pay
+	 * @return SPABurnAmt the amount of SPA to burn
+	 *			collaDepAmt the amount of collateral to stake
+	 *			USDsAmt the amount of USDs to mint
+	 *			swapFeeAmount the amount of Inswapfee to pay
 	 */
 	function mintWithUSDsView(address collaAddr, uint USDsMintAmt)
 		public returns (uint SPABurnAmt, uint collaDepAmt, uint USDsAmt, uint swapFeeAmount)
@@ -409,11 +392,11 @@ contract VaultCore is Initializable, OwnableUpgradeable {
 	/**
 	 * @dev view related quantities for minting USDs with SPA amount to burn
 	 * @param collaAddr the address of user's chosen collateral
-	 * @param USDsMintAmt the amount of SPAs to burn
-	 * @return  the amount of SPA to burn
-	 *			the amount of collateral to stake
-	 *			the amount of USDs to mint
-	 *			the amount of Inswapfee to pay
+	 * @param SPAAmt the amount of SPAs to burn
+	 * @return SPABurnAmt the amount of SPA to burn
+	 *			collaDepAmt the amount of collateral to stake
+	 *			USDsAmt the amount of USDs to mint
+	 *			swapFeeAmount the amount of Inswapfee to pay
 	 */
 	function mintWithSPAView(address collaAddr, uint SPAAmt)
 		public returns (uint SPABurnAmt, uint collaDepAmt, uint USDsAmt, uint swapFeeAmount)
@@ -425,11 +408,11 @@ contract VaultCore is Initializable, OwnableUpgradeable {
 	/**
 	 * @dev view related quantities for minting USDs with collateral amount to stake (excluding ETH)
 	 * @param collaAddr the address of user's chosen collateral
-	 * @param USDsMintAmt the amount of collateral to stake
-	 * @return  the amount of SPA to burn
-	 *			the amount of collateral to stake
-	 *			the amount of USDs to mint
-	 *			the amount of Inswapfee to pay
+	 * @param CollaAmt the amount of collateral to stake
+	 * @return SPABurnAmt the amount of SPA to burn
+	 *			collaDepAmt the amount of collateral to stake
+	 *			USDsAmt the amount of USDs to mint
+	 *			swapFeeAmount the amount of Inswapfee to pay
 	 */
 	function mintWithCollaView(address collaAddr, uint CollaAmt)
 		public returns (uint SPABurnAmt, uint collaDepAmt, uint USDsAmt, uint swapFeeAmount)
@@ -442,10 +425,10 @@ contract VaultCore is Initializable, OwnableUpgradeable {
 	/**
 	 * @dev view related quantities for minting USDs with ETH
 	 * @param CollaAmt the amount of ETH that the user stakes for minting USDs
-	 * @return  the amount of SPA to burn
-	 *			the amount of collateral to stake
-	 *			the amount of USDs to mint
-	 *			the amount of Inswapfee to pay
+	 * @return SPABurnAmt the amount of SPA to burn
+	 *			collaDepAmt the amount of collateral to stake
+	 *			USDsAmt the amount of USDs to mint
+	 *			swapFeeAmount the amount of Inswapfee to pay
 	 *
 	 * SPABurnAmt precision: 10^18
 	 * collaDepAmt precision: 10^collaAddrDecimal
@@ -468,10 +451,10 @@ contract VaultCore is Initializable, OwnableUpgradeable {
 	 * @param collaAddr the address of user's chosen collateral
 	 * @param valueAmt the amount of user input whose specific meaning depends on valueType
 	 * @param valueType the type of user input whose interpretation is listed above in @dev
-	 * @return  the amount of SPA to burn
-	 *			the amount of collateral to stake
-	 *			the amount of USDs to mint
-	 *			the amount of Inswapfee to pay
+	 * @return SPABurnAmt the amount of SPA to burn
+	 *			collaDepAmt the amount of collateral to stake
+	 *			USDsAmt the amount of USDs to mint
+	 *			swapFeeAmount the amount of Inswapfee to pay
 	 */
 	function mintView(
 		address collaAddr,
@@ -616,7 +599,6 @@ contract VaultCore is Initializable, OwnableUpgradeable {
 			collaUnlockAmt = collaUnlockAmt.sub(collaUnlockAmt.mul(swapFee).div(swapFeePresion));
 		}
 
-
 		//Burn USDs
 		swapFeeAmount = USDsAmt.mul(swapFee).div(swapFeePresion);
 		USDsBurntAmt =  USDsAmt.sub(swapFeeAmount);
@@ -676,9 +658,6 @@ contract VaultCore is Initializable, OwnableUpgradeable {
 				USDsInstance.changeSupply(USDsSupplyIncrementTotal);
 		   }
 		}
-
-
-
 	}
 	//
 	// /**
@@ -686,21 +665,21 @@ contract VaultCore is Initializable, OwnableUpgradeable {
 	//  */
 	//
 	function collateralRatio() public returns (uint ratio) {
-        uint totalValueLocked = _totalValueLocked();
+    uint totalValueLocked = _totalValueLocked();
 		uint USDsSupply =  USDsInstance.totalSupply();
 		uint priceUSDs = uint(IOracle(oracleAddr).getUSDsPrice());
 		uint precisionUSDs = IOracle(oracleAddr).USDsPricePrecision();
 		uint USDsValue = USDsSupply.mul(priceUSDs).div(precisionUSDs);
 		ratio = totalValueLocked.mul(chiPrec).div(USDsValue);
-    }
+  }
 
-    function totalValueLocked() external view returns (uint value) {
-        value = _totalValueLocked();
-    }
+	function totalValueLocked() external view returns (uint value) {
+		value = _totalValueLocked();
+	}
 
-    function _totalValueLocked() internal view returns (uint value) {
+	function _totalValueLocked() internal view returns (uint value) {
 		value = _totalValueInVault().add(_totalValueInStrategies());
-    }
+	}
 
 	function totalValueInVault() external view returns (uint value) {
 		value = _totalValueInVault();
@@ -756,42 +735,37 @@ contract VaultCore is Initializable, OwnableUpgradeable {
 		}
 	}
 
-
+	/**
+		* @notice Allocate unallocated funds on Vault to strategies.
+		* @dev Allocate unallocated funds on Vault to strategies.
+		**/
+	function allocate() external whenNotCapitalPaused {
+		_allocate();
+	}
 
 	/**
-     * @notice Allocate unallocated funds on Vault to strategies.
-     * @dev Allocate unallocated funds on Vault to strategies.
-     **/
-    function allocate() external whenNotCapitalPaused {
-        _allocate();
-    }
-
-    /**
-     * @notice Allocate unallocated funds on Vault to strategies.
-     * @dev Allocate unallocated funds on Vault to strategies.
-     **/
-    function _allocate() internal {
-        // Iterate over all assets in the Vault and allocate the the appropriate
-        // strategy
-        for (uint i = 0; i < allCollat.length; i++) {
+		* @notice Allocate unallocated funds on Vault to strategies.
+		* @dev Allocate unallocated funds on Vault to strategies.
+		**/
+	function _allocate() internal {
+		// Iterate over all assets in the Vault and allocate the the appropriate
+		// strategy
+		for (uint i = 0; i < allCollat.length; i++) {
 			address collateralAddr = allCollat[i];
-            ERC20Upgradeable collateralERC20 = ERC20Upgradeable(collateralAddr);
-            uint collatInVault = collateralERC20.balanceOf(address(this));
+			ERC20Upgradeable collateralERC20 = ERC20Upgradeable(collateralAddr);
+			uint collatInVault = collateralERC20.balanceOf(address(this));
 			uint collatInVaultTotal = supportedCollatAmount[allCollat[i]];
 			(,uint allocateAmount) = collatInVaultTotal.mul(allocatePrecentage).div(allocatePrecentage_Prec).trySub(collatInVault);
 
-            address depositStrategyAddr = assetDefaultStrategies[collateralAddr];
+			address depositStrategyAddr = assetDefaultStrategies[collateralAddr];
 
-            if (depositStrategyAddr != address(0) && allocateAmount > 0) {
-                IStrategy strategy = IStrategy(depositStrategyAddr);
-                collateralERC20.safeTransfer(address(strategy), allocateAmount);
-                strategy.deposit(collateralAddr, allocateAmount);
+			if (depositStrategyAddr != address(0) && allocateAmount > 0) {
+				IStrategy strategy = IStrategy(depositStrategyAddr);
+				collateralERC20.safeTransfer(address(strategy), allocateAmount);
+				strategy.deposit(collateralAddr, allocateAmount);
 				strategiesAllocatedAmt[collateralAddr][depositStrategyAddr] = strategiesAllocatedAmt[collateralAddr][depositStrategyAddr].add(allocateAmount);
-            }
-        }
-    }
-
-
-
+			}
+		}
+	}
 
 }
