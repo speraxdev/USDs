@@ -41,6 +41,10 @@ library VaultCoreLibrary {
 		(, chiTarget_) = afterB.trySub(chiAdjustmentA);
 	}
 
+  function multiplier(uint original, uint price, uint precision) public pure returns (uint) {
+    return original.mul(price).div(precision);
+  }
+
 	/**
 	 * @dev calculate chiMint
 	 * @return chiMint, i.e. chiTarget, since they share the same value 
@@ -117,21 +121,26 @@ library VaultCoreLibrary {
 	) public returns (uint SPAMintAmt, uint collaUnlockAmt, uint USDsBurntAmt, uint swapFeeAmount) {
     VaultCore _vaultContract = VaultCore(_VaultCoreContract);
 		uint swapFee = calculateSwapFeeOut(_VaultCoreContract);
-		SPAMintAmt = USDsAmt.mul((_vaultContract.chiPrec() - chiRedeem(_VaultCoreContract)).mul(IOracle(_oracleAddr).SPAPricePrecision())).div(IOracle(_oracleAddr).getSPAPrice().mul(_vaultContract.chiPrec()));
+    collaUnlockAmt = 0;
+    USDsBurntAmt = 0;
+    swapFeeAmount = 0;
+		SPAMintAmt = multiplier(USDsAmt, (_vaultContract.chiPrec() - chiRedeem(_VaultCoreContract)), _vaultContract.chiPrec());
+    SPAMintAmt = multiplier(SPAMintAmt, IOracle(_oracleAddr).SPAPricePrecision(), IOracle(_oracleAddr).getSPAPrice());
 		if (swapFee > 0) {
-			SPAMintAmt = SPAMintAmt.sub(SPAMintAmt.mul(swapFee).div(_vaultContract.swapFeePresion()));
+			SPAMintAmt = SPAMintAmt.sub(multiplier(SPAMintAmt, swapFee, _vaultContract.swapFeePresion()));
 		}
 
-		//Unlock collaeral
-		collaUnlockAmt = USDsAmt.mul(chiMint(_VaultCoreContract).mul(IOracle(_oracleAddr).collatPricePrecision(_collaAddr)))
-      .div(_vaultContract.chiPrec().mul(IOracle(_oracleAddr).collatPrice(_collaAddr)))
-      .div(10**(uint(18).sub(uint(ERC20Upgradeable(_collaAddr).decimals()))));
+		// //Unlock collaeral
+		collaUnlockAmt = multiplier(USDsAmt, chiMint(_VaultCoreContract), _vaultContract.chiPrec());
+		collaUnlockAmt = multiplier(collaUnlockAmt, IOracle(_oracleAddr).collatPricePrecision(_collaAddr), IOracle(_oracleAddr).collatPrice(_collaAddr));
+		collaUnlockAmt = collaUnlockAmt.div(10**(uint(18).sub(uint(ERC20Upgradeable(_collaAddr).decimals()))));
+
 		if (swapFee > 0) {
-			collaUnlockAmt = collaUnlockAmt.sub(collaUnlockAmt.mul(swapFee).div(_vaultContract.swapFeePresion()));
+			collaUnlockAmt = collaUnlockAmt.sub(multiplier(collaUnlockAmt, swapFee, _vaultContract.swapFeePresion()));
 		}
 
-		//Burn USDs
-		swapFeeAmount = USDsAmt.mul(swapFee).div(_vaultContract.swapFeePresion());
+		// //Burn USDs
+		swapFeeAmount = multiplier(USDsAmt, swapFee, _vaultContract.swapFeePresion());
 		USDsBurntAmt =  USDsAmt.sub(swapFeeAmount);
 	}
 
