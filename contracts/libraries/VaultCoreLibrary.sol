@@ -240,7 +240,7 @@ library VaultCoreLibrary {
 
   function collaDeptAmountCalculator(
     uint valueType, uint USDsAmt, address _VaultCoreContract, address collaAddr, uint swapFee
-    ) internal returns (uint256 collaDeptAmt) {
+    ) public returns (uint256 collaDeptAmt) {
     VaultCore _vaultContract = VaultCore(_VaultCoreContract);
 		uint collaAddrDecimal = uint(ERC20Upgradeable(collaAddr).decimals());
     if (valueType == 1) {
@@ -258,7 +258,7 @@ library VaultCoreLibrary {
 
   function SPAAmountCalculator(
     uint valueType, uint USDsAmt, address _VaultCoreContract, uint swapFee
-    ) internal returns (uint256 SPABurnAmt) {
+    ) public returns (uint256 SPABurnAmt) {
     VaultCore _vaultContract = VaultCore(_VaultCoreContract);
 		uint priceSPA = IOracle(_vaultContract.oracleAddr()).getSPAPrice();
 		uint precisionSPA = IOracle(_vaultContract.oracleAddr()).SPAPricePrecision();
@@ -277,7 +277,7 @@ library VaultCoreLibrary {
 
   function USDsAmountCalculator(
     uint valueType, uint valueAmt, address _VaultCoreContract, address collaAddr, uint swapFee
-    ) internal returns (uint256 USDsAmt) {
+    ) public returns (uint256 USDsAmt) {
     VaultCore _vaultContract = VaultCore(_VaultCoreContract);
 		uint priceSPA = IOracle(_vaultContract.oracleAddr()).getSPAPrice();
 		uint precisionSPA = IOracle(_vaultContract.oracleAddr()).SPAPricePrecision();
