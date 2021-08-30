@@ -1,7 +1,7 @@
 pragma solidity ^0.6.12;
 
 /**
- * @title OUSD Aave Strategy
+ * @title USDs Aave Strategy
  * @notice Investment strategy for investing stablecoins via Aave
  * @author Origin Protocol Inc
  */
@@ -13,145 +13,162 @@ import {
 
 contract AaveStrategy is InitializableAbstractStrategy {
     uint16 constant referralCode = 0;
+    mapping(address => uint) public principalAmt;
 
     /**
-     * @dev Deposit asset into Aave
-     * @param _asset Address of asset to deposit
-     * @param _amount Amount of asset to deposit
+     * @dev Deposit collateral into Aave
+     * @param _collateral Address of collateral to deposit
+     * @param _amount Amount of collateral to deposit
      */
-    function deposit(address _asset, uint256 _amount)
+    function deposit(address _collateral, uint256 _amount)
         external
         onlyVault
-        nonReentrant
         override
     {
-        _deposit(_asset, _amount);
+        _deposit(_collateral, _amount);
     }
 
     /**
-     * @dev Deposit asset into Aave
-     * @param _asset Address of asset to deposit
-     * @param _amount Amount of asset to deposit
+     * @dev Deposit collateral into Aave
+     * @param _collateral Address of collateral to deposit
+     * @param _amount Amount of collateral to deposit
      */
-    function _deposit(address _asset, uint256 _amount) internal {
+    function _deposit(address _collateral, uint256 _amount) internal {
         require(_amount > 0, "Must deposit something");
-        IAaveAToken aToken = _getATokenFor(_asset);
-        emit Deposit(_asset, address(aToken), _amount);
-        _getLendingPool().deposit(_asset, _amount, referralCode);
+        IAaveAToken aToken = _getATokenFor(_collateral);
+        emit Deposit(_collateral, address(aToken), _amount);
+        _getLendingPool().deposit(_collateral, _amount, referralCode);
+        principalAmt[_collateral] = principalAmt[_collateral].add(_amount);
     }
 
     /**
-     * @dev Deposit the entire balance of any supported asset into Aave
+     * @dev Deposit the entire balance of any supported collateral into Aave
      */
-    function depositAll() external onlyVault nonReentrant override {
-        for (uint256 i = 0; i < assetsMapped.length; i++) {
-            uint256 balance = ERC20Upgradeable(assetsMapped[i]).balanceOf(address(this));
+    function depositAll() external onlyVault override {
+        for (uint256 i = 0; i < collateralsMapped.length; i++) {
+            uint256 balance = ERC20Upgradeable(collateralsMapped[i]).balanceOf(address(this));
             if (balance > 0) {
-                _deposit(assetsMapped[i], balance);
+                _deposit(collateralsMapped[i], balance);
             }
         }
     }
 
     /**
-     * @dev Withdraw asset from Aave
-     * @param _recipient Address to receive withdrawn asset
-     * @param _asset Address of asset to withdraw
-     * @param _amount Amount of asset to withdraw
+     * @dev Withdraw collateral from Aave
+     * @param _recipient Address to receive withdrawn collateral
+     * @param _collateral Address of collateral to withdraw
+     * @param _amount Amount of collateral to withdraw
      */
     function withdraw(
         address _recipient,
-        address _asset,
+        address _collateral,
         uint256 _amount
-    ) external onlyVault nonReentrant override {
+    ) external onlyVault   override {
         require(_amount > 0, "Must withdraw something");
         require(_recipient != address(0), "Must specify recipient");
 
-        IAaveAToken aToken = _getATokenFor(_asset);
-        emit Withdrawal(_asset, address(aToken), _amount);
+        IAaveAToken aToken = _getATokenFor(_collateral);
+        emit Withdrawal(_collateral, address(aToken), _amount);
         aToken.redeem(_amount);
-        ERC20Upgradeable(_asset).safeTransfer(_recipient, _amount);
+        ERC20Upgradeable(_collateral).safeTransfer(_recipient, _amount);
+        uint balance = aToken.balanceOf(address(this));
+        if (balance < principalAmt[_collateral]) {
+            principalAmt[_collateral] = balance;
+        }
     }
 
     /**
-     * @dev Remove all assets from platform and send them to Vault contract.
+     * @dev Remove all collaterals from platform and send them to Vault contract.
      */
-    function withdrawAll() external onlyVaultOrGovernor nonReentrant override {
-        for (uint256 i = 0; i < assetsMapped.length; i++) {
+    function withdrawAll() external onlyVaultOrOwner override {
+        for (uint256 i = 0; i < collateralsMapped.length; i++) {
             // Redeem entire balance of aToken
-            IAaveAToken aToken = _getATokenFor(assetsMapped[i]);
+            IAaveAToken aToken = _getATokenFor(collateralsMapped[i]);
             uint256 balance = aToken.balanceOf(address(this));
             if (balance > 0) {
                 aToken.redeem(balance);
                 // Transfer entire balance to Vault
-                ERC20Upgradeable asset = ERC20Upgradeable(assetsMapped[i]);
-                asset.safeTransfer(
+                ERC20Upgradeable collateral = ERC20Upgradeable(collateralsMapped[i]);
+                collateral.safeTransfer(
                     vaultAddress,
-                    asset.balanceOf(address(this))
+                    collateral.balanceOf(address(this))
                 );
             }
         }
     }
 
     /**
-     * @dev Get the total asset value held in the platform
-     * @param _asset      Address of the asset
-     * @return balance    Total value of the asset in the platform
+     * @dev Get the total collateral value held in the platform
+     * @param _collateral      Address of the collateral
+     * @return balance    Total value of the collateral in the platform
      */
-    function checkBalance(address _asset)
+    function checkBalance(address _collateral)
         external
         view
         override
         returns (uint256 balance)
     {
         // Balance is always with token aToken decimals
-        IAaveAToken aToken = _getATokenFor(_asset);
+        IAaveAToken aToken = _getATokenFor(_collateral);
         balance = aToken.balanceOf(address(this));
     }
 
-    /**
-     * @dev Retuns bool indicating whether asset is supported by strategy
-     * @param _asset Address of the asset
-     */
-    function supportsAsset(address _asset) external view override returns (bool) {
-        return assetToPToken[_asset] != address(0);
+    function checkInterestEarned(address _collateral)
+        external
+        view
+        override
+        returns (uint256 interestEarned)
+    {
+        // Balance is always with token aToken decimals
+        IAaveAToken aToken = _getATokenFor(_collateral);
+        interestEarned = aToken.balanceOf(address(this)).sub(principalAmt[_collateral]);
+
     }
 
     /**
-     * @dev Approve the spending of all assets by their corresponding aToken,
+     * @dev Retuns bool indicating whether collateral is supported by strategy
+     * @param _collateral Address of the collateral
+     */
+    function supportsCollateral(address _collateral) external view override returns (bool) {
+        return collateralToPToken[_collateral] != address(0);
+    }
+
+    /**
+     * @dev Approve the spending of all collaterals by their corresponding aToken,
      *      if for some reason is it necessary.
      */
-    function safeApproveAllTokens() external onlyGovernor nonReentrant override {
-        uint256 assetCount = assetsMapped.length;
+    function safeApproveAllTokens() external onlyOwner   override {
+        uint256 collateralCount = collateralsMapped.length;
         address lendingPoolVault = _getLendingPoolCore();
-        // approve the pool to spend the bAsset
-        for (uint256 i = 0; i < assetCount; i++) {
-            address asset = assetsMapped[i];
+        // approve the pool to spend the bCollateral
+        for (uint256 i = 0; i < collateralCount; i++) {
+            address collateral = collateralsMapped[i];
             // Safe approval
-            ERC20Upgradeable(asset).safeApprove(lendingPoolVault, 0);
-            ERC20Upgradeable(asset).safeApprove(lendingPoolVault, uint256(-1));
+            ERC20Upgradeable(collateral).safeApprove(lendingPoolVault, 0);
+            ERC20Upgradeable(collateral).safeApprove(lendingPoolVault, uint256(-1));
         }
     }
 
     /**
-     * @dev Internal method to respond to the addition of new asset / aTokens
-     *      We need to approve the aToken and give it permission to spend the asset
-     * @param _asset Address of the asset to approve
+     * @dev Internal method to respond to the addition of new collateral / aTokens
+     *      We need to approve the aToken and give it permission to spend the collateral
+     * @param _collateral Address of the collateral to approve
      * @param _aToken This aToken has the approval approval
      */
-    function _abstractSetPToken(address _asset, address _aToken) internal override {
+    function _abstractSetPToken(address _collateral, address _aToken) internal override {
         address lendingPoolVault = _getLendingPoolCore();
-        ERC20Upgradeable(_asset).safeApprove(lendingPoolVault, 0);
-        ERC20Upgradeable(_asset).safeApprove(lendingPoolVault, uint256(-1));
+        ERC20Upgradeable(_collateral).safeApprove(lendingPoolVault, 0);
+        ERC20Upgradeable(_collateral).safeApprove(lendingPoolVault, uint256(-1));
     }
 
     /**
-     * @dev Get the aToken wrapped in the ICERC20 interface for this asset.
+     * @dev Get the aToken wrapped in the ICERC20 interface for this collateral.
      *      Fails if the pToken doesn't exist in our mappings.
-     * @param _asset Address of the asset
-     * @return Corresponding aToken to this asset
+     * @param _collateral Address of the collateral
+     * @return Corresponding aToken to this collateral
      */
-    function _getATokenFor(address _asset) internal view returns (IAaveAToken) {
-        address aToken = assetToPToken[_asset];
+    function _getATokenFor(address _collateral) internal view returns (IAaveAToken) {
+        address aToken = collateralToPToken[_collateral];
         require(aToken != address(0), "aToken does not exist");
         return IAaveAToken(aToken);
     }

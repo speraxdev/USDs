@@ -1,22 +1,16 @@
 pragma solidity ^0.6.12;
 
 interface IOracle {
-    event Update(uint currPriceMA7, uint currPricetime);
-
-    function lastUpdateTime() external view returns (uint32);
-    function period() external view returns (uint32);
-    function token0PriceMA() external view returns (uint);
-    function update() external;
-    function collatPrice(address tokenAddr) external view returns (uint);
-    function getSPAPrice() external view returns (uint);
-    function getUSDsPrice() external returns (uint);
-    function getUSDsPrice_Average() external returns (uint);
-    function getETHPrice() external view returns (uint);
-    function getAssetPrice(address assetAddress) external view returns (uint);
-    function ETHPricePrecision() external view returns (uint);
-    function collatPricePrecision(address tokenAddr) external view returns (uint);
-    function SPAPricePrecision() external view returns (uint);
-    function USDsPricePrecision() external view returns (uint);
+    function getCollateralPrice(address collateralAddr) external view returns (uint);
+    function getETHprice() external view returns (uint);
+    function getSPAprice() external view returns (uint);
+    function getUSDsPrice() external view returns (uint);
+    function getUSDsPrice_average() external view returns (uint);
+    function getCollateralPrice_prec(address collateralAddr) external view returns (uint);
+    function getETHprice_prec() external view returns (uint);
+    function getSPAprice_prec() external view returns (uint);
+    function getUSDsPrice_prec() external view returns (uint);
+    function updateInOutRatio() external;
     function USDsInOutRatio() external view returns (uint);
-    function USDsInOutRatioPrecision() external view returns (uint);
+    function USDsInOutRatio_prec() external view returns (uint);
 }

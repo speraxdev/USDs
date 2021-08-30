@@ -15,8 +15,8 @@ library VaultCoreLibrary {
 	using SafeMathUpgradeable for uint;
 	using MyMath for uint;
 	using StableMath for uint;
-    
-	// note: chi_alpha_Prec = chiPrec
+
+	// note: chi_alpha_prec = chi_prec
 	/**
 	 * @dev calculate chiTarget by the formula in section 2.2 of the whitepaper
 	 * @param blockPassed the number of blocks that have passed since USDs is launched, i.e. "Block Height"
@@ -28,14 +28,14 @@ library VaultCoreLibrary {
       uint blockPassed, uint priceUSDs, uint precisionUSDs, address _VaultCoreContract
     ) public view returns (uint chiTarget_) {
     VaultCore _vaultContract = VaultCore(_VaultCoreContract);
-		uint chiAdjustmentA = blockPassed.mul(_vaultContract.chiPrec()).mul(_vaultContract.chi_alpha()).div(_vaultContract.chi_alpha_Prec());
+		uint chiAdjustmentA = blockPassed.mul(_vaultContract.chi_prec()).mul(_vaultContract.chi_alpha()).div(_vaultContract.chi_alpha_prec());
 		uint chiAdjustmentB;
 		uint afterB;
 		if (priceUSDs >= precisionUSDs) {
-			chiAdjustmentB = _vaultContract.chi_beta().mul(_vaultContract.chiPrec()).mul(priceUSDs - precisionUSDs).mul(priceUSDs - precisionUSDs).div(_vaultContract.chi_beta_Prec());
+			chiAdjustmentB = _vaultContract.chi_beta().mul(_vaultContract.chi_prec()).mul(priceUSDs - precisionUSDs).mul(priceUSDs - precisionUSDs).div(_vaultContract.chi_beta_prec());
 			afterB = _vaultContract.chiInit().add(chiAdjustmentB);
 		} else {
-			chiAdjustmentB = _vaultContract.chi_beta().mul(_vaultContract.chiPrec()).mul(precisionUSDs - priceUSDs).mul(precisionUSDs - priceUSDs).div(_vaultContract.chi_beta_Prec());
+			chiAdjustmentB = _vaultContract.chi_beta().mul(_vaultContract.chi_prec()).mul(precisionUSDs - priceUSDs).mul(precisionUSDs - priceUSDs).div(_vaultContract.chi_beta_prec());
 			(, afterB) = _vaultContract.chiInit().trySub(chiAdjustmentB);
 		}
 		(, chiTarget_) = afterB.trySub(chiAdjustmentA);
@@ -47,12 +47,12 @@ library VaultCoreLibrary {
 
 	/**
 	 * @dev calculate chiMint
-	 * @return chiMint, i.e. chiTarget, since they share the same value 
+	 * @return chiMint, i.e. chiTarget, since they share the same value
 	 */
-	function chiMint(address _VaultCoreContract) public returns (uint)  {
+	function chiMint(address _VaultCoreContract) public view returns (uint)  {
     VaultCore _vaultContract = VaultCore(_VaultCoreContract);
 		uint priceUSDs = uint(IOracle(_vaultContract.oracleAddr()).getUSDsPrice());
-		uint precisionUSDs = IOracle(_vaultContract.oracleAddr()).USDsPricePrecision();
+		uint precisionUSDs = IOracle(_vaultContract.oracleAddr()).getUSDsPrice_prec();
 		uint blockPassed = uint(block.number).sub(_vaultContract.startBlockHeight());
 		return chiTarget(blockPassed, priceUSDs, precisionUSDs, _VaultCoreContract);
 	}
@@ -62,17 +62,17 @@ library VaultCoreLibrary {
 	 * @dev calculate chiRedeem based on the formula at the end of section 2.2
 	 * @return chiRedeem_
 	 */
-	function chiRedeem(address _VaultCoreContract) public returns (uint chiRedeem_) {
+	function chiRedeem(address _VaultCoreContract) public view returns (uint chiRedeem_) {
 		// calculate chiTarget
     VaultCore _vaultContract = VaultCore(_VaultCoreContract);
 		uint priceUSDs = uint(IOracle(_vaultContract.oracleAddr()).getUSDsPrice());
-		uint precisionUSDs = IOracle(_vaultContract.oracleAddr()).USDsPricePrecision();
+		uint precisionUSDs = IOracle(_vaultContract.oracleAddr()).getUSDsPrice_prec();
 		uint blockPassed = uint(block.number).sub(_vaultContract.startBlockHeight());
 		uint chiTarget_ = chiTarget(blockPassed, priceUSDs, precisionUSDs, _VaultCoreContract);
 		// calculate chiRedeem
 		uint collateralRatio_ = _vaultContract.collateralRatio();
 		if (chiTarget_ > collateralRatio_) {
-			chiRedeem_ = chiTarget_.add(_vaultContract.chi_gamma().mul(chiTarget_ - collateralRatio_).div(_vaultContract.chi_gamma_Prec()));
+			chiRedeem_ = chiTarget_.add(_vaultContract.chi_gamma().mul(chiTarget_ - collateralRatio_).div(_vaultContract.chi_gamma_prec()));
 		} else {
 			chiRedeem_ = chiTarget_;
 		}
@@ -82,7 +82,7 @@ library VaultCoreLibrary {
 	// Note: assuming when exponentWithPrec >= 2^32, toReturn >= swapFeePresion () (TO-DO: work out the number)
 	/**
 	 * @dev calculate the OutSwap fee, i.e. fees for redeeming USDs
-	 * @return the OutSwap fee 
+	 * @return the OutSwap fee
 	 */
 	function calculateSwapFeeOut(address _VaultCoreContract) public view returns (uint) {
 		// if the OutSwap fee is diabled, return 0
@@ -93,16 +93,16 @@ library VaultCoreLibrary {
 
 		// implement the formula in Section 4.3.2 of whitepaper
 		uint USDsInOutRatio = IOracle(_vaultContract.oracleAddr()).USDsInOutRatio();
-		uint USDsInOutRatioPrecision = IOracle(_vaultContract.oracleAddr()).USDsInOutRatioPrecision();
-		if (USDsInOutRatio <= uint(12).mul(USDsInOutRatioPrecision).div(10)) {
+		uint USDsInOutRatio_prec = IOracle(_vaultContract.oracleAddr()).USDsInOutRatio_prec();
+		if (USDsInOutRatio <= uint(12).mul(USDsInOutRatio_prec).div(10)) {
 			return _vaultContract.swapFeePresion() / 1000; //0.1%
 		} else {
-			uint exponentWithPrec = USDsInOutRatio - uint(12).mul(USDsInOutRatioPrecision).div(10);
+			uint exponentWithPrec = USDsInOutRatio - uint(12).mul(USDsInOutRatio_prec).div(10);
 			if (exponentWithPrec >= 2^32) {
 				return _vaultContract.swapFeePresion();
 			}
-			(uint powResWithPrec, uint8 powResPrec) = BancorFormula(_vaultContract.BancorInstanceAddr()).power(
-        _vaultContract.swapFee_A(), _vaultContract.swapFee_A_Prec(), uint32(exponentWithPrec), uint32(USDsInOutRatioPrecision)
+			(uint powResWithPrec, uint8 powResPrec) = BancorFormula(_vaultContract.BancorInstance()).power(
+        _vaultContract.swapFee_A(), _vaultContract.swapFee_A_prec(), uint32(exponentWithPrec), uint32(USDsInOutRatio_prec)
       );
 			uint toReturn = uint(powResWithPrec >> powResPrec).mul(_vaultContract.swapFeePresion()).div(100);
 			if (toReturn >= _vaultContract.swapFeePresion()) {
@@ -116,23 +116,23 @@ library VaultCoreLibrary {
 	function redeemView(
 		address _collaAddr,
 		uint USDsAmt,
-    address _VaultCoreContract,
-    address _oracleAddr
-	) public returns (uint SPAMintAmt, uint collaUnlockAmt, uint USDsBurntAmt, uint swapFeeAmount) {
+    	address _VaultCoreContract,
+    	address _oracleAddr
+	) public view returns (uint SPAMintAmt, uint collaUnlockAmt, uint USDsBurntAmt, uint swapFeeAmount) {
     VaultCore _vaultContract = VaultCore(_VaultCoreContract);
 		uint swapFee = calculateSwapFeeOut(_VaultCoreContract);
     collaUnlockAmt = 0;
     USDsBurntAmt = 0;
     swapFeeAmount = 0;
-		SPAMintAmt = multiplier(USDsAmt, (_vaultContract.chiPrec() - chiRedeem(_VaultCoreContract)), _vaultContract.chiPrec());
-    SPAMintAmt = multiplier(SPAMintAmt, IOracle(_oracleAddr).SPAPricePrecision(), IOracle(_oracleAddr).getSPAPrice());
+		SPAMintAmt = multiplier(USDsAmt, (_vaultContract.chi_prec() - chiRedeem(_VaultCoreContract)), _vaultContract.chi_prec());
+    SPAMintAmt = multiplier(SPAMintAmt, IOracle(_oracleAddr).getSPAprice_prec(), IOracle(_oracleAddr).getSPAprice());
 		if (swapFee > 0) {
 			SPAMintAmt = SPAMintAmt.sub(multiplier(SPAMintAmt, swapFee, _vaultContract.swapFeePresion()));
 		}
 
 		// //Unlock collaeral
-		collaUnlockAmt = multiplier(USDsAmt, chiMint(_VaultCoreContract), _vaultContract.chiPrec());
-		collaUnlockAmt = multiplier(collaUnlockAmt, IOracle(_oracleAddr).collatPricePrecision(_collaAddr), IOracle(_oracleAddr).collatPrice(_collaAddr));
+		collaUnlockAmt = multiplier(USDsAmt, chiMint(_VaultCoreContract), _vaultContract.chi_prec());
+		collaUnlockAmt = multiplier(collaUnlockAmt, IOracle(_oracleAddr).getCollateralPrice_prec(_collaAddr), IOracle(_oracleAddr).getCollateralPrice(_collaAddr));
 		collaUnlockAmt = collaUnlockAmt.div(10**(uint(18).sub(uint(ERC20Upgradeable(_collaAddr).decimals()))));
 
 		if (swapFee > 0) {
@@ -148,22 +148,22 @@ library VaultCoreLibrary {
 	 * @dev calculate the InSwap fee, i.e. fees for minting USDs
 	 * @return the InSwap fee
 	 */
-	function calculateSwapFeeIn(address _VaultCoreContract) public returns (uint) {
+	function calculateSwapFeeIn(address _VaultCoreContract) public view returns (uint) {
 		// if InSwap fee is disabled, return 0
     VaultCore _vaultContract = VaultCore(_VaultCoreContract);
 		if (!_vaultContract.swapfeeInAllowed()) {
 			return 0;
 		}
 
-		// implement the formula in Section 4.3.1 of whitepaper 
-		uint priceUSDs_Average = IOracle(_vaultContract.oracleAddr()).getUSDsPrice_Average(); //TODO: change to 3 days average
-		uint precisionUSDs = IOracle(_vaultContract.oracleAddr()).USDsPricePrecision();
-		uint smallPwithPrecision = _vaultContract.swapFee_p().mul(precisionUSDs).div(_vaultContract.swapFee_p_Prec());
+		// implement the formula in Section 4.3.1 of whitepaper
+		uint priceUSDs_Average = IOracle(_vaultContract.oracleAddr()).getUSDsPrice_average();
+		uint precisionUSDs = IOracle(_vaultContract.oracleAddr()).getUSDsPrice_prec();
+		uint smallPwithPrecision = _vaultContract.swapFee_p().mul(precisionUSDs).div(_vaultContract.swapFee_p_prec());
     uint swapFeePresion = _vaultContract.swapFeePresion();
 		if (smallPwithPrecision < priceUSDs_Average) {
 			return swapFeePresion / 1000; // 0.1%
 		} else {
-			uint temp = (smallPwithPrecision - priceUSDs_Average).mul(_vaultContract.swapFee_theta()).div(_vaultContract.swapFee_theta_Prec()); //precision: precisionUSDs
+			uint temp = (smallPwithPrecision - priceUSDs_Average).mul(_vaultContract.swapFee_theta()).div(_vaultContract.swapFee_theta_prec()); //precision: precisionUSDs
 			uint temp2 = temp.mul(temp); //precision: precisionUSDs^2
 			uint temp3 = temp2.mul(swapFeePresion).div(precisionUSDs).div(precisionUSDs);
 			uint temp4 = temp3.div(100);
@@ -195,8 +195,8 @@ library VaultCoreLibrary {
 		address collaAddr,
 		uint valueAmt,
 		uint8 valueType,
-    address _VaultCoreContract
-	) public returns (uint SPABurnAmt, uint collaDeptAmt, uint USDsAmt, uint swapFeeAmount) {
+    	address _VaultCoreContract
+	) public view returns (uint SPABurnAmt, uint collaDeptAmt, uint USDsAmt, uint swapFeeAmount) {
 		// obtain the price and pecision of the collateral
     VaultCore _vaultContract = VaultCore(_VaultCoreContract);
 
@@ -210,7 +210,7 @@ library VaultCoreLibrary {
 			SPABurnAmt = SPAAmountCalculator(valueType, USDsAmt, _VaultCoreContract, swapFee);
 			// calculate collaDeptAmt
       collaDeptAmt = collaDeptAmountCalculator(valueType, USDsAmt, _VaultCoreContract, collaAddr, swapFee);
-			
+
 			// calculate swapFeeAmount
 			swapFeeAmount = USDsAmt.mul(swapFee).div(_vaultContract.swapFeePresion());
 
@@ -220,7 +220,7 @@ library VaultCoreLibrary {
 			// calculate USDsAmt
 			USDsAmt = USDsAmountCalculator(valueType, valueAmt, _VaultCoreContract, collaAddr, swapFee);
 			// calculate collaDeptAmt
-			
+
       collaDeptAmt = collaDeptAmountCalculator(valueType, USDsAmt, _VaultCoreContract, collaAddr, swapFee);
 			// calculate swapFeeAmount
 			swapFeeAmount = USDsAmt.mul(swapFee).div(_vaultContract.swapFeePresion());
@@ -230,7 +230,7 @@ library VaultCoreLibrary {
 			collaDeptAmt = valueAmt;
 			// calculate USDsAmt
 			USDsAmt = USDsAmountCalculator(valueType, valueAmt, _VaultCoreContract, collaAddr, swapFee);
-			
+
 			// calculate SPABurnAmt
 			SPABurnAmt = SPAAmountCalculator(valueType, USDsAmt, _VaultCoreContract, swapFee);
 			// calculate swapFeeAmount
@@ -240,16 +240,16 @@ library VaultCoreLibrary {
 
   function collaDeptAmountCalculator(
     uint valueType, uint USDsAmt, address _VaultCoreContract, address collaAddr, uint swapFee
-    ) internal returns (uint256 collaDeptAmt) {
+) internal view returns (uint256 collaDeptAmt) {
     VaultCore _vaultContract = VaultCore(_VaultCoreContract);
 		uint collaAddrDecimal = uint(ERC20Upgradeable(collaAddr).decimals());
     if (valueType == 1) {
-      collaDeptAmt = USDsAmt.mul(chiMint(_VaultCoreContract)).mul(IOracle(_vaultContract.oracleAddr()).collatPricePrecision(collaAddr)).div(_vaultContract.chiPrec().mul(IOracle(_vaultContract.oracleAddr()).collatPrice(collaAddr))).div(10**(uint(18).sub(collaAddrDecimal)));
+      collaDeptAmt = USDsAmt.mul(chiMint(_VaultCoreContract)).mul(IOracle(_vaultContract.oracleAddr()).getCollateralPrice_prec(collaAddr)).div(_vaultContract.chi_prec().mul(IOracle(_vaultContract.oracleAddr()).getCollateralPrice(collaAddr))).div(10**(uint(18).sub(collaAddrDecimal)));
 			if (swapFee > 0) {
 				collaDeptAmt = collaDeptAmt.add(collaDeptAmt.mul(swapFee).div(_vaultContract.swapFeePresion()));
 			}
     } else if (valueType == 0) {
-      collaDeptAmt = USDsAmt.mul(chiMint(_VaultCoreContract)).mul(IOracle(_vaultContract.oracleAddr()).collatPricePrecision(collaAddr)).div(_vaultContract.chiPrec().mul(IOracle(_vaultContract.oracleAddr()).collatPrice(collaAddr))).div(10**(uint(18).sub(collaAddrDecimal)));
+      collaDeptAmt = USDsAmt.mul(chiMint(_VaultCoreContract)).mul(IOracle(_vaultContract.oracleAddr()).getCollateralPrice_prec(collaAddr)).div(_vaultContract.chi_prec().mul(IOracle(_vaultContract.oracleAddr()).getCollateralPrice(collaAddr))).div(10**(uint(18).sub(collaAddrDecimal)));
 			if (swapFee > 0) {
 				collaDeptAmt = collaDeptAmt.add(collaDeptAmt.mul(swapFee).div(_vaultContract.swapFeePresion()));
 			}
@@ -258,17 +258,17 @@ library VaultCoreLibrary {
 
   function SPAAmountCalculator(
     uint valueType, uint USDsAmt, address _VaultCoreContract, uint swapFee
-    ) internal returns (uint256 SPABurnAmt) {
+) internal view returns (uint256 SPABurnAmt) {
     VaultCore _vaultContract = VaultCore(_VaultCoreContract);
-		uint priceSPA = IOracle(_vaultContract.oracleAddr()).getSPAPrice();
-		uint precisionSPA = IOracle(_vaultContract.oracleAddr()).SPAPricePrecision();
+		uint priceSPA = IOracle(_vaultContract.oracleAddr()).getSPAprice();
+		uint precisionSPA = IOracle(_vaultContract.oracleAddr()).getSPAprice_prec();
     if (valueType == 2 || valueType == 3) {
-      SPABurnAmt = USDsAmt.mul(_vaultContract.chiPrec() - chiMint(_VaultCoreContract)).mul(precisionSPA).div(priceSPA.mul(_vaultContract.chiPrec()));
+      SPABurnAmt = USDsAmt.mul(_vaultContract.chi_prec() - chiMint(_VaultCoreContract)).mul(precisionSPA).div(priceSPA.mul(_vaultContract.chi_prec()));
 			if (swapFee > 0) {
 				SPABurnAmt = SPABurnAmt.add(SPABurnAmt.mul(swapFee).div(_vaultContract.swapFeePresion()));
 			}
     } else if (valueType == 0) {
-      SPABurnAmt = USDsAmt.mul(_vaultContract.chiPrec() - chiMint(_VaultCoreContract)).mul(precisionSPA).div(priceSPA.mul(_vaultContract.chiPrec()));
+      SPABurnAmt = USDsAmt.mul(_vaultContract.chi_prec() - chiMint(_VaultCoreContract)).mul(precisionSPA).div(priceSPA.mul(_vaultContract.chi_prec()));
 			if (swapFee > 0) {
 				SPABurnAmt = SPABurnAmt.add(SPABurnAmt.mul(swapFee).div(_vaultContract.swapFeePresion()));
 			}
@@ -277,26 +277,26 @@ library VaultCoreLibrary {
 
   function USDsAmountCalculator(
     uint valueType, uint valueAmt, address _VaultCoreContract, address collaAddr, uint swapFee
-    ) internal returns (uint256 USDsAmt) {
+) internal view returns (uint256 USDsAmt) {
     VaultCore _vaultContract = VaultCore(_VaultCoreContract);
-		uint priceSPA = IOracle(_vaultContract.oracleAddr()).getSPAPrice();
-		uint precisionSPA = IOracle(_vaultContract.oracleAddr()).SPAPricePrecision();
+		uint priceSPA = IOracle(_vaultContract.oracleAddr()).getSPAprice();
+		uint precisionSPA = IOracle(_vaultContract.oracleAddr()).getSPAprice_prec();
     if (valueType == 2 || valueType == 3) {
       USDsAmt = valueAmt;
 			if (swapFee > 0) {
 				USDsAmt = USDsAmt.mul(_vaultContract.swapFeePresion()).div(_vaultContract.swapFeePresion().add(swapFee));
 			}
       if (valueType == 3) {
-        USDsAmt = USDsAmt.mul(10**(uint(18).sub(uint(ERC20Upgradeable(collaAddr).decimals())))).mul(_vaultContract.chiPrec().mul(IOracle(_vaultContract.oracleAddr()).getETHPrice())).div(IOracle(_vaultContract.oracleAddr()).ETHPricePrecision()).div(chiMint(_VaultCoreContract));
+        USDsAmt = USDsAmt.mul(10**(uint(18).sub(uint(ERC20Upgradeable(collaAddr).decimals())))).mul(_vaultContract.chi_prec().mul(IOracle(_vaultContract.oracleAddr()).getETHprice())).div(IOracle(_vaultContract.oracleAddr()).getETHprice_prec()).div(chiMint(_VaultCoreContract));
       } else {
-        USDsAmt = USDsAmt.mul(10**(uint(18).sub(uint(ERC20Upgradeable(collaAddr).decimals())))).mul(_vaultContract.chiPrec().mul(IOracle(_vaultContract.oracleAddr()).collatPrice(collaAddr))).div(IOracle(_vaultContract.oracleAddr()).collatPricePrecision(collaAddr)).div(chiMint(_VaultCoreContract));
+        USDsAmt = USDsAmt.mul(10**(uint(18).sub(uint(ERC20Upgradeable(collaAddr).decimals())))).mul(_vaultContract.chi_prec().mul(IOracle(_vaultContract.oracleAddr()).getCollateralPrice(collaAddr))).div(IOracle(_vaultContract.oracleAddr()).getCollateralPrice_prec(collaAddr)).div(chiMint(_VaultCoreContract));
       }
     } else if (valueType == 1) {
       USDsAmt = valueAmt;
 			if (swapFee > 0) {
 				USDsAmt = USDsAmt.mul(_vaultContract.swapFeePresion()).div(_vaultContract.swapFeePresion().add(swapFee));
 			}
-			USDsAmt = USDsAmt.mul(_vaultContract.chiPrec()).mul(priceSPA).div(precisionSPA.mul(_vaultContract.chiPrec() - chiMint(_VaultCoreContract)));
+			USDsAmt = USDsAmt.mul(_vaultContract.chi_prec()).mul(priceSPA).div(precisionSPA.mul(_vaultContract.chi_prec() - chiMint(_VaultCoreContract)));
     }
   }
 }

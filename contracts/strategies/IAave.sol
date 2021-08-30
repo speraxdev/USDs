@@ -7,14 +7,14 @@ pragma solidity ^0.6.12;
 interface IAaveAToken {
     /**
      * @notice Non-standard ERC20 function to redeem an _amount of aTokens for the underlying
-     * asset, burning the aTokens during the process.
+     * collateral, burning the aTokens during the process.
      * @param _amount Amount of aTokens
      */
     function redeem(uint256 _amount) external;
 
     /**
      * @notice returns the current total aToken balance of _user all interest collected included.
-     * To obtain the user asset principal balance with interests excluded , ERC20 non-standard
+     * To obtain the user collateral principal balance with interests excluded , ERC20 non-standard
      * method principalBalanceOf() can be used.
      */
     function balanceOf(address _user) external view returns (uint256);
@@ -26,7 +26,7 @@ interface IAaveAToken {
  */
 interface IAaveLendingPool {
     /**
-     * @notice Deposits a certain _amount of an asset specified by the _reserve parameter.
+     * @notice Deposits a certain _amount of an collateral specified by the _reserve parameter.
      * @dev The caller receives a certain amount of corresponding aTokens in exchange.
      * The amount of aTokens received depends on the corresponding aToken exchange rate.
      * LendingPoolCore must be approved to spend this reserve

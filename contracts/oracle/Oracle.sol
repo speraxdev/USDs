@@ -1,6 +1,4 @@
 // SPDX-License-Identifier: MIT
-
-//TO-DO: have getUSDsPrice_Average() returns USDs price over longer period;
 pragma solidity ^0.6.12;
 pragma experimental ABIEncoderV2; //What's this for?
 
@@ -9,12 +7,13 @@ import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
 
-import { USDs } from "../token/USDs.sol";
+import "../token/USDs.sol";
 import "../interfaces/AggregatorV3Interface.sol";
 import "../interfaces/IOracle.sol";
 import "../interfaces/IUniswapV2Pair.sol";
 import "../libraries/UniswapV2OracleLibrary.sol";
 import "../interfaces/IQuoter.sol";
+import "../libraries/OracleLibrary.sol";
 
 /**
  * @title Oracle - the oracle contract for Spark
@@ -25,310 +24,197 @@ import "../interfaces/IQuoter.sol";
 
 contract Oracle is Initializable, IOracle, OwnableUpgradeable {
     using SafeMathUpgradeable for *;
+    using OracleLibrary for *;
 
-    event Update(uint currPriceMA, uint currPricetime);
-
-	event PriceListUpdated(
-		address indexed token,
-		address indexed aggregator,
-        uint256 precision
-	);
-
-	event PeriodUpdated(
-		uint256 indexed oldPeriod,
-        uint256 indexed newPeriod,
-        uint256 timestamp
-	);
-
-    struct token0Pricetime {
-       uint32 timestamp;
-       uint price0Cumulative;
-    }
-
-
-    //
-    // Constants & Immutables
-    //
+    uint public override USDsInOutRatio; // USDsInOutRatio is accurate after 24 hours (one iteration)
+    uint public override USDsInOutRatio_prec;
     uint8 public constant FREQUENCY = 24;
+    uint32 public updateNextIndex;
+    uint32 public lastUpdateTime; // the timstamp of the lastest update
+    uint32 public updatePeriod; // the default updatePeriod of one update is 1 hours
+    uint public ETHprice_prec;
+    uint public SPAprice_prec;
+    uint public USDsPrice_prec;
+    AggregatorV3Interface priceFeedETH;
+    address public SPAaddr;
+    address public USDsAddr;
+    address public WETH9;
+    address public USDsOraclePool;
+    address public SPAoracleBaseTokenAddr;
+    address public USDsOracleBaseTokenAddr;
 
-    //
-    // Core State Variables
-    //
-    // the moving average price of token0 denominated in token1
-    // frequency = 24, default period = 1 hours ==> default timespan is 1 days
-    uint public override token0PriceMA;
-    IUniswapV2Pair private _pair;
+    event USDsInOutRatioUpdated(
+        uint USDsInOutRatio,
+        uint USDsOutflow_average,
+        uint USDsInflow_average,
+        uint32 timeStamp,
+        uint index
+    );
+    event updatePeriodChanged(
+        uint32 newPeriod
+    );
+    event collateralInfoChanged(
+        address _collateralAddr,
+        bool _supported,
+        AggregatorV3Interface _priceFeed,
+        uint _price_prec
+    );
 
-    //
-    // Auxilliary State Variables
-    //
-    // the per-period cumulative pricetimes, i.e. the UniswapV2 price*time values, of token0
-    token0Pricetime[FREQUENCY+1] public token0Pricetimes;
-    uint32 public pricetimeOldestIndex;
-    // the timstamp of the lastest price update
-    uint32 public override lastUpdateTime;
-    // the default period of one price update is 1 hours
-    uint32 public override period;
-	AggregatorV3Interface priceFeedETH;
-
-    uint public override ETHPricePrecision;
-    uint public override USDsPricePrecision;
-    uint public override SPAPricePrecision;
-
-    //  For swap fee:
     uint[FREQUENCY+1] public USDsInflow;
     uint[FREQUENCY+1] public USDsOutflow;
-    uint public override USDsInOutRatio;
-    uint public override USDsInOutRatioPrecision;
-    USDs public USDsInstance;
-
-    address[] public tokenAddresses;
-    mapping(address => uint256) public tokenAddressIndex;
-    mapping(address => AggregatorV3Interface) public priceFeeds;
-    mapping(address => uint256) public pricePrecisions;
-
-    IQuoter public uniswapQuoter;
-    address private USDsToken;
-    address private WETH9;
-	// AggregatorV3Interface priceFeedUSDC;
-	// AggregatorV3Interface priceFeedUSDT;
-	// AggregatorV3Interface priceFeedDAI;
-
-	// address public USDCAddr;
-	// address public USDTAddr;
-	// address public DAIAddr;
-    // uint public USDCPricePrecision;
-    // uint public USDTPricePrecision;
-    // uint public DAIPricePrecision;
+    mapping (address => collateralStruct) collateralsInfo;
+    struct collateralStruct {
+        address collateralAddr;
+        bool supported;
+        AggregatorV3Interface priceFeed;
+        uint price_prec;
+    }
 
     //
     // Initializer
     //
     function initialize(
-        address pair_, address USDsToken_
+        address _USDsAddr
     ) public initializer {
         OwnableUpgradeable.__Ownable_init();
-
-        // Initialize variables
-        period = 1 hours;
-        // USDCAddr = 0xb7a4F3E9097C08dA09517b5aB877F7a917224ede;
-        // USDCPricePrecision = 10**8;
-        // priceFeedUSDC = AggregatorV3Interface(0x9211c6b3BF41A10F78539810Cf5c64e1BB78Ec60);
-        ETHPricePrecision = 10**8;
-        USDsPricePrecision = 10**18;
-        SPAPricePrecision = 10**8;
-        USDsInOutRatioPrecision = 10000000; // Note: need to be less than (2^32 - 1)
-
-        priceFeedETH = AggregatorV3Interface(0x9326BFA02ADD2366b30bacB125260Af641031331);
-        uint32 constructTime = uint32(now % 2 ** 32);
-        _pair = IUniswapV2Pair(pair_);
-        lastUpdateTime = constructTime;
-
-        // obtain the cumulative pricetime from uniswapv2 pair deployment to now
-        (uint pricetimeCorrection, , ) = UniswapV2OracleLibrary.currentCumulativePrices(pair_);
-
-        // set up initial conditions
-        // assume that 1 ETH = 2500 USD, 1 SPA = 0.02 USD, so 1 ETH = 125,000 SPA
-        uint iniToken0Price = 125000;
-        uint resolution = 112;
-        uint unitPricetime = (iniToken0Price << resolution) * period;
-        uint basePricetime = unitPricetime * FREQUENCY;
-
-        // simulate the pricetimes of the past 7 days, including necessary correction
-        token0PriceMA = iniToken0Price << resolution;
-        for (uint i = 0; i < (FREQUENCY+1); i++) {
-            token0Pricetimes[i].price0Cumulative = unitPricetime
-                                                   .mul(i)
-                                                   .add(pricetimeCorrection)
-                                                   .sub(basePricetime);
-            token0Pricetimes[i].timestamp = constructTime - period * uint32(FREQUENCY - i);
-        }
-        USDsInstance = USDs(USDsToken_);
-
-        for (uint i = 0; i < (FREQUENCY+1); i++) {
-            USDsInflow[i] = 0;
-            USDsOutflow[i] = 0;
-        }
-
-        uniswapQuoter = IQuoter(0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6);
-        USDsToken = USDsToken_;
+        updatePeriod = 1 hours;
+        USDsAddr = _USDsAddr;
+        USDsInOutRatio_prec = 10000000; // Note: need to be less than (2^32 - 1)
+        lastUpdateTime = uint32(now % 2 ** 32);
         WETH9 = 0xd0A1E359811322d97991E03f863a0C30C2cF029C;
+        SPAoracleBaseTokenAddr = WETH9;
+        USDsOracleBaseTokenAddr = 0xb7a4F3E9097C08dA09517b5aB877F7a917224ede; //USDC Address
+        priceFeedETH = AggregatorV3Interface(0x9326BFA02ADD2366b30bacB125260Af641031331);
+        ETHprice_prec = 10**8;
+        USDsPrice_prec = 10**18;
+        SPAprice_prec = 10**8;
     }
 
-    //
-    // Getter Function
-    //
     /**
-     * @notice get the address of the token pair pool
-     * @return the pair pool address
-     */
-    function getPairAddr() external view returns (address) {
-        return address(_pair);
-    }
-
-    //
-    // Owner Only Function: changePeriod
-    //
-
-    /**
-     * @notice change updating period
+     * @notice change updatePeriod
      * @dev the frequency of update always remains the same
-     * @param newPeriod new minimal period in between two updates
+     * @param newPeriod new minimal updatePeriod in between two updates
      */
     function changePeriod(uint32 newPeriod) external onlyOwner {
-        emit PeriodUpdated(period, newPeriod, block.timestamp);
+        updatePeriod = newPeriod;
+        emit updatePeriodChanged(updatePeriod);
+    }
 
-        period = newPeriod;
+    function updateCollateralInfo(address _collateralAddr, bool _supported, AggregatorV3Interface _priceFeed, uint _price_prec) external onlyOwner {
+        collateralStruct storage updatedCollateral = collateralsInfo[_collateralAddr];
+        updatedCollateral.collateralAddr = _collateralAddr;
+        updatedCollateral.supported = _supported;
+        updatedCollateral.priceFeed = _priceFeed;
+        updatedCollateral.price_prec = _price_prec;
+        emit collateralInfoChanged(_collateralAddr, _supported, _priceFeed, _price_prec);
     }
 
     /**
-        Update price list
+     * @notice update the price of token0 to the latest
+     * @dev the price would be updated only once per updatePeriod time
+     * @dev USDsInOutRatio is accurate after 24 hours (one iteration)
      */
-    function updatePriceList(address assetAddress, address aggregatorAddress, uint256 precision) external onlyOwner {
-        if (tokenAddressIndex[assetAddress] == 0) {
-            tokenAddresses.push(assetAddress);
-            tokenAddressIndex[assetAddress] = tokenAddresses.length;
+    function updateInOutRatio() external override {
+        uint32 currTime = uint32(now % 2 ** 32);
+        uint32 timeElapsed = currTime - lastUpdateTime;
+        require(currTime >= lastUpdateTime, "updateInOutRatio; error last update happened in the future");
+        require(timeElapsed >= updatePeriod, "updateInOutRatio: the time elapsed is too short.");
+        uint32 indexNew = updateNextIndex;
+        uint32 indexOld = (indexNew + 1) % (FREQUENCY+1);
+        USDsInflow[indexNew] = USDs(USDsAddr)._totalMinted();
+        USDsOutflow[indexNew] = USDs(USDsAddr)._totalBurnt();
+        uint USDsInflow_average = USDsInflow[indexNew].sub(USDsInflow[indexOld]);
+        uint USDsOutflow_average = USDsOutflow[indexNew].sub(USDsOutflow[indexOld]);
+        if (USDsInOutRatio == 0) {
+            USDsInOutRatio = USDsInOutRatio_prec;
+        } else {
+            USDsInOutRatio = USDsOutflow_average.mul(USDsInOutRatio_prec).div(USDsInflow_average);
         }
-        priceFeeds[assetAddress] = AggregatorV3Interface(aggregatorAddress);
-        pricePrecisions[assetAddress] = 10 ** precision;
-
-        emit PriceListUpdated(assetAddress, aggregatorAddress, precision);
+        lastUpdateTime = currTime;
+        updateNextIndex = indexOld;
+        emit USDsInOutRatioUpdated(USDsInOutRatio, USDsOutflow_average, USDsInflow_average, lastUpdateTime, indexNew);
     }
 
-    /**
-        Update USDs Uniswap V3 pair
-     */
-    function updateUSDsPair(address USDsToken_, address WETH9_, address quoterAddress_) external onlyOwner {
-        uniswapQuoter = IQuoter(quoterAddress_);
-        USDsToken = USDsToken_;
-        WETH9 = WETH9_;
-
-        emit PriceListUpdated(USDsToken_, quoterAddress_, 18);
+    function getCollateralPrice(address collateralAddr) external view override returns (uint) {
+        collateralStruct memory  collateralInfo = collateralsInfo[collateralAddr];
+        require(collateralInfo.supported, "getCollateralPrice: Collateral not supported.");
+        return _getCollateralPrice(collateralAddr);
     }
 
-    //
-    // Core Functions
-    //
+    function getETHprice() external view override returns (uint) {
+        return _getETHprice();
+	}
 
-	function getETHPrice() public view override returns (uint) {
+    function getSPAprice() external view override returns (uint) {
+        int24 timeWeightedAverageTick = USDsOraclePool.consult(3600);
+        //To-DO: confirm 1 or 10^18
+        uint quoteAmount = timeWeightedAverageTick.getQuoteAtTick(10**18, SPAaddr, SPAoracleBaseTokenAddr);
+        uint SPAPrice = _getETHprice().mul(SPAprice_prec).mul(quoteAmount).div(ETHprice_prec);
+        return SPAPrice;
+    }
+
+    function getUSDsPrice() external view override returns (uint) {
+        int24 timeWeightedAverageTick = USDsOraclePool.consult(3600);
+        //To-DO: confirm 1 or 10^18
+        uint quoteAmount = timeWeightedAverageTick.getQuoteAtTick(10**18, USDsAddr, USDsOracleBaseTokenAddr);
+        uint USDsPrice = _getCollateralPrice(USDsOracleBaseTokenAddr).mul(USDsPrice_prec).mul(quoteAmount).div(_getCollateralPrice_prec(USDsOracleBaseTokenAddr));
+        return USDsPrice;
+    }
+
+    function getUSDsPrice_average() external view override returns (uint) {
+        int24 timeWeightedAverageTick = USDsOraclePool.consult(86400);
+        //To-DO: confirm 1 or 10^18
+        uint quoteAmount = timeWeightedAverageTick.getQuoteAtTick(10**18, USDsAddr, USDsOracleBaseTokenAddr);
+        uint USDsPrice_average = _getCollateralPrice(USDsOracleBaseTokenAddr).mul(USDsPrice_prec).mul(quoteAmount).div(_getCollateralPrice_prec(USDsOracleBaseTokenAddr));
+        return USDsPrice_average;
+    }
+
+    function getCollateralPrice_prec(address collateralAddr) external view override returns (uint) {
+        collateralStruct memory  collateralInfo = collateralsInfo[collateralAddr];
+        require(collateralInfo.supported, "getCollateralPrice_prec: Collateral not supported.");
+        return _getCollateralPrice_prec(collateralAddr);
+    }
+
+    function getETHprice_prec() external view override returns (uint) {
+        return ETHprice_prec;
+    }
+
+    function getSPAprice_prec() external view override returns (uint) {
+        return SPAprice_prec;
+    }
+
+    function getUSDsPrice_prec() external view override returns (uint) {
+        return USDsPrice_prec;
+    }
+
+    function _getCollateralPrice(address collateralAddr) internal view returns (uint) {
+        collateralStruct memory  collateralInfo = collateralsInfo[collateralAddr];
+        require(collateralInfo.supported, "_getCollateralPrice: Collateral not supported.");
+        (
+            ,
+            int price,
+            ,
+            ,
+        ) = collateralInfo.priceFeed.latestRoundData();
+        return uint(price);
+    }
+
+
+	function _getETHprice() internal view returns (uint) {
 		(
-			uint80 roundID,
-			int price,
-			uint startedAt,
-			uint timeStamp,
-			uint80 answeredInRound
+            ,
+            int price,
+            ,
+            ,
 		) = priceFeedETH.latestRoundData();
 		return uint(price);
 	}
 
-	function getAssetPrice(address assetAddress) public view override returns (uint) {
-		(
-			uint80 roundID,
-			int price,
-			uint startedAt,
-			uint timeStamp,
-			uint80 answeredInRound
-		) = priceFeeds[assetAddress].latestRoundData();
-		return uint(price);
+    function _getCollateralPrice_prec(address collateralAddr) internal view returns (uint) {
+        collateralStruct memory  collateralInfo = collateralsInfo[collateralAddr];
+        require(collateralInfo.supported, "_getCollateralPrice_prec: Collateral not supported.");
+        return collateralInfo.price_prec;
 	}
 
-    //to-do
-	function getSPAPrice() external view override returns (uint) {
-		uint ETHPrice = getETHPrice();
 
-        uint token0PriceMA_NoPrec = token0PriceMA.div(2**112);
-        //failing case: 1 ETH > 10^25 SPA or token0PriceMA/2**112 < ETHPrice
-        return ETHPrice.mul(2**112).div(token0PriceMA);
-	}
-
-    function getUSDsPrice() external override returns (uint) {
-        // address tokenIn = USDsToken;
-        // address tokenOut = WETH9;
-        // uint24 fee = 3000;
-        // uint160 sqrtPriceLimitX96 = 0;
-
-        // uint256 amountIn = uniswapQuoter.quoteExactOutputSingle(
-        //     tokenIn,
-        //     tokenOut,
-        //     fee,
-        //     1,
-        //     sqrtPriceLimitX96
-        // );
-
-		// uint ETHPrice = getETHPrice();
-		// return amountIn.mul(ETHPricePrecision).mul(USDsPricePrecision).div(ETHPrice);
-        return 1 * USDsPricePrecision;
-	}
-
-    //TO-DO: have getUSDsPrice_Average() returns USDs price over longer period;
-    function getUSDsPrice_Average() external override returns (uint) {
-        address tokenIn = USDsToken;
-        address tokenOut = WETH9;
-        uint24 fee = 3000;
-        uint160 sqrtPriceLimitX96 = 0;
-
-        uint256 amountIn = uniswapQuoter.quoteExactOutputSingle(
-            tokenIn,
-            tokenOut,
-            fee,
-            1,
-            sqrtPriceLimitX96
-        );
-
-		uint ETHPrice = getETHPrice();
-		return amountIn.mul(ETHPricePrecision).mul(USDsPricePrecision).div(ETHPrice);
-	}
-
-	function collatPrice(address tokenAddr) external view override returns (uint) {
-		return getAssetPrice(tokenAddr);
-	}
-
-    function collatPricePrecision(address tokenAddr) external view override returns (uint) {
-        return pricePrecisions[tokenAddr];
-	}
-
-    /**
-     * @notice update the price of token0 to the latest
-     * @dev the price would be updated only once per period time
-     */
-    function update() external override {
-        // check if enough time has elapsed for a new update
-        uint32 currTime = uint32(now % 2 ** 32);
-        uint32 timeElapsed = currTime - lastUpdateTime;
-        require(timeElapsed >= period, "update() : the time elapsed is too short.");
-
-
-        // query the lastest pricetime
-        (uint price0Cumulative, , ) = UniswapV2OracleLibrary.currentCumulativePrices(address(_pair));
-
-        // update the past-7-day pricetime array and record
-        uint32 indexNew = pricetimeOldestIndex;
-        uint32 indexOld = (indexNew + 1) % (FREQUENCY+1);
-        token0Pricetimes[indexNew].price0Cumulative = price0Cumulative;
-        token0Pricetimes[indexNew].timestamp = currTime;
-
-        // calculate the new moving average price of token0
-        uint timeElapsedMA =
-            uint(token0Pricetimes[indexNew].timestamp - token0Pricetimes[indexOld].timestamp); // notice: overflow is preferred
-        token0PriceMA = token0Pricetimes[indexNew].price0Cumulative
-                         .sub(token0Pricetimes[indexOld].price0Cumulative)
-                         .div(timeElapsedMA);
-
-        // update global status
-        lastUpdateTime = currTime;
-        pricetimeOldestIndex = indexOld;
-        emit Update(token0PriceMA, price0Cumulative);
-
-        USDsInflow[indexNew] = USDsInstance._totalMinted();
-        USDsOutflow[indexNew] = USDsInstance._totalBurnt();
-
-        uint USDsInflowOneDay = USDsInflow[indexNew].sub(USDsInflow[indexOld]);
-        uint USDsOutflowOneDay = USDsOutflow[indexNew].sub(USDsOutflow[indexOld]);
-        if (USDsInOutRatio == 0) {
-            USDsInOutRatio = USDsInOutRatioPrecision;
-        } else {
-            USDsInOutRatio = USDsOutflowOneDay.div(USDsInOutRatio);
-        }
-
-    }
 }
