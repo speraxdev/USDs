@@ -355,20 +355,13 @@ contract VaultCore is Initializable, OwnableUpgradeable {
 	}
 
 	function _totalValueInVault() internal view returns (uint value) {
-		//address collateralAddr;
-		collateralStruct memory collateral;
-		uint priceColla = 0;
-		uint precisionColla = 0;
-		uint collateralAddrDecimal = 0;
-		uint collaTotalValueInVault = 0;
-		uint collaTotalValueInVault_18 = 0;
 		for (uint y = 0; y < allCollaterals.length; y++) {
-			collateral = allCollaterals[y];
-			priceColla = IOracle(oracleAddr).getCollateralPrice(collateral.collateralAddr);
-			precisionColla = IOracle(oracleAddr).getCollateralPrice_prec(collateral.collateralAddr);
-			collateralAddrDecimal = uint(ERC20Upgradeable(collateral.collateralAddr).decimals());
-			collaTotalValueInVault = ERC20Upgradeable(collateral.collateralAddr).balanceOf(address(this)).mul(priceColla).div(precisionColla);
-			collaTotalValueInVault_18 = collaTotalValueInVault.mul(10**(uint(18).sub(collateralAddrDecimal)));
+			collateralStruct memory collateral = allCollaterals[y];
+			uint priceColla = IOracle(oracleAddr).getCollateralPrice(collateral.collateralAddr);
+			uint precisionColla = IOracle(oracleAddr).getCollateralPrice_prec(collateral.collateralAddr);
+			uint collateralAddrDecimal = uint(ERC20Upgradeable(collateral.collateralAddr).decimals());
+			uint collaTotalValueInVault = ERC20Upgradeable(collateral.collateralAddr).balanceOf(address(this)).mul(priceColla).div(precisionColla);
+			uint collaTotalValueInVault_18 = collaTotalValueInVault.mul(10**(uint(18).sub(collateralAddrDecimal)));
 			value = value.add(collaTotalValueInVault_18);
 		}
 	}
@@ -387,20 +380,14 @@ contract VaultCore is Initializable, OwnableUpgradeable {
 
 	function _totalValueInStrategy(address _strategyAddr) internal view returns (uint value) {
 		IStrategy strategy = IStrategy(_strategyAddr);
-		collateralStruct memory collateral;
-		uint priceColla = 0;
-		uint precisionColla = 0;
-		uint collateralAddrDecimal = 0;
-		uint collaTotalValueInStrategy = 0;
-		uint collaTotalValueInStrategy_18 = 0;
 		for (uint y = 0; y < allCollaterals.length; y++) {
-			collateral = allCollaterals[y];
+			collateralStruct memory collateral = allCollaterals[y];
 			if (strategy.supportsCollateral(collateral.collateralAddr)) {
-				priceColla = IOracle(oracleAddr).getCollateralPrice(collateral.collateralAddr);
-				precisionColla = IOracle(oracleAddr).getCollateralPrice_prec(collateral.collateralAddr);
-				collateralAddrDecimal = uint(ERC20Upgradeable(collateral.collateralAddr).decimals());
-				collaTotalValueInStrategy = strategy.checkBalance(collateral.collateralAddr).mul(priceColla).div(precisionColla);
-				collaTotalValueInStrategy_18 = collaTotalValueInStrategy.mul(10**(uint(18).sub(collateralAddrDecimal)));
+				uint priceColla = IOracle(oracleAddr).getCollateralPrice(collateral.collateralAddr);
+				uint precisionColla = IOracle(oracleAddr).getCollateralPrice_prec(collateral.collateralAddr);
+				uint collateralAddrDecimal = uint(ERC20Upgradeable(collateral.collateralAddr).decimals());
+				uint collaTotalValueInStrategy = strategy.checkBalance(collateral.collateralAddr).mul(priceColla).div(precisionColla);
+				uint collaTotalValueInStrategy_18 = collaTotalValueInStrategy.mul(10**(uint(18).sub(collateralAddrDecimal)));
 				value = value.add(collaTotalValueInStrategy_18);
 			}
 		}
