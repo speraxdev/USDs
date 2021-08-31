@@ -49,7 +49,7 @@ abstract contract InitializableAbstractStrategy is Initializable, OwnableUpgrade
         address _rewardTokenAddress,
         address[] calldata _collaterals,
         address[] calldata _pTokens
-    ) external   initializer {
+    ) external initializer {
         InitializableAbstractStrategy._initialize(
             _platformAddress,
             _vaultAddress,

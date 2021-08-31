@@ -1,148 +1,59 @@
+//pragma solidity =0.7.6;
 pragma solidity ^0.6.12;
 pragma experimental ABIEncoderV2;
 
-import { Governable } from "../governance/Governable.sol";
-import "../interfaces/AggregatorV3Interface.sol";
-import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/token/ERC20/SafeERC20Upgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
-import { UniswapV3Router } from "../interfaces/UniswapV3Router.sol";
+import '../libraries/TransferHelper.sol';
+import '../interfaces/ISwapRouter.sol';
+import '../interfaces/IBuyback.sol';
 
-contract Buyback is Governable {
-    using SafeERC20Upgradeable for ERC20Upgradeable;
-	using SafeMathUpgradeable for uint;
-
-    event UniswapUpdated(address _address);
-    event BuybackFailed(bytes data);
-
-    // Address of Uniswap
-    address public uniswapAddr = 0xE592427A0AEce92De3Edee1F18E0157C05861564;
-
-    // Address of OUSD Vault
-    address public constant vaultAddr = 0xE75D77B1865Ae93c7eaa3040B038D7aA7BC02F70;
-
-    // Swap from OUSD
-    ERC20Upgradeable constant ousd = ERC20Upgradeable(0x2A8e1E676Ec238d8A992307B495b45B3fEAa5e86);
-
-    // Swap to OGN
-    ERC20Upgradeable constant ogn = ERC20Upgradeable(0x8207c1FfC5B6804F6024322CcF34F29c3541Ae26);
-
-    // USDT for Uniswap path
-    ERC20Upgradeable constant usdt = ERC20Upgradeable(0xdAC17F958D2ee523a2206206994597C13D831ec7);
-
-    // WETH for Uniswap path
-    ERC20Upgradeable constant weth9 = ERC20Upgradeable(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
-
-    // Oracles
-    address constant ognEthOracle = address(
-        0x2c881B6f3f6B5ff6C975813F87A4dad0b241C15b
-    );
-    address constant ethUsdOracle = address(
-        0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419
-    );
+contract Buyback is IBuyback {
+    ISwapRouter public immutable swapRouter;
+    address public immutable USDsAddr;
+    address public constant USDCaddr = 0x2F375e94FC336Cdec2Dc0cCB5277FE59CBf1cAe5;
+    address public immutable vaultAddr;
+    // For this example, we will set the pool fee to 0.05%.
+    uint24 public constant poolFee = 500;
 
     /**
-     * @dev Verifies that the caller is the OUSD Vault.
+     * @dev Verifies that the caller is the Vault.
      */
     modifier onlyVault() {
-        require(vaultAddr == msg.sender, "Caller is not the Vault");
+        require(msg.sender == vaultAddr, "Caller is not the Vault");
         _;
     }
 
-    /**
-     * @dev Set address of Uniswap for performing liquidation of strategy reward
-     * tokens. Setting to 0x0 will pause swaps.
-     * @param _address Address of Uniswap
-     */
-    function setUniswapAddr(address _address) external onlyGovernor {
-        uniswapAddr = _address;
-        if (uniswapAddr == address(0)) return;
-        // Give Uniswap unlimited OUSD allowance
-        ousd.safeApprove(uniswapAddr, 0);
-        ousd.safeApprove(uniswapAddr, uint256(-1));
-        emit UniswapUpdated(_address);
+    constructor(ISwapRouter _swapRouter, address _USDsAddr, address _vaultAddr) public {
+        swapRouter = _swapRouter;
+        USDsAddr = _USDsAddr;
+        vaultAddr = _vaultAddr;
     }
 
-    /**
-     * @dev Execute a swap of OGN for OUSD via Uniswap or Uniswap compatible
-     * protocol (e.g. Sushiswap)
-     **/
-    function swap() external onlyVault nonReentrant {
-        uint256 sourceAmount = ousd.balanceOf(address(this));
-        if (sourceAmount < 1000 * 1e18) return;
-        if (uniswapAddr == address(0)) return;
-        // 97% should be the limits of our oracle errors.
-        // If this swap sometimes skips when it should succeed, that’s okay,
-        // the amounts will get get sold the next time this runs,
-        // when presumably the oracles are more accurate.
-        uint256 minExpected = expectedOgnPerOUSD(sourceAmount).mul(97).div(100);
-
-        UniswapV3Router.ExactInputParams memory params = UniswapV3Router
-            .ExactInputParams({
-            path: abi.encodePacked(
-                ousd,
-                uint24(500), // Pool fee, ousd -> usdt
-                usdt,
-                uint24(3000), // Pool fee, usdt -> weth9
-                weth9,
-                uint24(3000), // Pool fee, weth9 -> ogn
-                ogn
-            ),
-            recipient: address(this),
-            deadline: uint256(block.timestamp.add(1000)),
-            amountIn: sourceAmount,
-            amountOutMinimum: minExpected
-        });
-
-        // Don't revert everything, even if the buyback fails.
-        // We want the overall transaction to continue regardless.
-        // We don't need to look at the return data, since the amount will
-        // be above the minExpected.
-        (bool success, bytes memory data) = uniswapAddr.call(
-            abi.encodeWithSignature(
-                "exactInput((bytes,address,uint256,uint256,uint256))",
-                params
-            )
-        );
-        if (!success) {
-            emit BuybackFailed(data);
-        }
+    /// @notice swapExactInputSingle swaps a fixed amount of USDC for a maximum possible amount of USDs
+    /// using the USDC/USDs 0.3% pool by calling `exactInputSingle` in the swap router.
+    /// @dev The calling address must approve this contract to spend at least `amountIn` worth of its USDC for this function to succeed.
+    /// @param amountIn The exact amount of USDC that will be swapped for USDs.
+    /// @return amountOut The amount of USDs received.
+    function swapExactInputSingle(uint256 amountIn) external onlyVault override returns (uint256 amountOut) {
+        // msg.sender must approve this contract
+        // Transfer the specified amount of USDC to this contract.
+        TransferHelper.safeTransferFrom(USDCaddr, msg.sender, address(this), amountIn);
+        // Approve the router to spend USDC.
+        TransferHelper.safeApprove(USDCaddr, address(swapRouter), amountIn);
+        // Naively set amountOutMinimum to 0. In production, use an oracle or other data source to choose a safer value for amountOutMinimum.
+        // We also set the sqrtPriceLimitx96 to be 0 to ensure we swap our exact input amount.
+        ISwapRouter.ExactInputSingleParams memory params =
+            ISwapRouter.ExactInputSingleParams({
+                tokenIn: USDCaddr,
+                tokenOut: USDsAddr,
+                fee: poolFee,
+                recipient: msg.sender,
+                deadline: block.timestamp,
+                amountIn: amountIn,
+                amountOutMinimum: 0,
+                sqrtPriceLimitX96: 0
+            });
+        // The call to `exactInputSingle` executes the swap.
+        amountOut = swapRouter.exactInputSingle(params);
     }
 
-    function expectedOgnPerOUSD(uint256 ousdAmount)
-        public
-        view
-        returns (uint256)
-    {
-        return
-            ousdAmount
-                .mul(uint256(1e26)) // ognEth is 18 decimal. ethUsd is 8 decimal.
-                .div(_price(ognEthOracle).mul(_price(ethUsdOracle)));
-    }
-
-    function _price(address _feed) internal view returns (uint256) {
-        require(_feed != address(0), "Asset not available");
-        (
-            uint80 roundID,
-            int256 _iprice,
-            uint256 startedAt,
-            uint256 timeStamp,
-            uint80 answeredInRound
-        ) = AggregatorV3Interface(_feed).latestRoundData();
-        require(_iprice > 0, "Price must be greater than zero");
-        return uint256(_iprice);
-    }
-
-    /**
-     * @notice Owner function to withdraw a specific amount of a token
-     * @param token token to be transferered
-     * @param amount amount of the token to be transferred
-     */
-    function transferToken(address token, uint256 amount)
-        external
-        onlyGovernor
-        nonReentrant
-    {
-        ERC20Upgradeable(token).safeTransfer(_governor(), amount);
-    }
 }

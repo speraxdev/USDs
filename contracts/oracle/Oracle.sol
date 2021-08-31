@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: MIT
+// To-do: change BaseTokenAddr
 pragma solidity ^0.6.12;
 pragma experimental ABIEncoderV2; //What's this for?
 
@@ -12,7 +13,6 @@ import "../interfaces/AggregatorV3Interface.sol";
 import "../interfaces/IOracle.sol";
 import "../interfaces/IUniswapV2Pair.sol";
 import "../libraries/UniswapV2OracleLibrary.sol";
-import "../interfaces/IQuoter.sol";
 import "../libraries/OracleLibrary.sol";
 
 /**
@@ -38,7 +38,7 @@ contract Oracle is Initializable, IOracle, OwnableUpgradeable {
     AggregatorV3Interface priceFeedETH;
     address public SPAaddr;
     address public USDsAddr;
-    address public WETH9;
+    address public constant WETH9 = 0xd0A1E359811322d97991E03f863a0C30C2cF029C;
     address public USDsOraclePool;
     address public SPAoracleBaseTokenAddr;
     address public USDsOracleBaseTokenAddr;
@@ -81,9 +81,8 @@ contract Oracle is Initializable, IOracle, OwnableUpgradeable {
         USDsAddr = _USDsAddr;
         USDsInOutRatio_prec = 10000000; // Note: need to be less than (2^32 - 1)
         lastUpdateTime = uint32(now % 2 ** 32);
-        WETH9 = 0xd0A1E359811322d97991E03f863a0C30C2cF029C;
         SPAoracleBaseTokenAddr = WETH9;
-        USDsOracleBaseTokenAddr = 0xb7a4F3E9097C08dA09517b5aB877F7a917224ede; //USDC Address
+        USDsOracleBaseTokenAddr = 0x2F375e94FC336Cdec2Dc0cCB5277FE59CBf1cAe5; //USDC Address
         priceFeedETH = AggregatorV3Interface(0x9326BFA02ADD2366b30bacB125260Af641031331);
         ETHprice_prec = 10**8;
         USDsPrice_prec = 10**18;
