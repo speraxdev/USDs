@@ -4,7 +4,7 @@ var USDs = artifacts.require("../contracts/token/USDs.sol");
 var Oracle = artifacts.require("../contracts/oracle/Oracle.sol");
 var VaultCore = artifacts.require("../contracts/vault/VaultCore.sol");
 var VaultCoreLibrary = artifacts.require("../contracts/libraries/VaultCoreLibrary.sol");
-
+var AaveStrategy = artifacts.require("../contracts/strategies/AaveStrategy.sol");
 
 //let BancorFormulaAddr = "0x0f27662A7e4033eB4549a4E6Bd42a35a96979BdC";
 //let SPAandWETHPair = "0x06Ee09fF6f4c83eaB024173f5507515B0f810DB0";
