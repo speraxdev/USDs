@@ -2,7 +2,6 @@ const { deployProxy, upgradeProxy, prepareUpgrade } = require('@openzeppelin/tru
 
 var USDs = artifacts.require("../contracts/token/USDs.sol");
 
-
 //let BancorFormulaAddr = "0x0f27662A7e4033eB4549a4E6Bd42a35a96979BdC";
 //let SPAandWETHPair = "0x06Ee09fF6f4c83eaB024173f5507515B0f810DB0";
 

@@ -33,7 +33,7 @@ contract VaultCore is Initializable, OwnableUpgradeable {
 	using StableMath for uint;
 
 	bool public mintRedeemAllowed;	// if false, no USDs can be minted or burnt
-	bool public allocationAllowed;		// if false, no collaterals can be reinvested
+	bool public allocationAllowed;	// if false, no collaterals can be reinvested
 	bool public rebaseAllowed;
 	bool public swapfeeInAllowed;
 	bool public swapfeeOutAllowed;
@@ -195,13 +195,13 @@ contract VaultCore is Initializable, OwnableUpgradeable {
 	 * @param collateralAddr the address of user's chosen collateral
 	 * @param USDsMintAmt the amount of USDs to be minted
 	 */
-	function mintWithUSDs(address collateralAddr, uint USDsMintAmt)
+	function mintWithUSDs(address collateralAddr, uint USDsMintAmt, uint slippageCollateral, uint slippageSPA, uint deadline)
 		public
 		whenMintRedeemAllowed
 	{
 		require(collateralsInfo[collateralAddr].supported, "Collateral not supported");
 		require(USDsMintAmt > 0, "Amount needs to be greater than 0");
-		_mint(collateralAddr, USDsMintAmt, 0);
+		_mint(collateralAddr, USDsMintAmt, 0, USDsMintAmt, slippageCollateral, slippageSPA, deadline);
 	}
 
 	/**
@@ -209,13 +209,15 @@ contract VaultCore is Initializable, OwnableUpgradeable {
 	 * @param collateralAddr the address of user's chosen collateral
 	 * @param SPAamt the amount of SPA to burn
 	 */
-	function mintWithSPA(address collateralAddr, uint SPAamt)
+
+	function mintWithSPA(address collateralAddr, uint SPAAmt, uint slippageUSDs, uint slippageCollateral, uint deadline)
 		public
 		whenMintRedeemAllowed
 	{
 		require(collateralsInfo[collateralAddr].supported, "Collateral not supported");
-		require(SPAamt > 0, "Amount needs to be greater than 0");
-		_mint(collateralAddr, SPAamt, 1);
+		require(SPAAmt > 0, "Amount needs to be greater than 0");
+		_mint(collateralAddr, SPAAmt, 1, slippageUSDs, slippageCollateral, SPAAmt, deadline);
+
 	}
 
 	/**
@@ -223,22 +225,22 @@ contract VaultCore is Initializable, OwnableUpgradeable {
 	 * @param collateralAddr the address of user's chosen collateral
 	 * @param collateralAmt the amount of collateral to stake
 	 */
-	function mintWithColla(address collateralAddr, uint collateralAmt)
+	function mintWithColla(address collateralAddr, uint collateralAmt, uint slippageUSDs, uint slippageSPA, uint deadline)
 		public
 		whenMintRedeemAllowed
 	{
 		require(collateralsInfo[collateralAddr].supported, "Collateral not supported");
 		require(collateralAmt > 0, "Amount needs to be greater than 0");
-		_mint(collateralAddr, collateralAmt, 2);
+		_mint(collateralAddr, collateralAmt, 2, slippageUSDs, collateralAmt, slippageSPA, deadline);
 	}
 
 	/**
 	 * @dev mint USDs by ETH
 	 * note: this function needs changes when USDs is deployed on other blockchain platform
 	 */
-	function mintWithEth() public payable whenMintRedeemAllowed {
-    require(msg.value > 0, "Need to pay Ether");
-		_mint(address(0), msg.value, 3);
+	function mintWithEth(uint slippageUSDs, uint slippageSPA, uint deadline) public payable whenMintRedeemAllowed {
+		require(msg.value > 0, "Need to pay Ether");
+		_mint(address(0), msg.value, 3, slippageUSDs, msg.value, slippageSPA, deadline);
 	}
 
 
@@ -246,7 +248,7 @@ contract VaultCore is Initializable, OwnableUpgradeable {
 	 * @dev the generic, internal mint function
 	 * @param collateralAddr the address of the collateral
 	 * @param valueAmt the amount of tokens (the specific meaning depends on valueType)
-	 * @param valueType the type of tokens (specific meanings are listed below)
+	 * @param valueType the type of tokens (specific meanings are listed lower)
 	 *		valueType = 0: mintWithUSDs
 	 *		valueType = 1: mintWithSPA
 	 *		valueType = 2: mintWithColla
@@ -255,10 +257,23 @@ contract VaultCore is Initializable, OwnableUpgradeable {
 	function _mint(
 		address collateralAddr,
 		uint valueAmt,
-		uint8 valueType
+		uint8 valueType,
+		uint slippageUSDs,
+		uint slippageCollat,
+		uint slippageSPA,
+		uint deadline
 	) internal whenMintRedeemAllowed {
 		// calculate all necessary related quantities based on user inputs
 		(uint SPABurnAmt, uint collateralDepAmt, uint USDsAmt, uint swapFeeAmount) = VaultCoreLibrary.mintView(collateralAddr, valueAmt, valueType, address(this));
+
+		// slippageUSDs is the minimum value of the minted USDs
+		// slippageCollat is the maximum value of the required collateral
+		// slippageSPA is the maximum value of the required spa
+		require(USDsAmt >= slippageUSDs, "USDs amount is lower than the maximum slippage");
+		require(collateralDepAmt <= slippageCollat, "Collateral amount is more than the maximum slippage");
+		require(SPABurnAmt >= slippageSPA, "SPA amount is more than the maximum slippage");
+		require(block.timestamp <= deadline, "Deadline expired");
+
 		// burn SPA tokens
 		ISperaxToken(SPAaddr).burnFrom(msg.sender, SPABurnAmt);
 		SPAburnt = SPAburnt.add(SPABurnAmt);
@@ -275,20 +290,30 @@ contract VaultCore is Initializable, OwnableUpgradeable {
 	/**
 	 *
 	 */
-	function redeem(address collateralAddr, uint USDsAmt)
+	function redeem(address collateralAddr, uint USDsAmt, uint slippageCollat, uint slippageSPA, uint deadline)
 		public
 		whenMintRedeemAllowed
 	{
 		require(collateralsInfo[collateralAddr].supported, "Collateral not supported");
 		require(USDsAmt > 0, "Amount needs to be greater than 0");
-		_redeem(collateralAddr, USDsAmt);
+		_redeem(collateralAddr, USDsAmt, slippageCollat, slippageSPA, deadline);
 	}
 
 	function _redeem(
 		address collateralAddr,
-		uint USDsAmt
+		uint USDsAmt,
+		uint slippageCollat,
+		uint slippageSPA,
+		uint deadline
 	) internal whenMintRedeemAllowed {
 		(uint SPAMintAmt, uint collateralUnlockedAmt, uint USDsBurntAmt, uint swapFeeAmount) = VaultCoreLibrary.redeemView(collateralAddr, USDsAmt, address(this), oracleAddr);
+
+		// slippageCollat is the minimum value of the unlocked collateral
+		// slippageSPA is the minimum value of the minted spa
+		require(collateralUnlockedAmt >= slippageCollat, "Collateral amount is lower than the maximum slippage");
+		require(SPAMintAmt >= slippageSPA, "SPA amount is lower than the maximum slippage");
+		require(block.timestamp <= deadline, "Deadline expired");
+
 		ISperaxToken(SPAaddr).mintForUSDs(msg.sender, SPAMintAmt);
 		SPAminted = SPAminted.add(SPAMintAmt);
 		ERC20Upgradeable(collateralAddr).safeTransfer(msg.sender, collateralUnlockedAmt);
@@ -339,13 +364,13 @@ contract VaultCore is Initializable, OwnableUpgradeable {
 	//  */
 	//
 	function collateralRatio() public view returns (uint ratio) {
-    uint totalValueLocked = _totalValueLocked();
-		uint USDsSupply =  USDsInstance.totalSupply();
+		uint totalValueLocked = _totalValueLocked();
+		uint USDsSupply = USDsInstance.totalSupply();
 		uint priceUSDs = uint(IOracle(oracleAddr).getUSDsPrice());
 		uint precisionUSDs = IOracle(oracleAddr).getUSDsPrice_prec();
 		uint USDsValue = USDsSupply.mul(priceUSDs).div(precisionUSDs);
 		ratio = totalValueLocked.mul(chi_prec).div(USDsValue);
-  	}
+	}
 
 	function totalValueLocked() external view returns (uint value) {
 		value = _totalValueLocked();
