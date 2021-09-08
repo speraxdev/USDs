@@ -276,20 +276,26 @@ contract VaultCore is Initializable, OwnableUpgradeable {
 	/**
 	 *
 	 */
-	function redeem(address collateralAddr, uint USDsAmt)
+	function redeem(address collateralAddr, uint USDsAmt, uint slippage, uint deadline)
 		public
 		whenMintRedeemAllowed
 	{
 		require(collateralsInfo[collateralAddr].supported, "Collateral not supported");
 		require(USDsAmt > 0, "Amount needs to be greater than 0");
-		_redeem(collateralAddr, USDsAmt);
+		_redeem(collateralAddr, USDsAmt, slippage, deadline);
 	}
 
 	function _redeem(
 		address collateralAddr,
-		uint USDsAmt
+		uint USDsAmt,
+		uint slippage,
+		uint deadline
 	) internal whenMintRedeemAllowed {
 		(uint SPAMintAmt, uint collateralUnlockedAmt, uint USDsBurntAmt, uint swapFeeAmount) = VaultCoreLibrary.redeemView(collateralAddr, USDsAmt, address(this), oracleAddr);
+
+		require(collateralUnlockedAmt >= slippage, "Collateral amount is below than the maximum slippage");
+		require(block.timestamp <= deadline, "Deadline expired");
+
 		ISperaxToken(SPAaddr).mintForUSDs(msg.sender, SPAMintAmt);
 		SPAminted = SPAminted.add(SPAMintAmt);
 		ERC20Upgradeable(collateralAddr).safeTransfer(msg.sender, collateralUnlockedAmt);
