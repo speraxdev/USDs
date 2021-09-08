@@ -55,5 +55,4 @@ contract Buyback is IBuyback {
         // The call to `exactInputSingle` executes the swap.
         amountOut = swapRouter.exactInputSingle(params);
     }
-
 }

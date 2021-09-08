@@ -35,7 +35,7 @@ contract VaultCore is Initializable, OwnableUpgradeable {
 	using StableMath for uint;
 
 	bool public mintRedeemAllowed;	// if false, no USDs can be minted or burnt
-	bool public allocationAllowed;		// if false, no collaterals can be reinvested
+	bool public allocationAllowed;	// if false, no collaterals can be reinvested
 	bool public rebaseAllowed;
 	bool public swapfeeInAllowed;
 	bool public swapfeeOutAllowed;
@@ -190,13 +190,13 @@ contract VaultCore is Initializable, OwnableUpgradeable {
 	 * @param collateralAddr the address of user's chosen collateral
 	 * @param USDsMintAmt the amount of USDs to be minted
 	 */
-	function mintWithUSDs(address collateralAddr, uint USDsMintAmt)
+	function mintWithUSDs(address collateralAddr, uint USDsMintAmt, uint slippage, uint deadline)
 		public
 		whenMintRedeemAllowed
 	{
 		require(collateralsInfo[collateralAddr].supported, "Collateral not supported");
 		require(USDsMintAmt > 0, "Amount needs to be greater than 0");
-		_mint(collateralAddr, USDsMintAmt, 0);
+		_mint(collateralAddr, USDsMintAmt, 0, slippage, deadline);
 	}
 
 	/**
@@ -204,13 +204,13 @@ contract VaultCore is Initializable, OwnableUpgradeable {
 	 * @param collateralAddr the address of user's chosen collateral
 	 * @param SPAAmt the amount of SPA to burn
 	 */
-	function mintWithSPA(address collateralAddr, uint SPAAmt)
+	function mintWithSPA(address collateralAddr, uint SPAAmt, uint slippage, uint deadline)
 		public
 		whenMintRedeemAllowed
 	{
 		require(collateralsInfo[collateralAddr].supported, "Collateral not supported");
 		require(SPAAmt > 0, "Amount needs to be greater than 0");
-		_mint(collateralAddr, SPAAmt, 1);
+		_mint(collateralAddr, SPAAmt, 1, slippage, deadline);
 	}
 
 	/**
@@ -218,22 +218,22 @@ contract VaultCore is Initializable, OwnableUpgradeable {
 	 * @param collateralAddr the address of user's chosen collateral
 	 * @param collateralAmt the amount of collateral to stake
 	 */
-	function mintWithColla(address collateralAddr, uint collateralAmt)
+	function mintWithColla(address collateralAddr, uint collateralAmt, uint slippage, uint deadline)
 		public
 		whenMintRedeemAllowed
 	{
 		require(collateralsInfo[collateralAddr].supported, "Collateral not supported");
 		require(collateralAmt > 0, "Amount needs to be greater than 0");
-		_mint(collateralAddr, collateralAmt, 2);
+		_mint(collateralAddr, collateralAmt, 2, slippage, deadline);
 	}
 
 	/**
 	 * @dev mint USDs by ETH
 	 * note: this function needs changes when USDs is deployed on other blockchain platform
 	 */
-	function mintWithEth() public payable whenMintRedeemAllowed {
-    require(msg.value > 0, "Need to pay Ether");
-		_mint(address(0), msg.value, 3);
+	function mintWithEth(uint slippage, uint deadline) public payable whenMintRedeemAllowed {
+		require(msg.value > 0, "Need to pay Ether");
+		_mint(address(0), msg.value, 3, slippage, deadline);
 	}
 
 
@@ -250,10 +250,16 @@ contract VaultCore is Initializable, OwnableUpgradeable {
 	function _mint(
 		address collateralAddr,
 		uint valueAmt,
-		uint8 valueType
+		uint8 valueType,
+		uint slippage,
+		uint deadline
 	) internal whenMintRedeemAllowed {
 		// calculate all necessary related quantities based on user inputs
 		(uint SPABurnAmt, uint collateralDepAmt, uint USDsAmt, uint swapFeeAmount) = VaultCoreLibrary.mintView(collateralAddr, valueAmt, valueType, address(this));
+
+		require(USDsAmt >= slippage, "USDs amount is below than the maximum slippage");
+		require(block.timestamp <= deadline, "Deadline expired");
+
 		// burn SPA tokens
 		ISperaxToken(SPAaddr).burnFrom(msg.sender, SPABurnAmt);
 		SPAburnt = SPAburnt.add(SPABurnAmt);
@@ -334,13 +340,13 @@ contract VaultCore is Initializable, OwnableUpgradeable {
 	//  */
 	//
 	function collateralRatio() public view returns (uint ratio) {
-    uint totalValueLocked = _totalValueLocked();
-		uint USDsSupply =  USDsInstance.totalSupply();
+		uint totalValueLocked = _totalValueLocked();
+		uint USDsSupply = USDsInstance.totalSupply();
 		uint priceUSDs = uint(IOracle(oracleAddr).getUSDsPrice());
 		uint precisionUSDs = IOracle(oracleAddr).getUSDsPrice_prec();
 		uint USDsValue = USDsSupply.mul(priceUSDs).div(precisionUSDs);
 		ratio = totalValueLocked.mul(chi_prec).div(USDsValue);
-  	}
+	}
 
 	function totalValueLocked() external view returns (uint value) {
 		value = _totalValueLocked();
