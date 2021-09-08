@@ -1,5 +1,7 @@
-// SPDX-License-Identifier: MIT
-// To-do: change BaseTokenAddr
+
+t8// SPDX-License-Identifier: MIT
+// To-do: remove for testing purpose functions;
+// To-do: check USDsInOutRatio_prec;
 pragma solidity ^0.6.12;
 pragma experimental ABIEncoderV2; //What's this for?
 
@@ -32,14 +34,15 @@ contract Oracle is Initializable, IOracle, OwnableUpgradeable {
     uint32 public updateNextIndex;
     uint32 public lastUpdateTime; // the timstamp of the lastest update
     uint32 public updatePeriod; // the default updatePeriod of one update is 1 hours
-    uint public ETHprice_prec;
-    uint public SPAprice_prec;
-    uint public USDsPrice_prec;
+    uint public constant ETHprice_prec = 10**8;
+    uint public constant SPAprice_prec = 10**18;
+    uint public constant USDsPrice_prec = 10**18;
     AggregatorV3Interface priceFeedETH;
-    address public SPAaddr;
+    address public constant SPAaddr = address(0xbb5E27Ae27A6a7D092b181FbDdAc1A1004e9adff);
     address public USDsAddr;
     address public constant WETH9 = 0xd0A1E359811322d97991E03f863a0C30C2cF029C;
     address public USDsOraclePool;
+    address public SPAoraclePool;
     address public SPAoracleBaseTokenAddr;
     address public USDsOracleBaseTokenAddr;
 
@@ -73,20 +76,24 @@ contract Oracle is Initializable, IOracle, OwnableUpgradeable {
     //
     // Initializer
     //
-    function initialize(
-        address _USDsAddr
-    ) public initializer {
+    function initialize() public initializer {
         OwnableUpgradeable.__Ownable_init();
         updatePeriod = 1 hours;
-        USDsAddr = _USDsAddr;
         USDsInOutRatio_prec = 10000000; // Note: need to be less than (2^32 - 1)
         lastUpdateTime = uint32(now % 2 ** 32);
-        SPAoracleBaseTokenAddr = WETH9;
-        USDsOracleBaseTokenAddr = 0x2F375e94FC336Cdec2Dc0cCB5277FE59CBf1cAe5; //USDC Address
         priceFeedETH = AggregatorV3Interface(0x9326BFA02ADD2366b30bacB125260Af641031331);
-        ETHprice_prec = 10**8;
-        USDsPrice_prec = 10**18;
-        SPAprice_prec = 10**8;
+    }
+
+    //For testing purposes
+    function updateOraclePoolsAddress(address _SPAoracleBaseTokenAddr, address _USDsOracleBaseTokenAddr, address _USDsOraclePool, address _SPAoraclePool) external onlyOwner {
+        SPAoracleBaseTokenAddr = _SPAoracleBaseTokenAddr;
+        USDsOracleBaseTokenAddr = _USDsOracleBaseTokenAddr;
+        USDsOraclePool = _USDsOraclePool;
+        SPAoraclePool = _SPAoraclePool;
+    }
+    //For testing purposes
+    function updateUSDsAddress(address _USDsAddr) external onlyOwner {
+        USDsAddr = _USDsAddr;
     }
 
     /**
@@ -119,7 +126,7 @@ contract Oracle is Initializable, IOracle, OwnableUpgradeable {
         require(currTime >= lastUpdateTime, "updateInOutRatio; error last update happened in the future");
         require(timeElapsed >= updatePeriod, "updateInOutRatio: the time elapsed is too short.");
         uint32 indexNew = updateNextIndex;
-        uint32 indexOld = (indexNew + 1) % (FREQUENCY+1);
+        uint32 indexOld = (indexNew + 1) % (FREQUENCY + 1);
         USDsInflow[indexNew] = USDs(USDsAddr)._totalMinted();
         USDsOutflow[indexNew] = USDs(USDsAddr)._totalBurnt();
         uint USDsInflow_average = USDsInflow[indexNew].sub(USDsInflow[indexOld]);
@@ -145,7 +152,7 @@ contract Oracle is Initializable, IOracle, OwnableUpgradeable {
 	}
 
     function getSPAprice() external view override returns (uint) {
-        int24 timeWeightedAverageTick = USDsOraclePool.consult(3600);
+        int24 timeWeightedAverageTick = SPAoraclePool.consult(3600);
         //To-DO: confirm 1 or 10^18
         uint quoteAmount = timeWeightedAverageTick.getQuoteAtTick(10**18, SPAaddr, SPAoracleBaseTokenAddr);
         uint SPAPrice = _getETHprice().mul(SPAprice_prec).mul(quoteAmount).div(ETHprice_prec);

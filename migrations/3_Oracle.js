@@ -1,6 +1,7 @@
 const { deployProxy, upgradeProxy, prepareUpgrade } = require('@openzeppelin/truffle-upgrades');
 
-var USDs = artifacts.require("../contracts/token/USDs.sol");
+var Oracle = artifacts.require("../contracts/oracle/Oracle.sol");
+
 
 
 //let BancorFormulaAddr = "0x0f27662A7e4033eB4549a4E6Bd42a35a96979BdC";
@@ -8,8 +9,9 @@ var USDs = artifacts.require("../contracts/token/USDs.sol");
 
 
 module.exports = async function(deployer) {
+	const oracle = await deployProxy(Oracle, [], { deployer });
 
-	const usds = await deployProxy(USDs, ["USDs", "USDS", "0x0000000000000000000000000000000000000000"], { deployer });
+
 	//
 	// // Upgrade Proxy Contract
 	// const usdsExisting = await USDs.deployed();
