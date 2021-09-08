@@ -5,14 +5,13 @@
 //TO-DO: what happen when we redeem aTokens
 //TO-DO: whether _redeem needs "SafeTransferFrom" and how
 //TO-DO: check all user inputs, especially mintView
-//TO-DO: style reorg
-//TO-DO: vault and address(this)
+//TO-DO: remove for testing purposes files
 pragma solidity ^0.6.12;
 
-import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
+//import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
+//import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
+//import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/SafeERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 
@@ -22,7 +21,6 @@ import "../interfaces/IOracle.sol";
 import "../interfaces/ISperaxToken.sol";
 import "../interfaces/IStrategy.sol";
 import "../interfaces/IVault.sol";
-import "../libraries/StableMath.sol";
 import "../libraries/VaultCoreLibrary.sol";
 import "../token/USDs.sol";
 import "../libraries/BancorFormula.sol";
@@ -117,18 +115,25 @@ contract VaultCore is Initializable, OwnableUpgradeable {
 	collateralStruct[] allCollaterals;	// the list of all supported collaterals
 	strategyStruct[] allStrategies;	// the list of all strategy addresses
 
-	function initialize(address USDsToken_, address oracleAddr_) public initializer {
+	function initialize() public initializer {
 		OwnableUpgradeable.__Ownable_init();
 		mintRedeemAllowed = true;
 		swapfeeInAllowed = true;
 		swapfeeOutAllowed = true;
 		allocationAllowed = true;
-		SPAaddr = 0x2B607b664A1012aD658b430E03603be1DC83EeCc;	// SPA on Kovan
+		SPAaddr = 0xbb5E27Ae27A6a7D092b181FbDdAc1A1004e9adff;	// SPA on Kovan
 		SPAvault = address(this);
-		USDsInstance = USDs(USDsToken_);
-		oracleAddr = oracleAddr_;
 		startBlockHeight = block.number;
 		BancorInstance = BancorFormula(0x0f27662A7e4033eB4549a4E6Bd42a35a96979BdC);
+	}
+
+	//For testing purposes:
+	function updateUSDsAddress(address _USDsAddr) external onlyOwner {
+		USDsInstance = USDs(_USDsAddr);
+	}
+
+	function updateOracleAddress(address _oracleAddr) external onlyOwner {
+		oracleAddr =  _oracleAddr;
 	}
 
 	/**
@@ -160,8 +165,8 @@ contract VaultCore is Initializable, OwnableUpgradeable {
 		emit SwapFeeOutPermissionChanged(swapfeeOutAllowed);
 	}
 
-	function updateCollateralInfo(address _collateralAddr, bool _supported, address _defaultStrategyAddr, bool _allocationAlloweduint8, address _buyBackAddr, bool _rebaseAllowed) external onlyOwner {
-		_updateCollateralInfo(_collateralAddr, _supported, _defaultStrategyAddr, _allocationAlloweduint8, _buyBackAddr, _rebaseAllowed);
+	function updateCollateralInfo(address _collateralAddr, bool _supported, address _defaultStrategyAddr, bool _allocationAllowed, address _buyBackAddr, bool _rebaseAllowed) external onlyOwner {
+		_updateCollateralInfo(_collateralAddr, _supported, _defaultStrategyAddr, _allocationAllowed, _buyBackAddr, _rebaseAllowed);
 	}
 
 	function _updateCollateralInfo(address _collateralAddr, bool _supported, address _defaultStrategyAddr, bool _allocationAllowed, address _buyBackAddr, bool _rebaseAllowed) internal {
@@ -202,8 +207,9 @@ contract VaultCore is Initializable, OwnableUpgradeable {
 	/**
 	 * @dev mint USDs by entering SPA amount
 	 * @param collateralAddr the address of user's chosen collateral
-	 * @param SPAAmt the amount of SPA to burn
+	 * @param SPAamt the amount of SPA to burn
 	 */
+
 	function mintWithSPA(address collateralAddr, uint SPAAmt, uint slippageUSDs, uint slippageCollateral, uint deadline)
 		public
 		whenMintRedeemAllowed
@@ -211,6 +217,7 @@ contract VaultCore is Initializable, OwnableUpgradeable {
 		require(collateralsInfo[collateralAddr].supported, "Collateral not supported");
 		require(SPAAmt > 0, "Amount needs to be greater than 0");
 		_mint(collateralAddr, SPAAmt, 1, slippageUSDs, slippageCollateral, SPAAmt, deadline);
+
 	}
 
 	/**
