@@ -1,6 +1,6 @@
 //TO-DO: check source file of SafeMathUpgradeable regarding trySub() (and the usage of "unchecked")
 //TO-DO: check ERC20Upgradeable vs ERC20Upgradeable
-// Note: assuming when exponentWith_prec >= 2^32, toReturn >= swapFeePresion () (TO-DO: work out the number)
+// Note: assuming when exponentWith_prec >= 2^32, toReturn >= swapFee_prec () (TO-DO: work out the number)
 //TO-DO: deal with collateralStrategies
 //TO-DO: what happen when we redeem aTokens
 //TO-DO: whether _redeem needs "SafeTransferFrom" and how
@@ -8,19 +8,14 @@
 //TO-DO: remove for testing purposes files
 pragma solidity ^0.6.12;
 
-//import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-//import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
-//import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/SafeERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 
-import "../libraries/MyMath.sol";
 import "../libraries/Helpers.sol";
 import "../interfaces/IOracle.sol";
 import "../interfaces/ISperaxToken.sol";
 import "../interfaces/IStrategy.sol";
-import "../interfaces/IVault.sol";
 import "../libraries/VaultCoreLibrary.sol";
 import "../token/USDs.sol";
 import "../libraries/BancorFormula.sol";
@@ -29,11 +24,10 @@ import "../interfaces/IBuyback.sol";
 contract VaultCore is Initializable, OwnableUpgradeable {
 	using SafeERC20Upgradeable for ERC20Upgradeable;
 	using SafeMathUpgradeable for uint;
-	using MyMath for uint;
 	using StableMath for uint;
 
-	bool public mintRedeemAllowed;	// if false, no USDs can be minted or burnt
-	bool public allocationAllowed;	// if false, no collaterals can be reinvested
+	bool public mintRedeemAllowed;
+	bool public allocationAllowed;
 	bool public rebaseAllowed;
 	bool public swapfeeInAllowed;
 	bool public swapfeeOutAllowed;
@@ -45,26 +39,27 @@ contract VaultCore is Initializable, OwnableUpgradeable {
 	uint public startBlockHeight;
 	uint public SPAminted;
 	uint public SPAburnt;
-	uint public constant chi_alpha = 513;
-	uint public constant chi_alpha_prec = 10**12;
-	uint public constant chi_prec = chi_alpha_prec;
-	uint public constant chiInit = chi_prec * 100 / 95;
-	uint32 public constant chi_beta = 9;
-	uint32 public constant chi_beta_prec = 1;
-	uint32 public constant chi_gamma = 1;
-	uint32 public constant chi_gamma_prec = 1;
-	uint public constant swapFeePresion = 1000000;
-	uint32 public constant swapFee_p = 99;
-	uint32 public constant swapFee_p_prec = 100;
-	uint32 public constant swapFee_theta = 50;
-	uint32 public constant swapFee_theta_prec = 1;
-	uint32 public constant swapFee_a = 12;
-	uint32 public constant swapFee_a_prec = 10;
-	uint32 public constant swapFee_A = 20;
-	uint32 public constant swapFee_A_prec = 1;
-	uint32 public constant allocatePrecentage = 8;
-	uint32 public constant allocatePrecentage_prec = 10;
+	uint32 public chi_alpha;
+	uint64 public constant chi_alpha_prec = 10**12;
+	uint64 public constant chi_prec = 10**12;
+	uint64 public chiInit;
+	uint32 public chi_beta;
+	uint16 public constant chi_beta_prec = 10**4;
+	uint32 public chi_gamma;
+	uint16 public constant chi_gamma_prec = 10**4;
+	uint64 public constant swapFee_prec = 10**12;
+	uint32 public swapFee_p;
+	uint16 public constant swapFee_p_prec = 10**4;
+	uint32 public swapFee_theta;
+	uint16 public constant swapFee_theta_prec = 10**4;
+	uint32 public swapFee_a;
+	uint16 public constant swapFee_a_prec = 10**4;
+	uint32 public swapFee_A;
+	uint16 public constant swapFee_A_prec = 10**4;
+	uint32 public allocatePrecentage;
+	uint16 public constant allocatePrecentage_prec = 10**4;
 
+	event parametersUpdated(uint64 _chiInit, uint32 _chi_beta, uint32 _chi_gamma, uint32 _swapFee_p, uint32 _swapFee_theta, uint32 _swapFee_a, uint32 _swapFee_A, uint32 _allocatePrecentage);
 	event USDsMinted(address indexed wallet, uint indexed USDsAmt, uint collateralAmt, uint SPAsAmt, uint feeAmt);
 	event USDsRedeemed(address indexed wallet, uint indexed USDsAmt, uint collateralAmt, uint SPAsAmt, uint feeAmt);
 	event Rebase(uint indexed oldSupply, uint indexed newSupply);
@@ -118,13 +113,22 @@ contract VaultCore is Initializable, OwnableUpgradeable {
 	function initialize() public initializer {
 		OwnableUpgradeable.__Ownable_init();
 		mintRedeemAllowed = true;
-		swapfeeInAllowed = true;
-		swapfeeOutAllowed = true;
-		allocationAllowed = true;
+		swapfeeInAllowed = false;
+		swapfeeOutAllowed = false;
+		allocationAllowed = false;
 		SPAaddr = 0xbb5E27Ae27A6a7D092b181FbDdAc1A1004e9adff;	// SPA on Kovan
 		SPAvault = address(this);
 		startBlockHeight = block.number;
 		BancorInstance = BancorFormula(0x0f27662A7e4033eB4549a4E6Bd42a35a96979BdC);
+		chi_alpha = uint32(chi_alpha_prec * 513 / 10**10);
+		chiInit = chi_prec * 95 / 100;
+		chi_beta = chi_beta_prec * 9;
+		chi_gamma = chi_gamma_prec;
+		swapFee_p = swapFee_p_prec * 99 / 100;
+		swapFee_theta = swapFee_theta_prec * 50;
+		swapFee_a = swapFee_a_prec * 12 / 10;
+		swapFee_A = swapFee_A_prec * 20;
+		allocatePrecentage = allocatePrecentage_prec * 8 / 10;
 	}
 
 	//For testing purposes:
@@ -134,6 +138,18 @@ contract VaultCore is Initializable, OwnableUpgradeable {
 
 	function updateOracleAddress(address _oracleAddr) external onlyOwner {
 		oracleAddr =  _oracleAddr;
+	}
+
+	function updateParameters(uint64 _chiInit, uint32 _chi_beta, uint32 _chi_gamma, uint32 _swapFee_p, uint32 _swapFee_theta, uint32 _swapFee_a, uint32 _swapFee_A, uint32 _allocatePrecentage) external onlyOwner {
+		chiInit = _chiInit;
+		chi_beta = _chi_beta;
+		chi_gamma = _chi_gamma;
+		swapFee_p = _swapFee_p;
+		swapFee_theta = _swapFee_theta;
+		swapFee_a = _swapFee_a;
+		swapFee_A = _swapFee_A;
+		allocatePrecentage = _allocatePrecentage;
+		emit parametersUpdated(chiInit, chi_beta, chi_gamma, swapFee_p, swapFee_theta, swapFee_a, swapFee_A, allocatePrecentage);
 	}
 
 	/**
@@ -210,14 +226,13 @@ contract VaultCore is Initializable, OwnableUpgradeable {
 	 * @param SPAamt the amount of SPA to burn
 	 */
 
-	function mintWithSPA(address collateralAddr, uint SPAAmt, uint slippageUSDs, uint slippageCollateral, uint deadline)
+	function mintWithSPA(address collateralAddr, uint SPAamt, uint slippageUSDs, uint slippageCollateral, uint deadline)
 		public
 		whenMintRedeemAllowed
 	{
 		require(collateralsInfo[collateralAddr].supported, "Collateral not supported");
-		require(SPAAmt > 0, "Amount needs to be greater than 0");
-		_mint(collateralAddr, SPAAmt, 1, slippageUSDs, slippageCollateral, SPAAmt, deadline);
-
+		require(SPAamt > 0, "Amount needs to be greater than 0");
+		_mint(collateralAddr, SPAamt, 1, slippageUSDs, slippageCollateral, SPAamt, deadline);
 	}
 
 	/**

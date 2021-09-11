@@ -1,7 +1,7 @@
 /**
     Questions:
     1. in changeSupply, why we need to first check if _totalSupply > 0?
- */ 
+ */
 
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.6.12;
@@ -14,9 +14,9 @@ pragma solidity ^0.6.12;
  */
 
 import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
-import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
 import { InitializableERC20Detailed } from "../libraries/InitializableERC20Detailed.sol";
 import { StableMath } from "../libraries/StableMath.sol";
@@ -45,9 +45,9 @@ contract USDs is Initializable, InitializableERC20Detailed, OwnableUpgradeable {
     uint256 public _totalBurnt;     // the total num of USDs burnt so far
     mapping(address => mapping(address => uint256)) private _allowances;
     address public vaultAddress;    // the address where (i) all collaterals of USDs protocol reside, e.g. USDT, USDC, ETH, etc and (ii) major actions like USDs minting are initiated
-    // an user's balance of USDs is based on her balance of "credits." 
+    // an user's balance of USDs is based on her balance of "credits."
     // in a rebase process, her USDs balance will change according to her credit balance and the rebase ratio
-    mapping(address => uint256) private _creditBalances; 
+    mapping(address => uint256) private _creditBalances;
     // the total number of credits of the USDs protocol
     uint256 public rebasingCredits;
     // the rebase ratio = num of credits / num of USDs
@@ -56,7 +56,7 @@ contract USDs is Initializable, InitializableERC20Detailed, OwnableUpgradeable {
     // do not receive yield unless they explicitly opt in)
     uint256 public nonRebasingSupply;   // num of USDs that are not affected by rebase
     mapping(address => uint256) public nonRebasingCreditsPerToken; // the rebase ratio of non-rebasing accounts just before they opt out
-    mapping(address => RebaseOptions) public rebaseState;          // the rebase state of each account, i.e. opt in or opt out 
+    mapping(address => RebaseOptions) public rebaseState;          // the rebase state of each account, i.e. opt in or opt out
 
     function initialize(
         string calldata _nameArg,
@@ -477,7 +477,7 @@ contract USDs is Initializable, InitializableERC20Detailed, OwnableUpgradeable {
         external
         onlyVault
     {
-        require(_totalSupply > 0, "Cannot increase 0 supply"); 
+        require(_totalSupply > 0, "Cannot increase 0 supply");
 
         // special case: if the total supply remains the same
         if (_totalSupply == _newTotalSupply) {

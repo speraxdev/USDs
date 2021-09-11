@@ -1,6 +1,6 @@
 const { deployProxy, upgradeProxy, prepareUpgrade } = require('@openzeppelin/truffle-upgrades');
 
-var Oracle = artifacts.require("../contracts/oracle/Oracle.sol");
+var OracleGenesis = artifacts.require("../contracts/oracle/OracleGenesis.sol");
 
 
 
@@ -9,7 +9,7 @@ var Oracle = artifacts.require("../contracts/oracle/Oracle.sol");
 
 
 module.exports = async function(deployer) {
-	const oracle = await deployProxy(Oracle, [], { deployer });
+	const oracle = await deployProxy(OracleGenesis, [], { deployer });
 
 
 	//

@@ -12,5 +12,5 @@ interface IOracle {
     function getUSDsPrice_prec() external view returns (uint);
     function updateInOutRatio() external;
     function USDsInOutRatio() external view returns (uint);
-    function USDsInOutRatio_prec() external view returns (uint);
+    function USDsInOutRatio_prec() external view returns (uint32);
 }

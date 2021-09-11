@@ -10,18 +10,18 @@
     "migrate:arbitrum": "truffle migrate --config truffle-config.arbitrum.js --network $npm_config_network"
   },
   "dependencies": {
-    "@chainlink/contracts": "^0.1.7",
+    "@chainlink/contracts": "^0.2.1",
     "@openzeppelin/contracts": "^3.4.0",
     "@openzeppelin/contracts-upgradeable": "^3.4.0",
-    "@truffle/hdwallet-provider": "^1.4.0",
+    "@truffle/hdwallet-provider": "^1.0.37",
     "@uniswap/v3-core": "^1.0.0",
     "dotenv": "^10.0.0",
-    "truffle-contract-size": "^2.0.1",
-    "truffle-plugin-verify": "^0.5.11",
-    "web3": "^1.5.2"
+    "scryptsy": "^2.1.0",
+    "truffle": "^5.1.65",
+    "truffle-flattener": "^1.5.0",
+    "truffle-plugin-verify": "^0.5.15"
   },
   "devDependencies": {
-    "@openzeppelin/truffle-upgrades": "^1.8.0",
-    "eth-gas-reporter": "^0.2.22"
+    "@openzeppelin/truffle-upgrades": "^1.8.0"
   }
 }

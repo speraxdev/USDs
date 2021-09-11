@@ -28,27 +28,27 @@
       "type": "function"
     }
   ],
-  "metadata": "{\"compiler\":{\"version\":\"0.6.12+commit.27d51765\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[],\"name\":\"decimals\",\"outputs\":[{\"internalType\":\"uint8\",\"name\":\"\",\"type\":\"uint8\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"symbol\",\"outputs\":[{\"internalType\":\"string\",\"name\":\"\",\"type\":\"string\"}],\"stateMutability\":\"view\",\"type\":\"function\"}],\"devdoc\":{\"kind\":\"dev\",\"methods\":{},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{},\"version\":1}},\"settings\":{\"compilationTarget\":{\"/Volumes/Work/Sperax/USDs/contracts/interfaces/IBasicToken.sol\":\"IBasicToken\"},\"evmVersion\":\"istanbul\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\"},\"optimizer\":{\"enabled\":false,\"runs\":200},\"remappings\":[]},\"sources\":{\"/Volumes/Work/Sperax/USDs/contracts/interfaces/IBasicToken.sol\":{\"keccak256\":\"0x9355475f14f6b4a9ddb537e8a29a51e57b05ea3aaf678c5b830ee20ee0ad05d9\",\"urls\":[\"bzz-raw://7f3ed501a01d49a9dc39fcf42a8a2e287f03f3aae2080c2b0e1897d9953ea23f\",\"dweb:/ipfs/QmckvWPNEkYdHaCRyioroVoNs6TAt9qMFiS8dSPSQNecqH\"]}},\"version\":1}",
+  "metadata": "{\"compiler\":{\"version\":\"0.6.12+commit.27d51765\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[],\"name\":\"decimals\",\"outputs\":[{\"internalType\":\"uint8\",\"name\":\"\",\"type\":\"uint8\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"symbol\",\"outputs\":[{\"internalType\":\"string\",\"name\":\"\",\"type\":\"string\"}],\"stateMutability\":\"view\",\"type\":\"function\"}],\"devdoc\":{\"kind\":\"dev\",\"methods\":{},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{},\"version\":1}},\"settings\":{\"compilationTarget\":{\"/Users/daweizhao/Documents/Sperax/USDs/USDs github/USDs/contracts/interfaces/IBasicToken.sol\":\"IBasicToken\"},\"evmVersion\":\"istanbul\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\"},\"optimizer\":{\"enabled\":false,\"runs\":200},\"remappings\":[]},\"sources\":{\"/Users/daweizhao/Documents/Sperax/USDs/USDs github/USDs/contracts/interfaces/IBasicToken.sol\":{\"keccak256\":\"0x9355475f14f6b4a9ddb537e8a29a51e57b05ea3aaf678c5b830ee20ee0ad05d9\",\"urls\":[\"bzz-raw://7f3ed501a01d49a9dc39fcf42a8a2e287f03f3aae2080c2b0e1897d9953ea23f\",\"dweb:/ipfs/QmckvWPNEkYdHaCRyioroVoNs6TAt9qMFiS8dSPSQNecqH\"]}},\"version\":1}",
   "bytecode": "0x",
   "deployedBytecode": "0x",
   "immutableReferences": {},
   "sourceMap": "",
   "deployedSourceMap": "",
   "source": "pragma solidity >=0.5.11;\n\ninterface IBasicToken {\n    function symbol() external view returns (string memory);\n\n    function decimals() external view returns (uint8);\n}\n",
-  "sourcePath": "/Volumes/Work/Sperax/USDs/contracts/interfaces/IBasicToken.sol",
+  "sourcePath": "/Users/daweizhao/Documents/Sperax/USDs/USDs github/USDs/contracts/interfaces/IBasicToken.sol",
   "ast": {
-    "absolutePath": "/Volumes/Work/Sperax/USDs/contracts/interfaces/IBasicToken.sol",
+    "absolutePath": "/Users/daweizhao/Documents/Sperax/USDs/USDs github/USDs/contracts/interfaces/IBasicToken.sol",
     "exportedSymbols": {
       "IBasicToken": [
-        311
+        215
       ]
     },
-    "id": 312,
+    "id": 216,
     "license": null,
     "nodeType": "SourceUnit",
     "nodes": [
       {
-        "id": 300,
+        "id": 204,
         "literals": [
           "solidity",
           ">=",
@@ -65,9 +65,9 @@
         "contractKind": "interface",
         "documentation": null,
         "fullyImplemented": false,
-        "id": 311,
+        "id": 215,
         "linearizedBaseContracts": [
-          311
+          215
         ],
         "name": "IBasicToken",
         "nodeType": "ContractDefinition",
@@ -76,7 +76,7 @@
             "body": null,
             "documentation": null,
             "functionSelector": "95d89b41",
-            "id": 305,
+            "id": 209,
             "implemented": false,
             "kind": "function",
             "modifiers": [],
@@ -84,23 +84,23 @@
             "nodeType": "FunctionDefinition",
             "overrides": null,
             "parameters": {
-              "id": 301,
+              "id": 205,
               "nodeType": "ParameterList",
               "parameters": [],
               "src": "70:2:4"
             },
             "returnParameters": {
-              "id": 304,
+              "id": 208,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 303,
+                  "id": 207,
                   "mutability": "mutable",
                   "name": "",
                   "nodeType": "VariableDeclaration",
                   "overrides": null,
-                  "scope": 305,
+                  "scope": 209,
                   "src": "96:13:4",
                   "stateVariable": false,
                   "storageLocation": "memory",
@@ -109,7 +109,7 @@
                     "typeString": "string"
                   },
                   "typeName": {
-                    "id": 302,
+                    "id": 206,
                     "name": "string",
                     "nodeType": "ElementaryTypeName",
                     "src": "96:6:4",
@@ -124,7 +124,7 @@
               ],
               "src": "95:15:4"
             },
-            "scope": 311,
+            "scope": 215,
             "src": "55:56:4",
             "stateMutability": "view",
             "virtual": false,
@@ -134,7 +134,7 @@
             "body": null,
             "documentation": null,
             "functionSelector": "313ce567",
-            "id": 310,
+            "id": 214,
             "implemented": false,
             "kind": "function",
             "modifiers": [],
@@ -142,23 +142,23 @@
             "nodeType": "FunctionDefinition",
             "overrides": null,
             "parameters": {
-              "id": 306,
+              "id": 210,
               "nodeType": "ParameterList",
               "parameters": [],
               "src": "134:2:4"
             },
             "returnParameters": {
-              "id": 309,
+              "id": 213,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 308,
+                  "id": 212,
                   "mutability": "mutable",
                   "name": "",
                   "nodeType": "VariableDeclaration",
                   "overrides": null,
-                  "scope": 310,
+                  "scope": 214,
                   "src": "160:5:4",
                   "stateVariable": false,
                   "storageLocation": "default",
@@ -167,7 +167,7 @@
                     "typeString": "uint8"
                   },
                   "typeName": {
-                    "id": 307,
+                    "id": 211,
                     "name": "uint8",
                     "nodeType": "ElementaryTypeName",
                     "src": "160:5:4",
@@ -182,14 +182,14 @@
               ],
               "src": "159:7:4"
             },
-            "scope": 311,
+            "scope": 215,
             "src": "117:50:4",
             "stateMutability": "view",
             "virtual": false,
             "visibility": "external"
           }
         ],
-        "scope": 312,
+        "scope": 216,
         "src": "27:142:4"
       }
     ],
@@ -197,10 +197,10 @@
   },
   "legacyAST": {
     "attributes": {
-      "absolutePath": "/Volumes/Work/Sperax/USDs/contracts/interfaces/IBasicToken.sol",
+      "absolutePath": "/Users/daweizhao/Documents/Sperax/USDs/USDs github/USDs/contracts/interfaces/IBasicToken.sol",
       "exportedSymbols": {
         "IBasicToken": [
-          311
+          215
         ]
       },
       "license": null
@@ -215,7 +215,7 @@
             ".11"
           ]
         },
-        "id": 300,
+        "id": 204,
         "name": "PragmaDirective",
         "src": "0:25:4"
       },
@@ -232,10 +232,10 @@
           "documentation": null,
           "fullyImplemented": false,
           "linearizedBaseContracts": [
-            311
+            215
           ],
           "name": "IBasicToken",
-          "scope": 312
+          "scope": 216
         },
         "children": [
           {
@@ -251,7 +251,7 @@
               ],
               "name": "symbol",
               "overrides": null,
-              "scope": 311,
+              "scope": 215,
               "stateMutability": "view",
               "virtual": false,
               "visibility": "external"
@@ -264,7 +264,7 @@
                   ]
                 },
                 "children": [],
-                "id": 301,
+                "id": 205,
                 "name": "ParameterList",
                 "src": "70:2:4"
               },
@@ -276,7 +276,7 @@
                       "mutability": "mutable",
                       "name": "",
                       "overrides": null,
-                      "scope": 305,
+                      "scope": 209,
                       "stateVariable": false,
                       "storageLocation": "memory",
                       "type": "string",
@@ -289,22 +289,22 @@
                           "name": "string",
                           "type": "string"
                         },
-                        "id": 302,
+                        "id": 206,
                         "name": "ElementaryTypeName",
                         "src": "96:6:4"
                       }
                     ],
-                    "id": 303,
+                    "id": 207,
                     "name": "VariableDeclaration",
                     "src": "96:13:4"
                   }
                 ],
-                "id": 304,
+                "id": 208,
                 "name": "ParameterList",
                 "src": "95:15:4"
               }
             ],
-            "id": 305,
+            "id": 209,
             "name": "FunctionDefinition",
             "src": "55:56:4"
           },
@@ -321,7 +321,7 @@
               ],
               "name": "decimals",
               "overrides": null,
-              "scope": 311,
+              "scope": 215,
               "stateMutability": "view",
               "virtual": false,
               "visibility": "external"
@@ -334,7 +334,7 @@
                   ]
                 },
                 "children": [],
-                "id": 306,
+                "id": 210,
                 "name": "ParameterList",
                 "src": "134:2:4"
               },
@@ -346,7 +346,7 @@
                       "mutability": "mutable",
                       "name": "",
                       "overrides": null,
-                      "scope": 310,
+                      "scope": 214,
                       "stateVariable": false,
                       "storageLocation": "default",
                       "type": "uint8",
@@ -359,32 +359,32 @@
                           "name": "uint8",
                           "type": "uint8"
                         },
-                        "id": 307,
+                        "id": 211,
                         "name": "ElementaryTypeName",
                         "src": "160:5:4"
                       }
                     ],
-                    "id": 308,
+                    "id": 212,
                     "name": "VariableDeclaration",
                     "src": "160:5:4"
                   }
                 ],
-                "id": 309,
+                "id": 213,
                 "name": "ParameterList",
                 "src": "159:7:4"
               }
             ],
-            "id": 310,
+            "id": 214,
             "name": "FunctionDefinition",
             "src": "117:50:4"
           }
         ],
-        "id": 311,
+        "id": 215,
         "name": "ContractDefinition",
         "src": "27:142:4"
       }
     ],
-    "id": 312,
+    "id": 216,
     "name": "SourceUnit",
     "src": "0:170:4"
   },
@@ -393,8 +393,8 @@
     "version": "0.6.12+commit.27d51765.Emscripten.clang"
   },
   "networks": {},
-  "schemaVersion": "3.4.0",
-  "updatedAt": "2021-08-05T12:49:24.246Z",
+  "schemaVersion": "3.3.4",
+  "updatedAt": "2021-09-11T02:34:53.142Z",
   "devdoc": {
     "kind": "dev",
     "methods": {},

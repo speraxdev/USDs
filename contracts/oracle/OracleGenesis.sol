@@ -24,7 +24,7 @@ import "../libraries/OracleLibrary.sol";
  * @dev this contract draws insights from "ExampleOracleSimple.sol" by UniswapV2 team
  */
 
-contract Oracle is Initializable, IOracle, OwnableUpgradeable {
+contract OracleGenesis is Initializable, IOracle, OwnableUpgradeable {
     using SafeMathUpgradeable for *;
     using OracleLibrary for *;
 
@@ -157,17 +157,17 @@ contract Oracle is Initializable, IOracle, OwnableUpgradeable {
     }
 
     function getUSDsPrice() external view override returns (uint) {
-        int24 timeWeightedAverageTick = USDsOraclePool.consult(3600);
-        uint quoteAmount = timeWeightedAverageTick.getQuoteAtTick(10**18, VaultAddr, USDsOracleBaseTokenAddr);
-        uint USDsPrice = _getCollateralPrice(USDsOracleBaseTokenAddr).mul(USDsPrice_prec).mul(quoteAmount).div(_getCollateralPrice_prec(USDsOracleBaseTokenAddr));
-        return USDsPrice;
+        // int24 timeWeightedAverageTick = USDsOraclePool.consult(3600);
+        // uint quoteAmount = timeWeightedAverageTick.getQuoteAtTick(10**18, VaultAddr, USDsOracleBaseTokenAddr);
+        // uint USDsPrice = _getCollateralPrice(USDsOracleBaseTokenAddr).mul(USDsPrice_prec).mul(quoteAmount).div(_getCollateralPrice_prec(USDsOracleBaseTokenAddr));
+        return 1 * USDsPrice_prec;
     }
 
     function getUSDsPrice_average() external view override returns (uint) {
-        int24 timeWeightedAverageTick = USDsOraclePool.consult(86400);
-        uint quoteAmount = timeWeightedAverageTick.getQuoteAtTick(10**18, VaultAddr, USDsOracleBaseTokenAddr);
-        uint USDsPrice_average = _getCollateralPrice(USDsOracleBaseTokenAddr).mul(USDsPrice_prec).mul(quoteAmount).div(_getCollateralPrice_prec(USDsOracleBaseTokenAddr));
-        return USDsPrice_average;
+        // int24 timeWeightedAverageTick = USDsOraclePool.consult(86400);
+        // uint quoteAmount = timeWeightedAverageTick.getQuoteAtTick(10**18, VaultAddr, USDsOracleBaseTokenAddr);
+        // uint USDsPrice_average = _getCollateralPrice(USDsOracleBaseTokenAddr).mul(USDsPrice_prec).mul(quoteAmount).div(_getCollateralPrice_prec(USDsOracleBaseTokenAddr));
+        return 1 * USDsPrice_prec;
     }
 
     function getCollateralPrice_prec(address collateralAddr) external view override returns (uint) {
