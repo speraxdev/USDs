@@ -8,56 +8,59 @@
 //TO-DO: remove for testing purposes files
 pragma solidity ^0.6.12;
 
-import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/token/ERC20/SafeERC20Upgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
+//import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+//import "https://github.com/OpenZeppelin/openzeppelin-contracts-upgradeable/blob/v3.4.0/contracts/access/OwnableUpgradeable.sol";
+import "../libraries/openzeppelin/OwnableUpgradeable.sol";
+//import "@openzeppelin/contracts-upgradeable/token/ERC20/SafeERC20Upgradeable.sol";
+//import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 
 import "../libraries/Helpers.sol";
-import "../interfaces/IOracle.sol";
+//import "../interfaces/IOracle.sol";
 import "../interfaces/ISperaxToken.sol";
 import "../interfaces/IStrategy.sol";
 import "../libraries/VaultCoreLibrary.sol";
 import "../token/USDs.sol";
-import "../libraries/BancorFormula.sol";
+//import "../libraries/BancorFormula.sol";
 import "../interfaces/IBuyback.sol";
+import "../interfaces/IVaultCore.sol";
 
-contract VaultCore is Initializable, OwnableUpgradeable {
+contract VaultCore is Initializable, OwnableUpgradeable, IVaultCore {
 	using SafeERC20Upgradeable for ERC20Upgradeable;
 	using SafeMathUpgradeable for uint;
 	using StableMath for uint;
 
-	bool public mintRedeemAllowed;
-	bool public allocationAllowed;
-	bool public rebaseAllowed;
-	bool public swapfeeInAllowed;
-	bool public swapfeeOutAllowed;
+	bool public override mintRedeemAllowed;
+	bool public override allocationAllowed;
+	bool public override rebaseAllowed;
+	bool public override swapfeeInAllowed;
+	bool public override swapfeeOutAllowed;
 	address public SPAaddr;
-	address public oracleAddr;
+	address public override oracleAddr;
 	address public SPAvault;
 	USDs USDsInstance;
-	BancorFormula public BancorInstance;
-	uint public startBlockHeight;
+	BancorFormula public override BancorInstance;
+	uint public override startBlockHeight;
 	uint public SPAminted;
 	uint public SPAburnt;
-	uint32 public chi_alpha;
-	uint64 public constant chi_alpha_prec = 10**12;
-	uint64 public constant chi_prec = 10**12;
-	uint64 public chiInit;
-	uint32 public chi_beta;
-	uint16 public constant chi_beta_prec = 10**4;
-	uint32 public chi_gamma;
-	uint16 public constant chi_gamma_prec = 10**4;
-	uint64 public constant swapFee_prec = 10**12;
-	uint32 public swapFee_p;
-	uint16 public constant swapFee_p_prec = 10**4;
-	uint32 public swapFee_theta;
-	uint16 public constant swapFee_theta_prec = 10**4;
-	uint32 public swapFee_a;
-	uint16 public constant swapFee_a_prec = 10**4;
-	uint32 public swapFee_A;
-	uint16 public constant swapFee_A_prec = 10**4;
-	uint32 public allocatePrecentage;
-	uint16 public constant allocatePrecentage_prec = 10**4;
+	uint32 public override chi_alpha;
+	uint64 public override constant chi_alpha_prec = 10**12;
+	uint64 public override constant chi_prec = 10**12;
+	uint64 public override chiInit;
+	uint32 public override chi_beta;
+	uint16 public override constant chi_beta_prec = 10**4;
+	uint32 public override chi_gamma;
+	uint16 public override constant chi_gamma_prec = 10**4;
+	uint64 public override constant swapFee_prec = 10**12;
+	uint32 public override swapFee_p;
+	uint16 public override constant swapFee_p_prec = 10**4;
+	uint32 public override swapFee_theta;
+	uint16 public override constant swapFee_theta_prec = 10**4;
+	uint32 public override swapFee_a;
+	uint16 public override constant swapFee_a_prec = 10**4;
+	uint32 public override swapFee_A;
+	uint16 public override constant swapFee_A_prec = 10**4;
+	uint32 public override allocatePrecentage;
+	uint16 public override constant allocatePrecentage_prec = 10**4;
 
 	event parametersUpdated(uint64 _chiInit, uint32 _chi_beta, uint32 _chi_gamma, uint32 _swapFee_p, uint32 _swapFee_theta, uint32 _swapFee_a, uint32 _swapFee_A, uint32 _allocatePrecentage);
 	event USDsMinted(address indexed wallet, uint indexed USDsAmt, uint collateralAmt, uint SPAsAmt, uint feeAmt);
@@ -67,8 +70,7 @@ contract VaultCore is Initializable, OwnableUpgradeable {
 	event StrategyInfoChanged(address strategyAddr, bool enabled);
 	event MintRedeemPermssionChanged(bool indexed permission);
 	event AllocationPermssionChanged(bool indexed permission);
-	event SwapFeeInPermissionChanged(bool indexed permission);
-	event SwapFeeOutPermissionChanged(bool indexed permission);
+	event SwapFeeInOutPermissionChanged(bool indexed swapfeeInAllowed, bool indexed swapfeeOutAllowed);
 
 	/**
 	 * @dev check if USDs mint & redeem are both allowed
@@ -169,16 +171,10 @@ contract VaultCore is Initializable, OwnableUpgradeable {
 	/**
 	 * @dev disable swapInFee, i.e. mint becomes free
 	 */
-	function updateSwapInFee(bool _swapfeeInAllowed) external onlyOwner {
+	function updateSwapInOutFeePermission(bool _swapfeeInAllowed, bool _swapfeeOutAllowed) external onlyOwner {
 		swapfeeInAllowed = _swapfeeInAllowed;
-		emit SwapFeeInPermissionChanged(swapfeeInAllowed);
-	}
-	/**
-	 * @dev disable swapOutFee, i.e. redeem becomes free
-	 */
-	function updateSwapOutFee(bool _swapfeeOutAllowed) external onlyOwner {
 		swapfeeOutAllowed = _swapfeeOutAllowed;
-		emit SwapFeeOutPermissionChanged(swapfeeOutAllowed);
+		emit SwapFeeInOutPermissionChanged(swapfeeInAllowed, swapfeeOutAllowed);
 	}
 
 	function updateCollateralInfo(address _collateralAddr, bool _supported, address _defaultStrategyAddr, bool _allocationAllowed, address _buyBackAddr, bool _rebaseAllowed) external onlyOwner {
@@ -378,7 +374,7 @@ contract VaultCore is Initializable, OwnableUpgradeable {
 	//  * @dev  _precision: same as chi (chi_prec)
 	//  */
 	//
-	function collateralRatio() public view returns (uint ratio) {
+	function collateralRatio() public view override returns (uint ratio) {
 		uint totalValueLocked = _totalValueLocked();
 		uint USDsSupply = USDsInstance.totalSupply();
 		uint priceUSDs = uint(IOracle(oracleAddr).getUSDsPrice());

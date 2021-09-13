@@ -16,8 +16,9 @@ pragma solidity ^0.6.12;
 import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-
+//import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+//import "https://github.com/OpenZeppelin/openzeppelin-contracts-upgradeable/blob/v3.4.0/contracts/access/OwnableUpgradeable.sol";
+import "../libraries/openzeppelin/OwnableUpgradeable.sol";
 import { InitializableERC20Detailed } from "../libraries/InitializableERC20Detailed.sol";
 import { StableMath } from "../libraries/StableMath.sol";
 
