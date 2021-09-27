@@ -153,25 +153,24 @@ contract Oracle is Initializable, IOracle, OwnableUpgradeable {
 
     function getSPAprice() external view override returns (uint) {
         int24 timeWeightedAverageTick = SPAoraclePool.consult(3600);
-        uint quoteAmount = timeWeightedAverageTick.getQuoteAtTick(10**18, SPAaddr, SPAoracleBaseTokenAddr);
-        uint SPAprice = _getETHprice().mul(SPAprice_prec).mul(quoteAmount).div(ETHprice_prec);
+        uint quoteAmount = timeWeightedAverageTick.getQuoteAtTick(uint128(SPAprice_prec), SPAaddr, SPAoracleBaseTokenAddr);
+        uint SPAprice = _getETHprice().mul(quoteAmount).div(ETHprice_prec);
         return SPAprice;
     }
 
     function getUSDsPrice() external view override returns (uint) {
         int24 timeWeightedAverageTick = USDsOraclePool.consult(3600);
-        uint quoteAmount = timeWeightedAverageTick.getQuoteAtTick(10**18, VaultAddr, USDsOracleBaseTokenAddr);
-        uint USDsPrice = _getCollateralPrice(USDsOracleBaseTokenAddr).mul(USDsPrice_prec).mul(quoteAmount).div(_getCollateralPrice_prec(USDsOracleBaseTokenAddr));
+        uint quoteAmount = timeWeightedAverageTick.getQuoteAtTick(uint128(USDsPrice_prec), VaultAddr, USDsOracleBaseTokenAddr);
+        uint USDsPrice = _getCollateralPrice(USDsOracleBaseTokenAddr).mul(quoteAmount).div(_getCollateralPrice_prec(USDsOracleBaseTokenAddr));
         return USDsPrice;
     }
 
     function getUSDsPrice_average() external view override returns (uint) {
         int24 timeWeightedAverageTick = USDsOraclePool.consult(86400);
-        uint quoteAmount = timeWeightedAverageTick.getQuoteAtTick(10**18, VaultAddr, USDsOracleBaseTokenAddr);
-        uint USDsPrice_average = _getCollateralPrice(USDsOracleBaseTokenAddr).mul(USDsPrice_prec).mul(quoteAmount).div(_getCollateralPrice_prec(USDsOracleBaseTokenAddr));
+        uint quoteAmount = timeWeightedAverageTick.getQuoteAtTick(uint128(USDsPrice_prec), VaultAddr, USDsOracleBaseTokenAddr);
+        uint USDsPrice_average = _getCollateralPrice(USDsOracleBaseTokenAddr).mul(quoteAmount).div(_getCollateralPrice_prec(USDsOracleBaseTokenAddr));
         return USDsPrice_average;
     }
-
     function getCollateralPrice_prec(address collateralAddr) external view override returns (uint) {
         collateralStruct memory  collateralInfo = collateralsInfo[collateralAddr];
         require(collateralInfo.supported, "getCollateralPrice_prec: Collateral not supported.");
