@@ -310,6 +310,17 @@ contract VaultCore is Initializable, OwnableUpgradeable, IVaultCore {
 		_redeem(collateralAddr, USDsAmt, slippageCollat, slippageSPA, deadline);
 	}
 
+	/**
+	 *
+	 */
+	function redeemWithEth(uint USDsAmt, uint slippageEth, uint slippageSPA, uint deadline)
+		public
+		whenMintRedeemAllowed
+	{
+		require(USDsAmt > 0, "Amount needs to be greater than 0");
+		_redeem(address(0), USDsAmt, slippageEth, slippageSPA, deadline);
+	}
+
 	function _redeem(
 		address collateralAddr,
 		uint USDsAmt,
@@ -327,7 +338,13 @@ contract VaultCore is Initializable, OwnableUpgradeable, IVaultCore {
 
 		ISperaxToken(SPAaddr).mintForUSDs(msg.sender, SPAMintAmt);
 		SPAminted = SPAminted.add(SPAMintAmt);
-		ERC20Upgradeable(collateralAddr).safeTransfer(msg.sender, collateralUnlockedAmt);
+
+		if (collateralAddr == address(0)) {
+			(bool sent, ) = msg.sender.call{value: collateralUnlockedAmt}("");
+			require(sent, "Failed to send Ether");
+		} else {
+			ERC20Upgradeable(collateralAddr).safeTransfer(msg.sender, collateralUnlockedAmt);
+		}
 		USDsInstance.burn(msg.sender, USDsBurntAmt);
 		USDsInstance.transferFrom(msg.sender, address(this), swapFeeAmount);
 

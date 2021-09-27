@@ -123,10 +123,14 @@ library VaultCoreLibrary {
 			SPAMintAmt = SPAMintAmt.sub(multiplier(SPAMintAmt, swapFee, uint(_vaultContract.swapFee_prec())));
 		}
 
-		// //Unlock collaeral
+		// Unlock collaeral
 		collaUnlockAmt = multiplier(USDsAmt, chiMint(_VaultCoreContract), uint(_vaultContract.chi_prec()));
-		collaUnlockAmt = multiplier(collaUnlockAmt, IOracle(_oracleAddr).getCollateralPrice_prec(_collaAddr), IOracle(_oracleAddr).getCollateralPrice(_collaAddr));
-		collaUnlockAmt = collaUnlockAmt.div(10**(uint(18).sub(uint(ERC20Upgradeable(_collaAddr).decimals()))));
+		if (_collaAddr == address(0)) {
+			collaUnlockAmt = multiplier(collaUnlockAmt, IOracle(_oracleAddr).getCollateralPrice_prec(_collaAddr), IOracle(_oracleAddr).getCollateralPrice(_collaAddr));
+			collaUnlockAmt = collaUnlockAmt.div(10**(uint(18).sub(uint(ERC20Upgradeable(_collaAddr).decimals()))));
+		} else {
+			collaUnlockAmt = multiplier(collaUnlockAmt, IOracle(_oracleAddr).getETHprice_prec(), IOracle(_oracleAddr).getETHprice());
+		}
 
 		if (swapFee > 0) {
 			collaUnlockAmt = collaUnlockAmt.sub(multiplier(collaUnlockAmt, swapFee, uint(_vaultContract.swapFee_prec())));
