@@ -282,7 +282,7 @@ contract VaultCore is Initializable, OwnableUpgradeable, IVaultCore {
 		// slippageSPA is the maximum value of the required spa
 		require(USDsAmt >= slippageUSDs, "USDs amount is lower than the maximum slippage");
 		require(collateralDepAmt <= slippageCollat, "Collateral amount is more than the maximum slippage");
-		require(SPABurnAmt >= slippageSPA, "SPA amount is more than the maximum slippage");
+		require(SPABurnAmt <= slippageSPA, "SPA amount is more than the maximum slippage");
 		require(block.timestamp <= deadline, "Deadline expired");
 
 		// burn SPA tokens
