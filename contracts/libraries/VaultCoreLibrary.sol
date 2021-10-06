@@ -67,7 +67,7 @@ library VaultCoreLibrary {
 		// calculate chiRedeem
 		uint collateralRatio_ = _vaultContract.collateralRatio();
 		if (chiTarget_ > collateralRatio_) {
-			chiRedeem_ = chiTarget_.add(uint(_vaultContract.chi_gamma()).mul(chiTarget_ - collateralRatio_).div(uint(_vaultContract.chi_gamma_prec())));
+			chiRedeem_ = chiTarget_.sub(uint(_vaultContract.chi_gamma()).mul(chiTarget_ - collateralRatio_).div(uint(_vaultContract.chi_gamma_prec())));
 		} else {
 			chiRedeem_ = chiTarget_;
 		}
@@ -124,7 +124,7 @@ library VaultCoreLibrary {
 		}
 
 		// Unlock collaeral
-		collaUnlockAmt = multiplier(USDsAmt, chiMint(_VaultCoreContract), uint(_vaultContract.chi_prec()));
+		collaUnlockAmt = multiplier(USDsAmt, chiRedeem(_VaultCoreContract), uint(_vaultContract.chi_prec()));
 		if (_collaAddr == address(0)) {
 			collaUnlockAmt = multiplier(collaUnlockAmt, IOracle(_oracleAddr).getCollateralPrice_prec(_collaAddr), IOracle(_oracleAddr).getCollateralPrice(_collaAddr));
 			collaUnlockAmt = collaUnlockAmt.div(10**(uint(18).sub(uint(ERC20Upgradeable(_collaAddr).decimals()))));
