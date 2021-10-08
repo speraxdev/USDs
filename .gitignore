@@ -7,3 +7,4 @@ libraries/.DS_Store
 truffle-config.js
 LICENSE
 build/
+package-lock.json
