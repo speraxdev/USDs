@@ -139,7 +139,7 @@ describe("VaultCore contract", function () {
       console.log('usds changed amount', usdsAfterAmount.sub(usdsBeforeAmount).toString());
       const usdtAfterAmount = await usdtContract.balanceOf(owner.address);
       console.log('usdt changed amount', usdtAfterAmount.sub(usdtBeforeAmount).toString());
-      expect(usdtBeforeAmount.add(ethers.utils.parseUnits("25", 0))).to.equal(usdtAfterAmount);
+      expect(usdsBeforeAmount.sub(ethers.utils.parseUnits("30000", 16))).to.equal(usdsAfterAmount);
     });
 
     it("Should mint with usds reverted with mint & redeem paused", async function () {
