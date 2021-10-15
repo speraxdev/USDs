@@ -1,16 +1,16 @@
 {
   "contractName": "FullMath",
   "abi": [],
-  "metadata": "{\"compiler\":{\"version\":\"0.6.12+commit.27d51765\"},\"language\":\"Solidity\",\"output\":{\"abi\":[],\"devdoc\":{\"kind\":\"dev\",\"methods\":{},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{},\"version\":1}},\"settings\":{\"compilationTarget\":{\"/Users/daweizhao/Documents/Sperax/USDs/USDs github/USDs/contracts/libraries/FullMath.sol\":\"FullMath\"},\"evmVersion\":\"istanbul\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\"},\"optimizer\":{\"enabled\":false,\"runs\":200},\"remappings\":[]},\"sources\":{\"/Users/daweizhao/Documents/Sperax/USDs/USDs github/USDs/contracts/libraries/FullMath.sol\":{\"keccak256\":\"0xb4a3d6c2d97ecc3df2cb2602bf6f2f8d04869fa5eee3723140a2a32c2aa1d5dd\",\"urls\":[\"bzz-raw://efa15167602a1a21327871d35f285f2426253256876ad7da4b693d982b59e45f\",\"dweb:/ipfs/QmRogNVb1ArCMshRTaubNAxbrUpA4cDVmrS9JnHNufRJrc\"]}},\"version\":1}",
-  "bytecode": "0x60566023600b82828239805160001a607314601657fe5b30600052607381538281f3fe73000000000000000000000000000000000000000030146080604052600080fdfea26469706673582212202cae5431a5a3a478fee4af2120b5bfcbdb6e66f0c5167babfb2df0141ef0098264736f6c634300060c0033",
-  "deployedBytecode": "0x73000000000000000000000000000000000000000030146080604052600080fdfea26469706673582212202cae5431a5a3a478fee4af2120b5bfcbdb6e66f0c5167babfb2df0141ef0098264736f6c634300060c0033",
+  "metadata": "{\"compiler\":{\"version\":\"0.6.12+commit.27d51765\"},\"language\":\"Solidity\",\"output\":{\"abi\":[],\"devdoc\":{\"kind\":\"dev\",\"methods\":{},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{},\"version\":1}},\"settings\":{\"compilationTarget\":{\"/Volumes/Work/Sperax/USDs/contracts/libraries/FullMath.sol\":\"FullMath\"},\"evmVersion\":\"istanbul\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\"},\"optimizer\":{\"enabled\":true,\"runs\":200},\"remappings\":[]},\"sources\":{\"/Volumes/Work/Sperax/USDs/contracts/libraries/FullMath.sol\":{\"keccak256\":\"0xb4a3d6c2d97ecc3df2cb2602bf6f2f8d04869fa5eee3723140a2a32c2aa1d5dd\",\"urls\":[\"bzz-raw://efa15167602a1a21327871d35f285f2426253256876ad7da4b693d982b59e45f\",\"dweb:/ipfs/QmRogNVb1ArCMshRTaubNAxbrUpA4cDVmrS9JnHNufRJrc\"]}},\"version\":1}",
+  "bytecode": "0x60566023600b82828239805160001a607314601657fe5b30600052607381538281f3fe73000000000000000000000000000000000000000030146080604052600080fdfea2646970667358221220f8b2feb50009e5210f4cae0b4b417f3c06a82abb9b4bb6d479c7aea489ae9d5164736f6c634300060c0033",
+  "deployedBytecode": "0x73000000000000000000000000000000000000000030146080604052600080fdfea2646970667358221220f8b2feb50009e5210f4cae0b4b417f3c06a82abb9b4bb6d479c7aea489ae9d5164736f6c634300060c0033",
   "immutableReferences": {},
   "sourceMap": "156:1079:17:-:0;;;;;;;;;;;;;;;;;;;;;;;;;",
   "deployedSourceMap": "156:1079:17:-:0;;;;;;;;",
   "source": "\npragma solidity >=0.4.0;\n\n// taken from https://medium.com/coinmonks/math-in-solidity-part-3-percents-and-proportions-4db014e080b1\n// license is CC-BY-4.0\nlibrary FullMath {\n    function fullMul(uint256 x, uint256 y) internal pure returns (uint256 l, uint256 h) {\n        uint256 mm = mulmod(x, y, uint256(-1));\n        l = x * y;\n        h = mm - l;\n        if (mm < l) h -= 1;\n    }\n\n    function fullDiv(\n        uint256 l,\n        uint256 h,\n        uint256 d\n    ) private pure returns (uint256) {\n        uint256 pow2 = d & -d;\n        d /= pow2;\n        l /= pow2;\n        l += h * ((-pow2) / pow2 + 1);\n        uint256 r = 1;\n        r *= 2 - d * r;\n        r *= 2 - d * r;\n        r *= 2 - d * r;\n        r *= 2 - d * r;\n        r *= 2 - d * r;\n        r *= 2 - d * r;\n        r *= 2 - d * r;\n        r *= 2 - d * r;\n        return l * r;\n    }\n\n    function mulDiv(\n        uint256 x,\n        uint256 y,\n        uint256 d\n    ) internal pure returns (uint256) {\n        (uint256 l, uint256 h) = fullMul(x, y);\n\n        uint256 mm = mulmod(x, y, d);\n        if (mm > l) h -= 1;\n        l -= mm;\n\n        if (h == 0) return l / d;\n\n        require(h < d, 'FullMath: FULLDIV_OVERFLOW');\n        return fullDiv(l, h, d);\n    }\n}\n",
-  "sourcePath": "/Users/daweizhao/Documents/Sperax/USDs/USDs github/USDs/contracts/libraries/FullMath.sol",
+  "sourcePath": "/Volumes/Work/Sperax/USDs/contracts/libraries/FullMath.sol",
   "ast": {
-    "absolutePath": "/Users/daweizhao/Documents/Sperax/USDs/USDs github/USDs/contracts/libraries/FullMath.sol",
+    "absolutePath": "/Volumes/Work/Sperax/USDs/contracts/libraries/FullMath.sol",
     "exportedSymbols": {
       "FullMath": [
         4335
@@ -3075,7 +3075,7 @@
   },
   "legacyAST": {
     "attributes": {
-      "absolutePath": "/Users/daweizhao/Documents/Sperax/USDs/USDs github/USDs/contracts/libraries/FullMath.sol",
+      "absolutePath": "/Volumes/Work/Sperax/USDs/contracts/libraries/FullMath.sol",
       "exportedSymbols": {
         "FullMath": [
           4335
@@ -6351,8 +6351,8 @@
     "version": "0.6.12+commit.27d51765.Emscripten.clang"
   },
   "networks": {},
-  "schemaVersion": "3.3.4",
-  "updatedAt": "2021-09-11T02:34:53.665Z",
+  "schemaVersion": "3.4.0",
+  "updatedAt": "2021-10-15T18:31:40.575Z",
   "devdoc": {
     "kind": "dev",
     "methods": {},

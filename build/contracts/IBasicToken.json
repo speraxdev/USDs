@@ -28,16 +28,16 @@
       "type": "function"
     }
   ],
-  "metadata": "{\"compiler\":{\"version\":\"0.6.12+commit.27d51765\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[],\"name\":\"decimals\",\"outputs\":[{\"internalType\":\"uint8\",\"name\":\"\",\"type\":\"uint8\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"symbol\",\"outputs\":[{\"internalType\":\"string\",\"name\":\"\",\"type\":\"string\"}],\"stateMutability\":\"view\",\"type\":\"function\"}],\"devdoc\":{\"kind\":\"dev\",\"methods\":{},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{},\"version\":1}},\"settings\":{\"compilationTarget\":{\"/Users/daweizhao/Documents/Sperax/USDs/USDs github/USDs/contracts/interfaces/IBasicToken.sol\":\"IBasicToken\"},\"evmVersion\":\"istanbul\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\"},\"optimizer\":{\"enabled\":false,\"runs\":200},\"remappings\":[]},\"sources\":{\"/Users/daweizhao/Documents/Sperax/USDs/USDs github/USDs/contracts/interfaces/IBasicToken.sol\":{\"keccak256\":\"0x9355475f14f6b4a9ddb537e8a29a51e57b05ea3aaf678c5b830ee20ee0ad05d9\",\"urls\":[\"bzz-raw://7f3ed501a01d49a9dc39fcf42a8a2e287f03f3aae2080c2b0e1897d9953ea23f\",\"dweb:/ipfs/QmckvWPNEkYdHaCRyioroVoNs6TAt9qMFiS8dSPSQNecqH\"]}},\"version\":1}",
+  "metadata": "{\"compiler\":{\"version\":\"0.6.12+commit.27d51765\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[],\"name\":\"decimals\",\"outputs\":[{\"internalType\":\"uint8\",\"name\":\"\",\"type\":\"uint8\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"symbol\",\"outputs\":[{\"internalType\":\"string\",\"name\":\"\",\"type\":\"string\"}],\"stateMutability\":\"view\",\"type\":\"function\"}],\"devdoc\":{\"kind\":\"dev\",\"methods\":{},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{},\"version\":1}},\"settings\":{\"compilationTarget\":{\"/Volumes/Work/Sperax/USDs/contracts/interfaces/IBasicToken.sol\":\"IBasicToken\"},\"evmVersion\":\"istanbul\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\"},\"optimizer\":{\"enabled\":true,\"runs\":200},\"remappings\":[]},\"sources\":{\"/Volumes/Work/Sperax/USDs/contracts/interfaces/IBasicToken.sol\":{\"keccak256\":\"0x9355475f14f6b4a9ddb537e8a29a51e57b05ea3aaf678c5b830ee20ee0ad05d9\",\"urls\":[\"bzz-raw://7f3ed501a01d49a9dc39fcf42a8a2e287f03f3aae2080c2b0e1897d9953ea23f\",\"dweb:/ipfs/QmckvWPNEkYdHaCRyioroVoNs6TAt9qMFiS8dSPSQNecqH\"]}},\"version\":1}",
   "bytecode": "0x",
   "deployedBytecode": "0x",
   "immutableReferences": {},
   "sourceMap": "",
   "deployedSourceMap": "",
   "source": "pragma solidity >=0.5.11;\n\ninterface IBasicToken {\n    function symbol() external view returns (string memory);\n\n    function decimals() external view returns (uint8);\n}\n",
-  "sourcePath": "/Users/daweizhao/Documents/Sperax/USDs/USDs github/USDs/contracts/interfaces/IBasicToken.sol",
+  "sourcePath": "/Volumes/Work/Sperax/USDs/contracts/interfaces/IBasicToken.sol",
   "ast": {
-    "absolutePath": "/Users/daweizhao/Documents/Sperax/USDs/USDs github/USDs/contracts/interfaces/IBasicToken.sol",
+    "absolutePath": "/Volumes/Work/Sperax/USDs/contracts/interfaces/IBasicToken.sol",
     "exportedSymbols": {
       "IBasicToken": [
         215
@@ -197,7 +197,7 @@
   },
   "legacyAST": {
     "attributes": {
-      "absolutePath": "/Users/daweizhao/Documents/Sperax/USDs/USDs github/USDs/contracts/interfaces/IBasicToken.sol",
+      "absolutePath": "/Volumes/Work/Sperax/USDs/contracts/interfaces/IBasicToken.sol",
       "exportedSymbols": {
         "IBasicToken": [
           215
@@ -393,8 +393,8 @@
     "version": "0.6.12+commit.27d51765.Emscripten.clang"
   },
   "networks": {},
-  "schemaVersion": "3.3.4",
-  "updatedAt": "2021-09-11T02:34:53.142Z",
+  "schemaVersion": "3.4.0",
+  "updatedAt": "2021-10-15T18:31:40.143Z",
   "devdoc": {
     "kind": "dev",
     "methods": {},

@@ -1,16 +1,16 @@
 {
   "contractName": "UniswapV2OracleLibrary",
   "abi": [],
-  "metadata": "{\"compiler\":{\"version\":\"0.6.12+commit.27d51765\"},\"language\":\"Solidity\",\"output\":{\"abi\":[],\"devdoc\":{\"kind\":\"dev\",\"methods\":{},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{},\"version\":1}},\"settings\":{\"compilationTarget\":{\"/Users/daweizhao/Documents/Sperax/USDs/USDs github/USDs/contracts/libraries/UniswapV2OracleLibrary.sol\":\"UniswapV2OracleLibrary\"},\"evmVersion\":\"istanbul\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\"},\"optimizer\":{\"enabled\":false,\"runs\":200},\"remappings\":[]},\"sources\":{\"/Users/daweizhao/Documents/Sperax/USDs/USDs github/USDs/contracts/interfaces/IUniswapV2Pair.sol\":{\"keccak256\":\"0x80d2c7bda6ef801cded45d849d90338aee44a01b3763ad3985580371f49a9e43\",\"urls\":[\"bzz-raw://fbe99a99c352ed94742a6905c080fe465e7bfa585337109c6c7d8773d0a0df9c\",\"dweb:/ipfs/Qma5u2Rzbdvrzk54WwHvowP1iTgM4iJVfaQBWN5PxX3CHN\"]},\"/Users/daweizhao/Documents/Sperax/USDs/USDs github/USDs/contracts/libraries/Babylonian.sol\":{\"keccak256\":\"0xec2a4195869931bb9056a7fd5e046cf6ac127ade59f46270eb04d362f347e574\",\"urls\":[\"bzz-raw://9fb8e774cb2e9a3eac3d021b88d36041c3fb2fb9962237545daeeda210e82729\",\"dweb:/ipfs/QmUi9akTzxHmmRjqzbLWoEvapDABz81aVS7eFrENx1fE5j\"]},\"/Users/daweizhao/Documents/Sperax/USDs/USDs github/USDs/contracts/libraries/BitMath.sol\":{\"keccak256\":\"0x01f67c2041c86664888029befd130479daafc1980bfa6835bc38e99980c36710\",\"urls\":[\"bzz-raw://ae875f60d61fe885af509cf4f69a21a67b3f14a1ce8be06ae71d8759760923e6\",\"dweb:/ipfs/QmQvD2UAmqy5FfpwKN92a7iouzr69sAibbuP7cwUmABx57\"]},\"/Users/daweizhao/Documents/Sperax/USDs/USDs github/USDs/contracts/libraries/FixedPoint.sol\":{\"keccak256\":\"0x39ddd0439baa942b1e03546ca15b533f120bd9a2550d1d3e329f09db5441d407\",\"urls\":[\"bzz-raw://b9953bb10c154da84a6fb72560f4f5215e6c67464d33361b76d34cceb2f6fbb3\",\"dweb:/ipfs/QmbgUTtD8b9w1a2jobCV7jTK2XmvQKgNS4tccCkSJikRKR\"]},\"/Users/daweizhao/Documents/Sperax/USDs/USDs github/USDs/contracts/libraries/FullMath.sol\":{\"keccak256\":\"0xb4a3d6c2d97ecc3df2cb2602bf6f2f8d04869fa5eee3723140a2a32c2aa1d5dd\",\"urls\":[\"bzz-raw://efa15167602a1a21327871d35f285f2426253256876ad7da4b693d982b59e45f\",\"dweb:/ipfs/QmRogNVb1ArCMshRTaubNAxbrUpA4cDVmrS9JnHNufRJrc\"]},\"/Users/daweizhao/Documents/Sperax/USDs/USDs github/USDs/contracts/libraries/UniswapV2OracleLibrary.sol\":{\"keccak256\":\"0x51778724aa03277046e3b00e4285a20ca28ddd17db5c266a80be050566150a37\",\"urls\":[\"bzz-raw://c3ac3928b989f964c82409c97455301f9a47568d3f864862b71e88d193918095\",\"dweb:/ipfs/QmetEUVxADw5TtzZ3UbZFzCHJTF4LRHzxK1P3a64Jr7wAn\"]}},\"version\":1}",
-  "bytecode": "0x60566023600b82828239805160001a607314601657fe5b30600052607381538281f3fe73000000000000000000000000000000000000000030146080604052600080fdfea264697066735822122039333c7f98c1a218bc4c7b686819639b451d470edaec076adc8c73e78614033264736f6c634300060c0033",
-  "deployedBytecode": "0x73000000000000000000000000000000000000000030146080604052600080fdfea264697066735822122039333c7f98c1a218bc4c7b686819639b451d470edaec076adc8c73e78614033264736f6c634300060c0033",
+  "metadata": "{\"compiler\":{\"version\":\"0.6.12+commit.27d51765\"},\"language\":\"Solidity\",\"output\":{\"abi\":[],\"devdoc\":{\"kind\":\"dev\",\"methods\":{},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{},\"version\":1}},\"settings\":{\"compilationTarget\":{\"/Volumes/Work/Sperax/USDs/contracts/libraries/UniswapV2OracleLibrary.sol\":\"UniswapV2OracleLibrary\"},\"evmVersion\":\"istanbul\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\"},\"optimizer\":{\"enabled\":true,\"runs\":200},\"remappings\":[]},\"sources\":{\"/Volumes/Work/Sperax/USDs/contracts/interfaces/IUniswapV2Pair.sol\":{\"keccak256\":\"0x80d2c7bda6ef801cded45d849d90338aee44a01b3763ad3985580371f49a9e43\",\"urls\":[\"bzz-raw://fbe99a99c352ed94742a6905c080fe465e7bfa585337109c6c7d8773d0a0df9c\",\"dweb:/ipfs/Qma5u2Rzbdvrzk54WwHvowP1iTgM4iJVfaQBWN5PxX3CHN\"]},\"/Volumes/Work/Sperax/USDs/contracts/libraries/Babylonian.sol\":{\"keccak256\":\"0xec2a4195869931bb9056a7fd5e046cf6ac127ade59f46270eb04d362f347e574\",\"urls\":[\"bzz-raw://9fb8e774cb2e9a3eac3d021b88d36041c3fb2fb9962237545daeeda210e82729\",\"dweb:/ipfs/QmUi9akTzxHmmRjqzbLWoEvapDABz81aVS7eFrENx1fE5j\"]},\"/Volumes/Work/Sperax/USDs/contracts/libraries/BitMath.sol\":{\"keccak256\":\"0x01f67c2041c86664888029befd130479daafc1980bfa6835bc38e99980c36710\",\"urls\":[\"bzz-raw://ae875f60d61fe885af509cf4f69a21a67b3f14a1ce8be06ae71d8759760923e6\",\"dweb:/ipfs/QmQvD2UAmqy5FfpwKN92a7iouzr69sAibbuP7cwUmABx57\"]},\"/Volumes/Work/Sperax/USDs/contracts/libraries/FixedPoint.sol\":{\"keccak256\":\"0x39ddd0439baa942b1e03546ca15b533f120bd9a2550d1d3e329f09db5441d407\",\"urls\":[\"bzz-raw://b9953bb10c154da84a6fb72560f4f5215e6c67464d33361b76d34cceb2f6fbb3\",\"dweb:/ipfs/QmbgUTtD8b9w1a2jobCV7jTK2XmvQKgNS4tccCkSJikRKR\"]},\"/Volumes/Work/Sperax/USDs/contracts/libraries/FullMath.sol\":{\"keccak256\":\"0xb4a3d6c2d97ecc3df2cb2602bf6f2f8d04869fa5eee3723140a2a32c2aa1d5dd\",\"urls\":[\"bzz-raw://efa15167602a1a21327871d35f285f2426253256876ad7da4b693d982b59e45f\",\"dweb:/ipfs/QmRogNVb1ArCMshRTaubNAxbrUpA4cDVmrS9JnHNufRJrc\"]},\"/Volumes/Work/Sperax/USDs/contracts/libraries/UniswapV2OracleLibrary.sol\":{\"keccak256\":\"0x51778724aa03277046e3b00e4285a20ca28ddd17db5c266a80be050566150a37\",\"urls\":[\"bzz-raw://c3ac3928b989f964c82409c97455301f9a47568d3f864862b71e88d193918095\",\"dweb:/ipfs/QmetEUVxADw5TtzZ3UbZFzCHJTF4LRHzxK1P3a64Jr7wAn\"]}},\"version\":1}",
+  "bytecode": "0x60566023600b82828239805160001a607314601657fe5b30600052607381538281f3fe73000000000000000000000000000000000000000030146080604052600080fdfea2646970667358221220a9b07953ea78ef05270c4b70ec1db36b6f55ed9faf1d95826ffd32f734ceafc564736f6c634300060c0033",
+  "deployedBytecode": "0x73000000000000000000000000000000000000000030146080604052600080fdfea2646970667358221220a9b07953ea78ef05270c4b70ec1db36b6f55ed9faf1d95826ffd32f734ceafc564736f6c634300060c0033",
   "immutableReferences": {},
   "sourceMap": "189:1444:25:-:0;;;;;;;;;;;;;;;;;;;;;;;;;",
   "deployedSourceMap": "189:1444:25:-:0;;;;;;;;",
   "source": "pragma solidity >=0.5.0;\n\nimport '../interfaces/IUniswapV2Pair.sol';\nimport './FixedPoint.sol';\n\n// library with helper methods for oracles that are concerned with computing average prices\nlibrary UniswapV2OracleLibrary {\n    using FixedPoint for *;\n\n    // helper function that returns the current block timestamp within the range of uint32, i.e. [0, 2**32 - 1]\n    function currentBlockTimestamp() internal view returns (uint32) {\n        return uint32(block.timestamp % 2 ** 32);\n    }\n\n    // produces the cumulative price using counterfactuals to save gas and avoid a call to sync.\n    function currentCumulativePrices(\n        address pair\n    ) internal view returns (uint price0Cumulative, uint price1Cumulative, uint32 blockTimestamp) {\n        blockTimestamp = currentBlockTimestamp();\n        price0Cumulative = IUniswapV2Pair(pair).price0CumulativeLast();\n        price1Cumulative = IUniswapV2Pair(pair).price1CumulativeLast();\n\n        // if time has elapsed since the last update on the pair, mock the accumulated price values\n        (uint112 reserve0, uint112 reserve1, uint32 blockTimestampLast) = IUniswapV2Pair(pair).getReserves();\n        if (blockTimestampLast != blockTimestamp) {\n            // subtraction overflow is desired\n            uint32 timeElapsed = blockTimestamp - blockTimestampLast;\n            // addition overflow is desired\n            // counterfactual\n            price0Cumulative += uint(FixedPoint.fraction(reserve1, reserve0)._x) * timeElapsed;\n            // counterfactual\n            price1Cumulative += uint(FixedPoint.fraction(reserve0, reserve1)._x) * timeElapsed;\n        }\n    }\n}\n",
-  "sourcePath": "/Users/daweizhao/Documents/Sperax/USDs/USDs github/USDs/contracts/libraries/UniswapV2OracleLibrary.sol",
+  "sourcePath": "/Volumes/Work/Sperax/USDs/contracts/libraries/UniswapV2OracleLibrary.sol",
   "ast": {
-    "absolutePath": "/Users/daweizhao/Documents/Sperax/USDs/USDs github/USDs/contracts/libraries/UniswapV2OracleLibrary.sol",
+    "absolutePath": "/Volumes/Work/Sperax/USDs/contracts/libraries/UniswapV2OracleLibrary.sol",
     "exportedSymbols": {
       "UniswapV2OracleLibrary": [
         5206
@@ -32,7 +32,7 @@
         "src": "0:24:25"
       },
       {
-        "absolutePath": "/Users/daweizhao/Documents/Sperax/USDs/USDs github/USDs/contracts/interfaces/IUniswapV2Pair.sol",
+        "absolutePath": "/Volumes/Work/Sperax/USDs/contracts/interfaces/IUniswapV2Pair.sol",
         "file": "../interfaces/IUniswapV2Pair.sol",
         "id": 5102,
         "nodeType": "ImportDirective",
@@ -43,7 +43,7 @@
         "unitAlias": ""
       },
       {
-        "absolutePath": "/Users/daweizhao/Documents/Sperax/USDs/USDs github/USDs/contracts/libraries/FixedPoint.sol",
+        "absolutePath": "/Volumes/Work/Sperax/USDs/contracts/libraries/FixedPoint.sol",
         "file": "./FixedPoint.sol",
         "id": 5103,
         "nodeType": "ImportDirective",
@@ -1506,7 +1506,7 @@
   },
   "legacyAST": {
     "attributes": {
-      "absolutePath": "/Users/daweizhao/Documents/Sperax/USDs/USDs github/USDs/contracts/libraries/UniswapV2OracleLibrary.sol",
+      "absolutePath": "/Volumes/Work/Sperax/USDs/contracts/libraries/UniswapV2OracleLibrary.sol",
       "exportedSymbols": {
         "UniswapV2OracleLibrary": [
           5206
@@ -1531,7 +1531,7 @@
       {
         "attributes": {
           "SourceUnit": 589,
-          "absolutePath": "/Users/daweizhao/Documents/Sperax/USDs/USDs github/USDs/contracts/interfaces/IUniswapV2Pair.sol",
+          "absolutePath": "/Volumes/Work/Sperax/USDs/contracts/interfaces/IUniswapV2Pair.sol",
           "file": "../interfaces/IUniswapV2Pair.sol",
           "scope": 5207,
           "symbolAliases": [
@@ -1546,7 +1546,7 @@
       {
         "attributes": {
           "SourceUnit": 4115,
-          "absolutePath": "/Users/daweizhao/Documents/Sperax/USDs/USDs github/USDs/contracts/libraries/FixedPoint.sol",
+          "absolutePath": "/Volumes/Work/Sperax/USDs/contracts/libraries/FixedPoint.sol",
           "file": "./FixedPoint.sol",
           "scope": 5207,
           "symbolAliases": [
@@ -3156,8 +3156,8 @@
     "version": "0.6.12+commit.27d51765.Emscripten.clang"
   },
   "networks": {},
-  "schemaVersion": "3.3.4",
-  "updatedAt": "2021-09-11T02:34:53.732Z",
+  "schemaVersion": "3.4.0",
+  "updatedAt": "2021-10-15T18:31:40.971Z",
   "devdoc": {
     "kind": "dev",
     "methods": {},

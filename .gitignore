@@ -3,6 +3,7 @@ contracts/.DS_Store
 libraries/.DS_Store
 .DS_Store
 /node_modules
+packages/*/node_modules
 .env
 truffle-config.js
 LICENSE

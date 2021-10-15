@@ -1,16 +1,16 @@
 {
   "contractName": "StableMath",
   "abi": [],
-  "metadata": "{\"compiler\":{\"version\":\"0.6.12+commit.27d51765\"},\"language\":\"Solidity\",\"output\":{\"abi\":[],\"devdoc\":{\"kind\":\"dev\",\"methods\":{},\"stateVariables\":{\"FULL_SCALE\":{\"details\":\"Scaling unit for use in specific calculations, where 1 * 10**18, or 1e18 represents a unit '1'\"}},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{},\"version\":1}},\"settings\":{\"compilationTarget\":{\"/Users/daweizhao/Documents/Sperax/USDs/USDs github/USDs/contracts/libraries/StableMath.sol\":\"StableMath\"},\"evmVersion\":\"istanbul\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\"},\"optimizer\":{\"enabled\":false,\"runs\":200},\"remappings\":[]},\"sources\":{\"/Users/daweizhao/Documents/Sperax/USDs/USDs github/USDs/contracts/libraries/StableMath.sol\":{\"keccak256\":\"0x8e68ee5b3a782f656838b917aab46db1ae6828ae94c3e3daa8f979db02ee7f0e\",\"urls\":[\"bzz-raw://7b0bd1133a2b732e4da8a7dc67832f41ba9db45b3f1fd233cc61216a0bfa584d\",\"dweb:/ipfs/QmYF3UZjeiRf4zoLv2iDsrwWe4kMS3kwLGbbs2eSumNYW5\"]},\"@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol\":{\"keccak256\":\"0x0dd1e9b19801e3e7d900fbf4182d81e1afd23ad7be39504e33df6bbcba91d724\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://5e30d594df25d0651c2cd6f85d856e5fc9f3dbae68d017e1da33eb3c7e2f1ecc\",\"dweb:/ipfs/QmPgkV99jZr3Zs9ex8dJ5j22oX4wDuDtMCnXNy67bTwgAB\"]}},\"version\":1}",
-  "bytecode": "0x60566023600b82828239805160001a607314601657fe5b30600052607381538281f3fe73000000000000000000000000000000000000000030146080604052600080fdfea26469706673582212205a5564da7294fe464a7f2d9fe76f678db36bcbfcb279cff6b181c37da6bad17b64736f6c634300060c0033",
-  "deployedBytecode": "0x73000000000000000000000000000000000000000030146080604052600080fdfea26469706673582212205a5564da7294fe464a7f2d9fe76f678db36bcbfcb279cff6b181c37da6bad17b64736f6c634300060c0033",
+  "metadata": "{\"compiler\":{\"version\":\"0.6.12+commit.27d51765\"},\"language\":\"Solidity\",\"output\":{\"abi\":[],\"devdoc\":{\"kind\":\"dev\",\"methods\":{},\"stateVariables\":{\"FULL_SCALE\":{\"details\":\"Scaling unit for use in specific calculations, where 1 * 10**18, or 1e18 represents a unit '1'\"}},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{},\"version\":1}},\"settings\":{\"compilationTarget\":{\"/Volumes/Work/Sperax/USDs/contracts/libraries/StableMath.sol\":\"StableMath\"},\"evmVersion\":\"istanbul\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\"},\"optimizer\":{\"enabled\":true,\"runs\":200},\"remappings\":[]},\"sources\":{\"/Volumes/Work/Sperax/USDs/contracts/libraries/StableMath.sol\":{\"keccak256\":\"0x8e68ee5b3a782f656838b917aab46db1ae6828ae94c3e3daa8f979db02ee7f0e\",\"urls\":[\"bzz-raw://7b0bd1133a2b732e4da8a7dc67832f41ba9db45b3f1fd233cc61216a0bfa584d\",\"dweb:/ipfs/QmYF3UZjeiRf4zoLv2iDsrwWe4kMS3kwLGbbs2eSumNYW5\"]},\"@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol\":{\"keccak256\":\"0x0dd1e9b19801e3e7d900fbf4182d81e1afd23ad7be39504e33df6bbcba91d724\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://5e30d594df25d0651c2cd6f85d856e5fc9f3dbae68d017e1da33eb3c7e2f1ecc\",\"dweb:/ipfs/QmPgkV99jZr3Zs9ex8dJ5j22oX4wDuDtMCnXNy67bTwgAB\"]}},\"version\":1}",
+  "bytecode": "0x60566023600b82828239805160001a607314601657fe5b30600052607381538281f3fe73000000000000000000000000000000000000000030146080604052600080fdfea26469706673582212207e83f69afb312ba6914da6c63440ea62f6a214d458f6ae5263bac92641d003b264736f6c634300060c0033",
+  "deployedBytecode": "0x73000000000000000000000000000000000000000030146080604052600080fdfea26469706673582212207e83f69afb312ba6914da6c63440ea62f6a214d458f6ae5263bac92641d003b264736f6c634300060c0033",
   "immutableReferences": {},
   "sourceMap": "248:3596:23:-:0;;;;;;;;;;;;;;;;;;;;;;;;;",
   "deployedSourceMap": "248:3596:23:-:0;;;;;;;;",
   "source": "pragma solidity ^0.6.12;\n\nimport \"@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol\";\n\n// Based on StableMath from Stability Labs Pty. Ltd.\n// https://github.com/mstable/mStable-contracts/blob/master/contracts/shared/StableMath.sol\n\nlibrary StableMath {\n    using SafeMathUpgradeable for uint256;\n\n    /**\n     * @dev Scaling unit for use in specific calculations,\n     * where 1 * 10**18, or 1e18 represents a unit '1'\n     */\n    uint256 private constant FULL_SCALE = 1e18;\n\n    /***************************************\n                    Helpers\n    ****************************************/\n\n    /**\n     * @dev Adjust the scale of an integer\n     * @param adjustment Amount to adjust by e.g. scaleBy(1e18, -1) == 1e17\n     */\n    function scaleBy(uint256 x, int8 adjustment)\n        internal\n        pure\n        returns (uint256)\n    {\n        if (adjustment > 0) {\n            x = x.mul(10**uint256(adjustment));\n        } else if (adjustment < 0) {\n            x = x.div(10**uint256(adjustment * -1));\n        }\n        return x;\n    }\n\n    /***************************************\n               Precise Arithmetic\n    ****************************************/\n\n    /**\n     * @dev Multiplies two precise units, and then truncates by the full scale\n     * @param x Left hand input to multiplication\n     * @param y Right hand input to multiplication\n     * @return Result after multiplying the two inputs and then dividing by the shared\n     *         scale unit\n     */\n    function mulTruncate(uint256 x, uint256 y) internal pure returns (uint256) {\n        return mulTruncateScale(x, y, FULL_SCALE);\n    }\n\n    /**\n     * @dev Multiplies two precise units, and then truncates by the given scale. For example,\n     * when calculating 90% of 10e18, (10e18 * 9e17) / 1e18 = (9e36) / 1e18 = 9e18\n     * @param x Left hand input to multiplication\n     * @param y Right hand input to multiplication\n     * @param scale Scale unit\n     * @return Result after multiplying the two inputs and then dividing by the shared\n     *         scale unit\n     */\n    function mulTruncateScale(\n        uint256 x,\n        uint256 y,\n        uint256 scale\n    ) internal pure returns (uint256) {\n        // e.g. assume scale = fullScale\n        // z = 10e18 * 9e17 = 9e36\n        uint256 z = x.mul(y);\n        // return 9e38 / 1e18 = 9e18\n        return z.div(scale);\n    }\n\n    /**\n     * @dev Multiplies two precise units, and then truncates by the full scale, rounding up the result\n     * @param x Left hand input to multiplication\n     * @param y Right hand input to multiplication\n     * @return Result after multiplying the two inputs and then dividing by the shared\n     *          scale unit, rounded up to the closest base unit.\n     */\n    function mulTruncateCeil(uint256 x, uint256 y)\n        internal\n        pure\n        returns (uint256)\n    {\n        // e.g. 8e17 * 17268172638 = 138145381104e17\n        uint256 scaled = x.mul(y);\n        // e.g. 138145381104e17 + 9.99...e17 = 138145381113.99...e17\n        uint256 ceil = scaled.add(FULL_SCALE.sub(1));\n        // e.g. 13814538111.399...e18 / 1e18 = 13814538111\n        return ceil.div(FULL_SCALE);\n    }\n\n    /**\n     * @dev Precisely divides two units, by first scaling the left hand operand. Useful\n     *      for finding percentage weightings, i.e. 8e18/10e18 = 80% (or 8e17)\n     * @param x Left hand input to division\n     * @param y Right hand input to division\n     * @return Result after multiplying the left operand by the scale, and\n     *         executing the division on the right hand input.\n     */\n    function divPrecisely(uint256 x, uint256 y)\n        internal\n        pure\n        returns (uint256)\n    {\n        // e.g. 8e18 * 1e18 = 8e36\n        uint256 z = x.mul(FULL_SCALE);\n        // e.g. 8e36 / 10e18 = 8e17\n        return z.div(y);\n    }\n}\n",
-  "sourcePath": "/Users/daweizhao/Documents/Sperax/USDs/USDs github/USDs/contracts/libraries/StableMath.sol",
+  "sourcePath": "/Volumes/Work/Sperax/USDs/contracts/libraries/StableMath.sol",
   "ast": {
-    "absolutePath": "/Users/daweizhao/Documents/Sperax/USDs/USDs github/USDs/contracts/libraries/StableMath.sol",
+    "absolutePath": "/Volumes/Work/Sperax/USDs/contracts/libraries/StableMath.sol",
     "exportedSymbols": {
       "StableMath": [
         4928
@@ -37,7 +37,7 @@
         "id": 4772,
         "nodeType": "ImportDirective",
         "scope": 4929,
-        "sourceUnit": 12625,
+        "sourceUnit": 14048,
         "src": "26:74:23",
         "symbolAliases": [],
         "unitAlias": ""
@@ -63,10 +63,10 @@
               "id": 4773,
               "name": "SafeMathUpgradeable",
               "nodeType": "UserDefinedTypeName",
-              "referencedDeclaration": 12624,
+              "referencedDeclaration": 14047,
               "src": "279:19:23",
               "typeDescriptions": {
-                "typeIdentifier": "t_contract$_SafeMathUpgradeable_$12624",
+                "typeIdentifier": "t_contract$_SafeMathUpgradeable_$14047",
                 "typeString": "library SafeMathUpgradeable"
               }
             },
@@ -456,7 +456,7 @@
                                 "lValueRequested": false,
                                 "memberName": "div",
                                 "nodeType": "MemberAccess",
-                                "referencedDeclaration": 12529,
+                                "referencedDeclaration": 13952,
                                 "src": "989:5:23",
                                 "typeDescriptions": {
                                   "typeIdentifier": "t_function_internal_pure$_t_uint256_$_t_uint256_$returns$_t_uint256_$bound_to$_t_uint256_$",
@@ -651,7 +651,7 @@
                               "lValueRequested": false,
                               "memberName": "mul",
                               "nodeType": "MemberAccess",
-                              "referencedDeclaration": 12507,
+                              "referencedDeclaration": 13930,
                               "src": "904:5:23",
                               "typeDescriptions": {
                                 "typeIdentifier": "t_function_internal_pure$_t_uint256_$_t_uint256_$returns$_t_uint256_$bound_to$_t_uint256_$",
@@ -1124,7 +1124,7 @@
                       "lValueRequested": false,
                       "memberName": "mul",
                       "nodeType": "MemberAccess",
-                      "referencedDeclaration": 12507,
+                      "referencedDeclaration": 13930,
                       "src": "2300:5:23",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_internal_pure$_t_uint256_$_t_uint256_$returns$_t_uint256_$bound_to$_t_uint256_$",
@@ -1194,7 +1194,7 @@
                       "lValueRequested": false,
                       "memberName": "div",
                       "nodeType": "MemberAccess",
-                      "referencedDeclaration": 12529,
+                      "referencedDeclaration": 13952,
                       "src": "2362:5:23",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_internal_pure$_t_uint256_$_t_uint256_$returns$_t_uint256_$bound_to$_t_uint256_$",
@@ -1453,7 +1453,7 @@
                       "lValueRequested": false,
                       "memberName": "mul",
                       "nodeType": "MemberAccess",
-                      "referencedDeclaration": 12507,
+                      "referencedDeclaration": 13930,
                       "src": "2946:5:23",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_internal_pure$_t_uint256_$_t_uint256_$returns$_t_uint256_$bound_to$_t_uint256_$",
@@ -1565,7 +1565,7 @@
                           "lValueRequested": false,
                           "memberName": "sub",
                           "nodeType": "MemberAccess",
-                          "referencedDeclaration": 12473,
+                          "referencedDeclaration": 13896,
                           "src": "3059:14:23",
                           "typeDescriptions": {
                             "typeIdentifier": "t_function_internal_pure$_t_uint256_$_t_uint256_$returns$_t_uint256_$bound_to$_t_uint256_$",
@@ -1615,7 +1615,7 @@
                       "lValueRequested": false,
                       "memberName": "add",
                       "nodeType": "MemberAccess",
-                      "referencedDeclaration": 12451,
+                      "referencedDeclaration": 13874,
                       "src": "3048:10:23",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_internal_pure$_t_uint256_$_t_uint256_$returns$_t_uint256_$bound_to$_t_uint256_$",
@@ -1685,7 +1685,7 @@
                       "lValueRequested": false,
                       "memberName": "div",
                       "nodeType": "MemberAccess",
-                      "referencedDeclaration": 12529,
+                      "referencedDeclaration": 13952,
                       "src": "3153:8:23",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_internal_pure$_t_uint256_$_t_uint256_$returns$_t_uint256_$bound_to$_t_uint256_$",
@@ -1916,7 +1916,7 @@
                       "lValueRequested": false,
                       "memberName": "mul",
                       "nodeType": "MemberAccess",
-                      "referencedDeclaration": 12507,
+                      "referencedDeclaration": 13930,
                       "src": "3757:5:23",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_internal_pure$_t_uint256_$_t_uint256_$returns$_t_uint256_$bound_to$_t_uint256_$",
@@ -1986,7 +1986,7 @@
                       "lValueRequested": false,
                       "memberName": "div",
                       "nodeType": "MemberAccess",
-                      "referencedDeclaration": 12529,
+                      "referencedDeclaration": 13952,
                       "src": "3827:5:23",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_internal_pure$_t_uint256_$_t_uint256_$returns$_t_uint256_$bound_to$_t_uint256_$",
@@ -2141,7 +2141,7 @@
   },
   "legacyAST": {
     "attributes": {
-      "absolutePath": "/Users/daweizhao/Documents/Sperax/USDs/USDs github/USDs/contracts/libraries/StableMath.sol",
+      "absolutePath": "/Volumes/Work/Sperax/USDs/contracts/libraries/StableMath.sol",
       "exportedSymbols": {
         "StableMath": [
           4928
@@ -2165,7 +2165,7 @@
       },
       {
         "attributes": {
-          "SourceUnit": 12625,
+          "SourceUnit": 14048,
           "absolutePath": "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol",
           "file": "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol",
           "scope": 4929,
@@ -2203,7 +2203,7 @@
                 "attributes": {
                   "contractScope": null,
                   "name": "SafeMathUpgradeable",
-                  "referencedDeclaration": 12624,
+                  "referencedDeclaration": 14047,
                   "type": "library SafeMathUpgradeable"
                 },
                 "id": 4773,
@@ -2511,7 +2511,7 @@
                                           "isPure": false,
                                           "lValueRequested": false,
                                           "member_name": "mul",
-                                          "referencedDeclaration": 12507,
+                                          "referencedDeclaration": 13930,
                                           "type": "function (uint256,uint256) pure returns (uint256)"
                                         },
                                         "children": [
@@ -2769,7 +2769,7 @@
                                               "isPure": false,
                                               "lValueRequested": false,
                                               "member_name": "div",
-                                              "referencedDeclaration": 12529,
+                                              "referencedDeclaration": 13952,
                                               "type": "function (uint256,uint256) pure returns (uint256)"
                                             },
                                             "children": [
@@ -3461,7 +3461,7 @@
                               "isPure": false,
                               "lValueRequested": false,
                               "member_name": "mul",
-                              "referencedDeclaration": 12507,
+                              "referencedDeclaration": 13930,
                               "type": "function (uint256,uint256) pure returns (uint256)"
                             },
                             "children": [
@@ -3542,7 +3542,7 @@
                               "isPure": false,
                               "lValueRequested": false,
                               "member_name": "div",
-                              "referencedDeclaration": 12529,
+                              "referencedDeclaration": 13952,
                               "type": "function (uint256,uint256) pure returns (uint256)"
                             },
                             "children": [
@@ -3787,7 +3787,7 @@
                               "isPure": false,
                               "lValueRequested": false,
                               "member_name": "mul",
-                              "referencedDeclaration": 12507,
+                              "referencedDeclaration": 13930,
                               "type": "function (uint256,uint256) pure returns (uint256)"
                             },
                             "children": [
@@ -3898,7 +3898,7 @@
                               "isPure": false,
                               "lValueRequested": false,
                               "member_name": "add",
-                              "referencedDeclaration": 12451,
+                              "referencedDeclaration": 13874,
                               "type": "function (uint256,uint256) pure returns (uint256)"
                             },
                             "children": [
@@ -3950,7 +3950,7 @@
                                   "isPure": false,
                                   "lValueRequested": false,
                                   "member_name": "sub",
-                                  "referencedDeclaration": 12473,
+                                  "referencedDeclaration": 13896,
                                   "type": "function (uint256,uint256) pure returns (uint256)"
                                 },
                                 "children": [
@@ -4039,7 +4039,7 @@
                               "isPure": false,
                               "lValueRequested": false,
                               "member_name": "div",
-                              "referencedDeclaration": 12529,
+                              "referencedDeclaration": 13952,
                               "type": "function (uint256,uint256) pure returns (uint256)"
                             },
                             "children": [
@@ -4284,7 +4284,7 @@
                               "isPure": false,
                               "lValueRequested": false,
                               "member_name": "mul",
-                              "referencedDeclaration": 12507,
+                              "referencedDeclaration": 13930,
                               "type": "function (uint256,uint256) pure returns (uint256)"
                             },
                             "children": [
@@ -4365,7 +4365,7 @@
                               "isPure": false,
                               "lValueRequested": false,
                               "member_name": "div",
-                              "referencedDeclaration": 12529,
+                              "referencedDeclaration": 13952,
                               "type": "function (uint256,uint256) pure returns (uint256)"
                             },
                             "children": [
@@ -4437,8 +4437,8 @@
     "version": "0.6.12+commit.27d51765.Emscripten.clang"
   },
   "networks": {},
-  "schemaVersion": "3.3.4",
-  "updatedAt": "2021-09-11T02:34:53.720Z",
+  "schemaVersion": "3.4.0",
+  "updatedAt": "2021-10-15T18:31:40.792Z",
   "devdoc": {
     "kind": "dev",
     "methods": {},

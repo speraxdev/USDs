@@ -21,7 +21,7 @@ import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
 import "../libraries/openzeppelin/OwnableUpgradeable.sol";
 import { InitializableERC20Detailed } from "../libraries/InitializableERC20Detailed.sol";
 import { StableMath } from "../libraries/StableMath.sol";
-import { IArbToken } from "../interfaces/IArbToken.sol";
+import "arb-bridge-peripherals/contracts/tokenbridge/arbitrum/IArbToken.sol";
 
 /**
  * NOTE that this is an ERC20 token but the invariant that the sum of
