@@ -29,7 +29,7 @@ import "arb-bridge-peripherals/contracts/tokenbridge/arbitrum/IArbToken.sol";
  * rebasing design. Any integrations with USDs should be aware.
  */
 
-contract USDs is Initializable, InitializableERC20Detailed, OwnableUpgradeable, IArbToken {
+contract USDsL2 is Initializable, InitializableERC20Detailed, OwnableUpgradeable, IArbToken {
     using SafeMathUpgradeable for uint256;
     using StableMath for uint256;
 

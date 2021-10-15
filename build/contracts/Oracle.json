@@ -19707,16 +19707,9 @@
     "name": "solc",
     "version": "0.6.12+commit.27d51765.Emscripten.clang"
   },
-  "networks": {
-    "42": {
-      "events": {},
-      "links": {},
-      "address": "0x8edF6853b5cb0D1981842ab94FD561dbCb7Cc0c1",
-      "transactionHash": "0x4a025ad158a03f94b0873f8cc657635f5e2f6b2c280d4348343b07f1b0ad87c8"
-    }
-  },
+  "networks": {},
   "schemaVersion": "3.4.0",
-  "updatedAt": "2021-10-15T18:31:41.227Z",
+  "updatedAt": "2021-10-15T19:21:18.034Z",
   "devdoc": {
     "author": "Sperax Dev Team",
     "details": "this contract draws insights from \"ExampleOracleSimple.sol\" by UniswapV2 team",

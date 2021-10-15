@@ -9,9 +9,9 @@ var VaultCoreLibrary = artifacts.require("../contracts/libraries/VaultCoreLibrar
 
 
 module.exports = async function(deployer) {
-	await deployer.deploy(VaultCoreLibrary);
-	await deployer.link(VaultCoreLibrary, VaultCore);
-	const vaultCore = await deployProxy(VaultCore, [], { deployer, unsafeAllow: ['external-library-linking'] });
+	// await deployer.deploy(VaultCoreLibrary);
+	// await deployer.link(VaultCoreLibrary, VaultCore);
+	// const vaultCore = await deployProxy(VaultCore, [], { deployer, unsafeAllow: ['external-library-linking'] });
 
 	//
 	// // Upgrade Proxy Contract

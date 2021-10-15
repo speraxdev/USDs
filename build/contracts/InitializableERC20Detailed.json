@@ -1949,7 +1949,7 @@
   },
   "networks": {},
   "schemaVersion": "3.4.0",
-  "updatedAt": "2021-10-15T18:31:40.648Z",
+  "updatedAt": "2021-10-15T19:21:17.991Z",
   "devdoc": {
     "details": "Optional functions from the ERC20 standard. Converted from openzeppelin/contracts/token/ERC20/ERC20Detailed.sol",
     "kind": "dev",

@@ -9,7 +9,7 @@ var OracleGenesis = artifacts.require("../contracts/oracle/OracleGenesis.sol");
 
 
 module.exports = async function(deployer) {
-	const oracle = await deployProxy(OracleGenesis, [], { deployer });
+	// const oracle = await deployProxy(OracleGenesis, [], { deployer });
 
 
 	//

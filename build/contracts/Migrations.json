@@ -17,7 +17,8 @@
         }
       ],
       "stateMutability": "view",
-      "type": "function"
+      "type": "function",
+      "constant": true
     },
     {
       "inputs": [],
@@ -30,7 +31,8 @@
         }
       ],
       "stateMutability": "view",
-      "type": "function"
+      "type": "function",
+      "constant": true
     },
     {
       "inputs": [
@@ -979,15 +981,16 @@
     "version": "0.6.12+commit.27d51765.Emscripten.clang"
   },
   "networks": {
-    "42": {
+    "4": {
       "events": {},
       "links": {},
-      "address": "0x479AFbD06F8B19a2DF5B6d176D15C0b6C8fF7383",
-      "transactionHash": "0xfca1db9dd93bf6e18ff66c21c3683c79301970513cd5074a983fe6ffe16fedea"
+      "address": "0x46724282e023598b893f10De0E445497B40A0a46",
+      "transactionHash": "0x7d92b5ae90eb33d784a52c2f65b312728c64213a07cc61d9908a8d012c30021c"
     }
   },
-  "schemaVersion": "3.4.0",
-  "updatedAt": "2021-10-15T18:31:40.031Z",
+  "schemaVersion": "3.3.3",
+  "updatedAt": "2021-10-15T19:25:50.657Z",
+  "networkType": "ethereum",
   "devdoc": {
     "kind": "dev",
     "methods": {},
