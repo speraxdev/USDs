@@ -6,6 +6,8 @@
 //TO-DO: whether _redeem needs "SafeTransferFrom" and how
 //TO-DO: check all user inputs, especially mintView
 //TO-DO: remove for testing purposes files
+
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.6.12;
 
 //import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";

@@ -1,8 +1,3 @@
-/**
-    Questions:
-    1. in changeSupply, why we need to first check if _totalSupply > 0?
- */
-
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.6.12;
 
