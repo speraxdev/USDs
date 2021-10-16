@@ -3,13 +3,19 @@
 import pytest
 
 @pytest.fixture(scope="module", autouse=True)
-def vault(accounts):
-    return accounts[1]
+def vault(VaultCore, accounts):
+    owner = accounts[1]
+    vault = VaultCore.deploy(
+        {'from': owner}
+    )
+    vault.initialize(
+        {'from': owner}
+    )
+    return vault
 
 @pytest.fixture(scope="module", autouse=True)
 def usds(USDs, vault, accounts):
     owner = accounts[0]
-
     usds = USDs.deploy(
         {'from': owner}
     )
