@@ -10,26 +10,19 @@ pragma solidity ^0.6.12;
  * @title USDs Token Contract
  * @dev ERC20 compatible contract for USDs
  * @dev Implements an elastic supply
- * @author Origin Protocol Inc
+ * @author Sperax Inc
  */
 
 import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
-//import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-//import "https://github.com/OpenZeppelin/openzeppelin-contracts-upgradeable/blob/v3.4.0/contracts/access/OwnableUpgradeable.sol";
-import "../libraries/openzeppelin/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import { StableMath } from "../libraries/StableMath.sol";
 import "arb-bridge-peripherals/contracts/tokenbridge/ethereum/ICustomToken.sol";
 import "arb-bridge-peripherals/contracts/tokenbridge/ethereum/gateway/L1CustomGateway.sol";
 import "arb-bridge-peripherals/contracts/tokenbridge/ethereum/gateway/L1GatewayRouter.sol";
 
-/**
- * NOTE that this is an ERC20 token but the invariant that the sum of
- * balanceOf(x) for all x is not >= totalSupply(). This is a consequence of the
- * rebasing design. Any integrations with USDs should be aware.
- */
 
 contract USDsL1 is Initializable, ERC20Upgradeable, OwnableUpgradeable, ICustomToken {
     using SafeMathUpgradeable for uint256;
@@ -56,7 +49,7 @@ contract USDsL1 is Initializable, ERC20Upgradeable, OwnableUpgradeable, ICustomT
     {
         return ERC20Upgradeable.balanceOf(account);
     }
-  
+
     function transferFrom(
         address sender,
         address recipient,
@@ -64,7 +57,7 @@ contract USDsL1 is Initializable, ERC20Upgradeable, OwnableUpgradeable, ICustomT
     ) public override(ERC20Upgradeable, ICustomToken) returns (bool) {
         return ERC20Upgradeable.transferFrom(sender, recipient, amount);
     }
-  
+
     /// @dev we only set shouldRegisterGateway to true when in `registerTokenOnL2`
     function isArbitrumEnabled() external view override returns (uint8) {
         require(shouldRegisterGateway, "NOT_EXPECTED_CALL");
@@ -80,7 +73,7 @@ contract USDsL1 is Initializable, ERC20Upgradeable, OwnableUpgradeable, ICustomT
         bridge = newBridge;
         router = newRouter;
     }
-  
+
     function registerTokenOnL2(
         address l2CustomTokenAddress,
         uint256 maxSubmissionCostForCustomBridge,

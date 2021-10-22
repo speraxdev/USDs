@@ -1,6 +1,5 @@
 pragma solidity >=0.5.0 <0.8.0;
 
-//TO-DO: check library difference
 //import '@uniswap/v3-core/contracts/libraries/FullMath.sol';
 import '../libraries/FullMath.sol';
 import '@uniswap/v3-core/contracts/libraries/TickMath.sol';
@@ -57,5 +56,20 @@ library OracleLibrary {
                 ? FullMath.mulDiv(ratioX128, baseAmount, 1 << 128)
                 : FullMath.mulDiv(1 << 128, baseAmount, ratioX128);
         }
+    }
+
+    /// @notice Given a pool, it returns the number of seconds ago of the oldest stored observation
+    /// @param pool Address of Uniswap V3 pool that we want to observe
+    /// @return The number of seconds ago of the oldest observation stored for the pool
+    function getOldestObservationSecondsAgo(address pool) internal view returns (uint32) {
+        (, , uint16 observationIndex, uint16 observationCardinality, , , ) = IUniswapV3Pool(pool).slot0();
+        require(observationCardinality > 0, 'NI');
+        (uint32 observationTimestamp, , , bool initialized) = IUniswapV3Pool(pool).observations((observationIndex + 1) % observationCardinality);
+        // The next index might not be initialized if the cardinality is in the process of increasing
+        // In this case the oldest observation is always in index 0
+        if (!initialized) {
+            (observationTimestamp, , , ) = IUniswapV3Pool(pool).observations(0);
+        }
+        return uint32(block.timestamp) - observationTimestamp;
     }
 }

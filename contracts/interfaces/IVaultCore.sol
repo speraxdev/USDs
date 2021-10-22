@@ -13,7 +13,7 @@ interface IVaultCore {
     function chi_alpha() external view returns (uint32);
     function chi_alpha_prec() external view returns (uint64);
     function chi_prec() external view returns (uint64);
-    function chiInit() external view returns (uint64);
+    function chiInit() external view returns (uint);
     function chi_beta() external view returns (uint32);
     function chi_beta_prec() external view returns (uint16);
     function chi_gamma() external view returns (uint32);

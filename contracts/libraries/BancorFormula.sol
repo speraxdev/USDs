@@ -2,9 +2,7 @@ pragma solidity 0.6.12;
 
 import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
 
-import "../interfaces/IBancorFormula.sol";
-
-contract BancorFormula is IBancorFormula {
+contract BancorFormula {
     using SafeMathUpgradeable for uint256;
 
     uint256 private constant ONE = 1;

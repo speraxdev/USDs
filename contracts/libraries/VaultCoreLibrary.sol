@@ -23,15 +23,15 @@ library VaultCoreLibrary {
 			uint blockPassed, uint priceUSDs, uint precisionUSDs, address _VaultCoreContract
 		) public view returns (uint chiTarget_) {
 		IVaultCore _vaultContract = IVaultCore(_VaultCoreContract);
-		uint chiAdjustmentA = blockPassed.mul(uint(_vaultContract.chi_prec())).mul(_vaultContract.chi_alpha()).div(_vaultContract.chi_alpha_prec());
+		uint chiAdjustmentA = blockPassed.mul(_vaultContract.chi_alpha());
 		uint chiAdjustmentB;
 		uint afterB;
 		if (priceUSDs >= precisionUSDs) {
 			chiAdjustmentB = uint(_vaultContract.chi_beta()).mul(uint(_vaultContract.chi_prec())).mul(priceUSDs - precisionUSDs).mul(priceUSDs - precisionUSDs).div(_vaultContract.chi_beta_prec());
-			afterB = uint(_vaultContract.chiInit()).add(chiAdjustmentB);
+			afterB = _vaultContract.chiInit().add(chiAdjustmentB);
 		} else {
 			chiAdjustmentB = uint(_vaultContract.chi_beta()).mul(uint(_vaultContract.chi_prec())).mul(precisionUSDs - priceUSDs).mul(precisionUSDs - priceUSDs).div(_vaultContract.chi_beta_prec());
-			(, afterB) = uint(_vaultContract.chiInit()).trySub(chiAdjustmentB);
+			(, afterB) = _vaultContract.chiInit().trySub(chiAdjustmentB);
 		}
 		(, chiTarget_) = afterB.trySub(chiAdjustmentA);
 	}
@@ -236,7 +236,7 @@ library VaultCoreLibrary {
 
 	function collaDeptAmountCalculator(
 		uint valueType, uint USDsAmt, address _VaultCoreContract, address collaAddr, uint swapFee
-	) internal view returns (uint256 collaDeptAmt) {
+	) public view returns (uint256 collaDeptAmt) {
 		IVaultCore _vaultContract = IVaultCore(_VaultCoreContract);
 		uint collaAddrDecimal = uint(ERC20Upgradeable(collaAddr).decimals());
 		if (valueType == 1) {
@@ -254,7 +254,7 @@ library VaultCoreLibrary {
 
 	function SPAAmountCalculator(
 		uint valueType, uint USDsAmt, address _VaultCoreContract, uint swapFee
-	) internal view returns (uint256 SPABurnAmt) {
+	) public view returns (uint256 SPABurnAmt) {
 		IVaultCore _vaultContract = IVaultCore(_VaultCoreContract);
 		uint priceSPA = IOracle(_vaultContract.oracleAddr()).getSPAprice();
 		uint precisionSPA = IOracle(_vaultContract.oracleAddr()).getSPAprice_prec();
@@ -273,7 +273,7 @@ library VaultCoreLibrary {
 
 	function USDsAmountCalculator(
 		uint valueType, uint valueAmt, address _VaultCoreContract, address collaAddr, uint swapFee
-	) internal view returns (uint256 USDsAmt) {
+	) public view returns (uint256 USDsAmt) {
 		IVaultCore _vaultContract = IVaultCore(_VaultCoreContract);
 		uint priceSPA = IOracle(_vaultContract.oracleAddr()).getSPAprice();
 		uint precisionSPA = IOracle(_vaultContract.oracleAddr()).getSPAprice_prec();

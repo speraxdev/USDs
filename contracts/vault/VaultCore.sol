@@ -1,33 +1,23 @@
-//TO-DO: check source file of SafeMathUpgradeable regarding trySub() (and the usage of "unchecked")
-//TO-DO: check ERC20Upgradeable vs ERC20Upgradeable
-// Note: assuming when exponentWith_prec >= 2^32, toReturn >= swapFee_prec () (TO-DO: work out the number)
-//TO-DO: deal with collateralStrategies
-//TO-DO: what happen when we redeem aTokens
-//TO-DO: whether _redeem needs "SafeTransferFrom" and how
-//TO-DO: check all user inputs, especially mintView
-//TO-DO: remove for testing purposes files
 pragma solidity ^0.6.12;
-
-//import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-//import "https://github.com/OpenZeppelin/openzeppelin-contracts-upgradeable/blob/v3.4.0/contracts/access/OwnableUpgradeable.sol";
-import "../libraries/openzeppelin/OwnableUpgradeable.sol";
-//import "@openzeppelin/contracts-upgradeable/token/ERC20/SafeERC20Upgradeable.sol";
-//import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/SafeERC20Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 
 import "../libraries/Helpers.sol";
-//import "../interfaces/IOracle.sol";
 import "../interfaces/ISperaxToken.sol";
 import "../interfaces/IStrategy.sol";
 import "../libraries/VaultCoreLibrary.sol";
-import "../token/USDs.sol";
-//import "../libraries/BancorFormula.sol";
+import "../interfaces/IUSDs.sol";
 import "../interfaces/IBuyback.sol";
 import "../interfaces/IVaultCore.sol";
 
-contract VaultCore is Initializable, OwnableUpgradeable, IVaultCore {
+contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeable, IVaultCore {
 	using SafeERC20Upgradeable for ERC20Upgradeable;
 	using SafeMathUpgradeable for uint;
 	using StableMath for uint;
+
+	bytes32 public constant REBASER_ROLE = keccak256("REBASER_ROLE");
 
 	bool public override mintRedeemAllowed;
 	bool public override allocationAllowed;
@@ -35,17 +25,17 @@ contract VaultCore is Initializable, OwnableUpgradeable, IVaultCore {
 	bool public override swapfeeInAllowed;
 	bool public override swapfeeOutAllowed;
 	address public SPAaddr;
+	address public USDsAddr;
 	address public override oracleAddr;
 	address public SPAvault;
-	USDs USDsInstance;
 	BancorFormula public override BancorInstance;
 	uint public override startBlockHeight;
 	uint public SPAminted;
 	uint public SPAburnt;
 	uint32 public override chi_alpha;
 	uint64 public override constant chi_alpha_prec = 10**12;
-	uint64 public override constant chi_prec = 10**12;
-	uint64 public override chiInit;
+	uint64 public override constant chi_prec = chi_alpha_prec;
+	uint public override chiInit;
 	uint32 public override chi_beta;
 	uint16 public override constant chi_beta_prec = 10**4;
 	uint32 public override chi_gamma;
@@ -62,15 +52,17 @@ contract VaultCore is Initializable, OwnableUpgradeable, IVaultCore {
 	uint32 public override allocatePrecentage;
 	uint16 public override constant allocatePrecentage_prec = 10**4;
 
-	event parametersUpdated(uint64 _chiInit, uint32 _chi_beta, uint32 _chi_gamma, uint32 _swapFee_p, uint32 _swapFee_theta, uint32 _swapFee_a, uint32 _swapFee_A, uint32 _allocatePrecentage);
+	event parametersUpdated(uint _chiInit, uint32 _chi_beta, uint32 _chi_gamma, uint32 _swapFee_p, uint32 _swapFee_theta, uint32 _swapFee_a, uint32 _swapFee_A, uint32 _allocatePrecentage);
 	event USDsMinted(address indexed wallet, uint indexed USDsAmt, uint collateralAmt, uint SPAsAmt, uint feeAmt);
 	event USDsRedeemed(address indexed wallet, uint indexed USDsAmt, uint collateralAmt, uint SPAsAmt, uint feeAmt);
 	event Rebase(uint indexed oldSupply, uint indexed newSupply);
-	event CollateralInfoChanged(address indexed collateralAddr, bool supported, address defaultStrategyAddr, bool allocationAllowed, address buyBackAddr, bool rebaseAllowed);
-	event StrategyInfoChanged(address strategyAddr, bool enabled);
+	event CollateralAdded(address indexed collateralAddr, bool addded, address defaultStrategyAddr, bool allocationAllowed, address buyBackAddr, bool rebaseAllowed);
+	event CollateralChanged(address indexed collateralAddr, bool addded, address defaultStrategyAddr, bool allocationAllowed, address buyBackAddr, bool rebaseAllowed);
+	event StrategyAdded(address strategyAddr, bool added);
 	event MintRedeemPermssionChanged(bool indexed permission);
 	event AllocationPermssionChanged(bool indexed permission);
 	event SwapFeeInOutPermissionChanged(bool indexed swapfeeInAllowed, bool indexed swapfeeOutAllowed);
+	event CollateralAllocated(address indexed collateralAddr, address indexed depositStrategyAddr, uint allocateAmount);
 
 	/**
 	 * @dev check if USDs mint & redeem are both allowed
@@ -96,7 +88,7 @@ contract VaultCore is Initializable, OwnableUpgradeable, IVaultCore {
 
 	struct collateralStruct {
 		address collateralAddr;
-		bool supported;
+		bool added;
 		address defaultStrategyAddr;
 		bool allocationAllowed;
 		address buyBackAddr;
@@ -104,26 +96,25 @@ contract VaultCore is Initializable, OwnableUpgradeable, IVaultCore {
 	}
 	struct strategyStruct {
 		address strategyAddr;
-		bool enabled;
+		bool added;
 	}
-	mapping(address => uint) public supportedCollateral;		// if it is 1, the collateral is supported; else it is 0, it is not supported
 	mapping(address => collateralStruct) collateralsInfo;
 	mapping(address => strategyStruct) strategiesInfo;
-	collateralStruct[] allCollaterals;	// the list of all supported collaterals
+	collateralStruct[] allCollaterals;	// the list of all added collaterals
 	strategyStruct[] allStrategies;	// the list of all strategy addresses
 
-	function initialize() public initializer {
+	function initialize(address _SPAaddr, address _BancorFormulaAddr) public initializer {
 		OwnableUpgradeable.__Ownable_init();
 		mintRedeemAllowed = true;
 		swapfeeInAllowed = false;
 		swapfeeOutAllowed = false;
 		allocationAllowed = false;
-		SPAaddr = 0xbb5E27Ae27A6a7D092b181FbDdAc1A1004e9adff;	// SPA on Kovan
+		SPAaddr = _SPAaddr;
+		BancorInstance = BancorFormula(_BancorFormulaAddr);
 		SPAvault = address(this);
 		startBlockHeight = block.number;
-		BancorInstance = BancorFormula(0x0f27662A7e4033eB4549a4E6Bd42a35a96979BdC);
 		chi_alpha = uint32(chi_alpha_prec * 513 / 10**10);
-		chiInit = chi_prec * 95 / 100;
+		chiInit = uint(chi_prec * 95 / 100).add(startBlockHeight.mul(chi_alpha));
 		chi_beta = chi_beta_prec * 9;
 		chi_gamma = chi_gamma_prec;
 		swapFee_p = swapFee_p_prec * 99 / 100;
@@ -131,18 +122,19 @@ contract VaultCore is Initializable, OwnableUpgradeable, IVaultCore {
 		swapFee_a = swapFee_a_prec * 12 / 10;
 		swapFee_A = swapFee_A_prec * 20;
 		allocatePrecentage = allocatePrecentage_prec * 8 / 10;
+		_setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
 	}
 
-	//For testing purposes:
+	//for testing purpose
 	function updateUSDsAddress(address _USDsAddr) external onlyOwner {
-		USDsInstance = USDs(_USDsAddr);
+		USDsAddr = _USDsAddr;
 	}
 
 	function updateOracleAddress(address _oracleAddr) external onlyOwner {
 		oracleAddr =  _oracleAddr;
 	}
 
-	function updateParameters(uint64 _chiInit, uint32 _chi_beta, uint32 _chi_gamma, uint32 _swapFee_p, uint32 _swapFee_theta, uint32 _swapFee_a, uint32 _swapFee_A, uint32 _allocatePrecentage) external onlyOwner {
+	function updateParameters(uint _chiInit, uint32 _chi_beta, uint32 _chi_gamma, uint32 _swapFee_p, uint32 _swapFee_theta, uint32 _swapFee_a, uint32 _swapFee_A, uint32 _allocatePrecentage) external onlyOwner {
 		chiInit = _chiInit;
 		chi_beta = _chi_beta;
 		chi_gamma = _chi_gamma;
@@ -177,29 +169,47 @@ contract VaultCore is Initializable, OwnableUpgradeable, IVaultCore {
 		emit SwapFeeInOutPermissionChanged(swapfeeInAllowed, swapfeeOutAllowed);
 	}
 
-	function updateCollateralInfo(address _collateralAddr, bool _supported, address _defaultStrategyAddr, bool _allocationAllowed, address _buyBackAddr, bool _rebaseAllowed) external onlyOwner {
-		_updateCollateralInfo(_collateralAddr, _supported, _defaultStrategyAddr, _allocationAllowed, _buyBackAddr, _rebaseAllowed);
+	function addCollateral(address _collateralAddr, address _defaultStrategyAddr, bool _allocationAllowed, address _buyBackAddr, bool _rebaseAllowed) external onlyOwner {
+		require(!collateralsInfo[_collateralAddr].added, "Collateral added");
+		require(ERC20Upgradeable(_collateralAddr).decimals() <= 18, "Collaterals decimals need to be less tehn 18");
+		collateralStruct storage addingCollateral = collateralsInfo[_collateralAddr];
+		addingCollateral.collateralAddr = _collateralAddr;
+		addingCollateral.added = true;
+		addingCollateral.defaultStrategyAddr = _defaultStrategyAddr;
+		addingCollateral.allocationAllowed = _allocationAllowed;
+		addingCollateral.buyBackAddr = _buyBackAddr;
+		allCollaterals.push(addingCollateral);
+		emit CollateralAdded(_collateralAddr, addingCollateral.added, _defaultStrategyAddr, _allocationAllowed, _buyBackAddr, _rebaseAllowed);
 	}
 
-	function _updateCollateralInfo(address _collateralAddr, bool _supported, address _defaultStrategyAddr, bool _allocationAllowed, address _buyBackAddr, bool _rebaseAllowed) internal {
+	function updateCollateralInfo(address _collateralAddr, address _defaultStrategyAddr, bool _allocationAllowed, address _buyBackAddr, bool _rebaseAllowed) external onlyOwner {
+		require(collateralsInfo[_collateralAddr].added, "Collateral not added");
 		collateralStruct storage updatedCollateral = collateralsInfo[_collateralAddr];
 		updatedCollateral.collateralAddr = _collateralAddr;
-		updatedCollateral.supported = _supported;
 		updatedCollateral.defaultStrategyAddr = _defaultStrategyAddr;
 		updatedCollateral.allocationAllowed = _allocationAllowed;
 		updatedCollateral.buyBackAddr = _buyBackAddr;
-		emit CollateralInfoChanged(_collateralAddr, _supported, _defaultStrategyAddr, _allocationAllowed, _buyBackAddr, _rebaseAllowed);
+		emit CollateralChanged(_collateralAddr, updatedCollateral.added ,_defaultStrategyAddr, _allocationAllowed, _buyBackAddr, _rebaseAllowed);
 	}
 
-	function updateStrategyInfo(address _strategyAddr, bool _enabled) external onlyOwner {
-		_updateStrategyInfo(_strategyAddr, _enabled);
-	}
 
-	function _updateStrategyInfo(address _strategyAddr, bool _enabled) internal {
-		strategyStruct storage updatedStrategy = strategiesInfo[_strategyAddr];
-		updatedStrategy.strategyAddr = _strategyAddr;
-		updatedStrategy.enabled = _enabled;
-		emit StrategyInfoChanged(_strategyAddr, _enabled);
+	// function updateStrategyInfo(address _strategyAddr, bool _added) external onlyOwner {
+	// 	_updateStrategyInfo(_strategyAddr, _added);
+	// }
+	//
+	// function _updateStrategyInfo(address _strategyAddr, bool _added) internal {
+	// 	strategyStruct storage addingStrategy = strategiesInfo[_strategyAddr];
+	// 	addingStrategy.strategyAddr = _strategyAddr;
+	// 	addingStrategy.added = _added;
+	// 	emit StrategyInfoChanged(_strategyAddr, _added);
+	// }
+	function addStrategy(address _strategyAddr) external onlyOwner {
+		require(!strategiesInfo[_strategyAddr].added, "Strategy added");
+		strategyStruct storage addingStrategy = strategiesInfo[_strategyAddr];
+		addingStrategy.strategyAddr = _strategyAddr;
+		addingStrategy.added = true;
+		allStrategies.push(addingStrategy);
+		emit StrategyAdded(_strategyAddr, true);
 	}
 
 	/**
@@ -211,7 +221,7 @@ contract VaultCore is Initializable, OwnableUpgradeable, IVaultCore {
 		public
 		whenMintRedeemAllowed
 	{
-		require(collateralsInfo[collateralAddr].supported, "Collateral not supported");
+		require(collateralsInfo[collateralAddr].added, "Collateral not added");
 		require(USDsMintAmt > 0, "Amount needs to be greater than 0");
 		_mint(collateralAddr, USDsMintAmt, 0, USDsMintAmt, slippageCollateral, slippageSPA, deadline);
 	}
@@ -226,7 +236,7 @@ contract VaultCore is Initializable, OwnableUpgradeable, IVaultCore {
 		public
 		whenMintRedeemAllowed
 	{
-		require(collateralsInfo[collateralAddr].supported, "Collateral not supported");
+		require(collateralsInfo[collateralAddr].added, "Collateral not added");
 		require(SPAamt > 0, "Amount needs to be greater than 0");
 		_mint(collateralAddr, SPAamt, 1, slippageUSDs, slippageCollateral, SPAamt, deadline);
 	}
@@ -240,7 +250,7 @@ contract VaultCore is Initializable, OwnableUpgradeable, IVaultCore {
 		public
 		whenMintRedeemAllowed
 	{
-		require(collateralsInfo[collateralAddr].supported, "Collateral not supported");
+		require(collateralsInfo[collateralAddr].added, "Collateral not added");
 		require(collateralAmt > 0, "Amount needs to be greater than 0");
 		_mint(collateralAddr, collateralAmt, 2, slippageUSDs, collateralAmt, slippageSPA, deadline);
 	}
@@ -293,8 +303,8 @@ contract VaultCore is Initializable, OwnableUpgradeable, IVaultCore {
 			ERC20Upgradeable(collateralAddr).safeTransferFrom(msg.sender, address(this), collateralDepAmt);
 		}
 		// mint USDs and collect swapIn fees
-		USDsInstance.mint(msg.sender, USDsAmt);
-		USDsInstance.mint(address(this), swapFeeAmount);
+		IUSDs(USDsAddr).mint(msg.sender, USDsAmt);
+		IUSDs(USDsAddr).mint(address(this), swapFeeAmount);
 		emit USDsMinted(msg.sender, USDsAmt, collateralDepAmt, SPABurnAmt, swapFeeAmount);
 	}
 
@@ -305,7 +315,7 @@ contract VaultCore is Initializable, OwnableUpgradeable, IVaultCore {
 		public
 		whenMintRedeemAllowed
 	{
-		require(collateralsInfo[collateralAddr].supported, "Collateral not supported");
+		require(collateralsInfo[collateralAddr].added, "Collateral not added");
 		require(USDsAmt > 0, "Amount needs to be greater than 0");
 		_redeem(collateralAddr, USDsAmt, slippageCollat, slippageSPA, deadline);
 	}
@@ -345,30 +355,22 @@ contract VaultCore is Initializable, OwnableUpgradeable, IVaultCore {
 		} else {
 			ERC20Upgradeable(collateralAddr).safeTransfer(msg.sender, collateralUnlockedAmt);
 		}
-		USDsInstance.burn(msg.sender, USDsBurntAmt);
-		USDsInstance.transferFrom(msg.sender, address(this), swapFeeAmount);
+		IUSDs(USDsAddr).burn(msg.sender, USDsBurntAmt);
+		ERC20Upgradeable(USDsAddr).safeTransferFrom(msg.sender, address(this), swapFeeAmount);
 
 		emit USDsRedeemed(msg.sender, USDsBurntAmt, collateralUnlockedAmt,SPAMintAmt, swapFeeAmount);
 	}
 
-	/**
-	 * @dev Calculate the total value of collaterals held by the Vault and all
-	 *      strategies and update the supply of USDs.
-	 */
-	function rebase() external onlyOwner {
+	function rebase() external whenRebaseAllowed {
+		require(hasRole(REBASER_ROLE, msg.sender), "Caller is not a burner");
 		_rebase();
 	}
 
-	/**
-	 * @dev Calculate the total value of collaterals held by the Vault and all
-	 *      strategies and update the supply of USDs, optionaly sending a
-	 *      portion of the yield to the trustee.
-	 */
 	function _rebase() internal {
 		IStrategy strategy;
 		collateralStruct memory collateral;
 		uint newTokensAmt;
-		uint USDsSupply = USDsInstance._totalSupply();
+		uint USDsSupply = ERC20Upgradeable(USDsAddr).totalSupply();
 		uint USDsSupplyIncrementTotal;
 		uint USDsReceived;
 		for (uint y = 0; y < allCollaterals.length; y++) {
@@ -378,22 +380,19 @@ contract VaultCore is Initializable, OwnableUpgradeable, IVaultCore {
 			if (newTokensAmt > 0 && collateral.rebaseAllowed) {
 				strategy.withdraw(address(this), collateral.collateralAddr, newTokensAmt);
 				USDsReceived = IBuyback(collateral.buyBackAddr).swapExactInputSingle(newTokensAmt);
-				USDsInstance.burn(address(this), USDsReceived);
+				IUSDs(USDsAddr).burn(address(this), USDsReceived);
 				USDsSupplyIncrementTotal = USDsSupplyIncrementTotal.add(USDsReceived);
 			}
 		}
 		uint USDsNewSupply = USDsSupply.add(USDsSupplyIncrementTotal);
-		USDsInstance.changeSupply(USDsNewSupply);
+		IUSDs(USDsAddr).changeSupply(USDsNewSupply);
 		emit Rebase(USDsSupply, USDsNewSupply);
 	}
-	//
-	// /**
-	//  * @dev  _precision: same as chi (chi_prec)
-	//  */
-	//
+
+
 	function collateralRatio() public view override returns (uint ratio) {
 		uint totalValueLocked = _totalValueLocked();
-		uint USDsSupply = USDsInstance.totalSupply();
+		uint USDsSupply = ERC20Upgradeable(USDsAddr).totalSupply();
 		uint priceUSDs = uint(IOracle(oracleAddr).getUSDsPrice());
 		uint precisionUSDs = IOracle(oracleAddr).getUSDsPrice_prec();
 		uint USDsValue = USDsSupply.mul(priceUSDs).div(precisionUSDs);
@@ -418,9 +417,9 @@ contract VaultCore is Initializable, OwnableUpgradeable, IVaultCore {
 			uint priceColla = IOracle(oracleAddr).getCollateralPrice(collateral.collateralAddr);
 			uint precisionColla = IOracle(oracleAddr).getCollateralPrice_prec(collateral.collateralAddr);
 			uint collateralAddrDecimal = uint(ERC20Upgradeable(collateral.collateralAddr).decimals());
-			uint collaTotalValueInVault = ERC20Upgradeable(collateral.collateralAddr).balanceOf(address(this)).mul(priceColla).div(precisionColla);
-			uint collaTotalValueInVault_18 = collaTotalValueInVault.mul(10**(uint(18).sub(collateralAddrDecimal)));
-			value = value.add(collaTotalValueInVault_18);
+			uint collateralTotalValueInVault = ERC20Upgradeable(collateral.collateralAddr).balanceOf(address(this)).mul(priceColla).div(precisionColla);
+			uint collateralTotalValueInVault_18 = collateralTotalValueInVault.mul(10**(uint(18).sub(collateralAddrDecimal)));
+			value = value.add(collateralTotalValueInVault_18);
 		}
 	}
 
@@ -430,7 +429,7 @@ contract VaultCore is Initializable, OwnableUpgradeable, IVaultCore {
 
 	function _totalValueInStrategies() internal view returns (uint value) {
 		for (uint i = 0; i < allStrategies.length; i++) {
-			if (allStrategies[i].enabled) {
+			if (allStrategies[i].added) {
 				value = value.add(_totalValueInStrategy(allStrategies[i].strategyAddr));
 			}
 		}
@@ -444,53 +443,23 @@ contract VaultCore is Initializable, OwnableUpgradeable, IVaultCore {
 				uint priceColla = IOracle(oracleAddr).getCollateralPrice(collateral.collateralAddr);
 				uint precisionColla = IOracle(oracleAddr).getCollateralPrice_prec(collateral.collateralAddr);
 				uint collateralAddrDecimal = uint(ERC20Upgradeable(collateral.collateralAddr).decimals());
-				uint collaTotalValueInStrategy = strategy.checkBalance(collateral.collateralAddr).mul(priceColla).div(precisionColla);
-				uint collaTotalValueInStrategy_18 = collaTotalValueInStrategy.mul(10**(uint(18).sub(collateralAddrDecimal)));
-				value = value.add(collaTotalValueInStrategy_18);
+				uint collateralTotalValueInStrategy = strategy.checkBalance(collateral.collateralAddr).mul(priceColla).div(precisionColla);
+				uint collateralTotalValueInStrategy_18 = collateralTotalValueInStrategy.mul(10**(uint(18).sub(collateralAddrDecimal)));
+				value = value.add(collateralTotalValueInStrategy_18);
 			}
 		}
-	}
-
-	/**
-		* @notice Allocate unallocated funds on Vault to strategies.
-		* @dev Allocate unallocated funds on Vault to strategies.
-		**/
-	function allocateAll() external whenAllocationAllowed onlyOwner {
-		for (uint i = 0; i < allCollaterals.length; i++) {
-			collateralStruct memory collateral = allCollaterals[i];
-			if (collateral.supported && collateral.allocationAllowed) {
-				IStrategy strategyInstance = IStrategy(collateral.defaultStrategyAddr);
-				uint amtInVault = ERC20Upgradeable(collateral.collateralAddr).balanceOf(address(this));
-				uint amtInStrategy = strategyInstance.checkBalance(collateral.collateralAddr);
-				uint amtTotal = amtInVault.add(amtInStrategy);
-				(, uint amtToAllocate) = amtTotal.mul(allocatePrecentage).div(allocatePrecentage_prec).trySub(amtInStrategy);
-				if (amtToAllocate > 0) {
-					_allocate(collateral.collateralAddr, amtToAllocate);
-				}
-			}
-		}
-	}
-
-	function allocate(address _collateralAddr, uint amtToAllocate) external whenAllocationAllowed onlyOwner {
-		_allocate(_collateralAddr, amtToAllocate);
 	}
 
 	/**
 	* @notice Allocate unallocated funds on Vault to strategies.
 	* @dev Allocate unallocated funds on Vault to strategies.
 	**/
-	function _allocate(address _collateralAddr, uint amtToAllocate) internal {
-		collateralStruct memory collateral = collateralsInfo[_collateralAddr];
-		require(collateral.supported, "_allocate: Collateral not supported. ");
-		require(collateral.defaultStrategyAddr != address(0), "_allocate: Strategy not set. ");
-		require(collateral.allocationAllowed, "_allocate: Allocation not allowed. ");
-		IStrategy strategyInstance = IStrategy(collateralsInfo[_collateralAddr].defaultStrategyAddr);
-		strategyStruct memory strategy = strategiesInfo[collateralsInfo[_collateralAddr].defaultStrategyAddr];
-		require(strategy.strategyAddr != address(0), "_allocate: Strategy not set. ");
-		require(strategy.enabled, "_allocate: Strategy not enabled. ");
-		require(amtToAllocate > 0, "_allocate: amtToAllocate should be positive. ");
-		ERC20Upgradeable(_collateralAddr).safeTransfer(collateral.defaultStrategyAddr, amtToAllocate);
-		strategyInstance.deposit(_collateralAddr, amtToAllocate);
+    function _allocate() internal {
+		//David is working on this
 	}
+
+
+
+
 
 }

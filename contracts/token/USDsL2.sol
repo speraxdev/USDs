@@ -10,18 +10,17 @@ pragma solidity ^0.6.12;
  * @title USDs Token Contract
  * @dev ERC20 compatible contract for USDs
  * @dev Implements an elastic supply
- * @author Origin Protocol Inc
+ * @author Sperax Inc
  */
 
 import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
-//import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-//import "https://github.com/OpenZeppelin/openzeppelin-contracts-upgradeable/blob/v3.4.0/contracts/access/OwnableUpgradeable.sol";
-import "../libraries/openzeppelin/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import { InitializableERC20Detailed } from "../libraries/InitializableERC20Detailed.sol";
 import { StableMath } from "../libraries/StableMath.sol";
 import "arb-bridge-peripherals/contracts/tokenbridge/arbitrum/IArbToken.sol";
+import "../interfaces/IUSDs.sol";
 
 /**
  * NOTE that this is an ERC20 token but the invariant that the sum of
@@ -29,7 +28,7 @@ import "arb-bridge-peripherals/contracts/tokenbridge/arbitrum/IArbToken.sol";
  * rebasing design. Any integrations with USDs should be aware.
  */
 
-contract USDsL2 is Initializable, InitializableERC20Detailed, OwnableUpgradeable, IArbToken {
+contract USDsL2 is Initializable, InitializableERC20Detailed, OwnableUpgradeable, IArbToken, IUSDs {
     using SafeMathUpgradeable for uint256;
     using StableMath for uint256;
 
@@ -42,9 +41,9 @@ contract USDsL2 is Initializable, InitializableERC20Detailed, OwnableUpgradeable
     enum RebaseOptions { NotSet, OptOut, OptIn }
 
     uint256 private constant MAX_SUPPLY = ~uint128(0); // (2^128) - 1
-    uint256 public _totalSupply;    // the total supply of USDs
-    uint256 public _totalMinted;    // the total num of USDs minted so far
-    uint256 public _totalBurnt;     // the total num of USDs burnt so far
+    uint256 internal _totalSupply;    // the total supply of USDs
+    uint256 public override totalMinted;    // the total num of USDs minted so far
+    uint256 public override totalBurnt;     // the total num of USDs burnt so far
     mapping(address => mapping(address => uint256)) private _allowances;
     address public vaultAddress;    // the address where (i) all collaterals of USDs protocol reside, e.g. USDT, USDC, ETH, etc and (ii) major actions like USDs minting are initiated
     // an user's balance of USDs is based on her balance of "credits."
@@ -60,7 +59,7 @@ contract USDsL2 is Initializable, InitializableERC20Detailed, OwnableUpgradeable
     mapping(address => uint256) public nonRebasingCreditsPerToken; // the rebase ratio of non-rebasing accounts just before they opt out
     mapping(address => RebaseOptions) public rebaseState;          // the rebase state of each account, i.e. opt in or opt out
 
-    // Arbitrum Bridge    
+    // Arbitrum Bridge
     address public l2Gateway;
     address public override l1Address;
 
@@ -286,7 +285,7 @@ contract USDsL2 is Initializable, InitializableERC20Detailed, OwnableUpgradeable
      * @param _account the account address the newly minted USDs will be attributed to
      * @param _amount the amount of USDs that will be minted
      */
-    function mint(address _account, uint256 _amount) external onlyVault {
+    function mint(address _account, uint256 _amount) external override onlyVault {
         _mint(_account, _amount);
     }
 
@@ -321,7 +320,7 @@ contract USDsL2 is Initializable, InitializableERC20Detailed, OwnableUpgradeable
         }
 
         _totalSupply = _totalSupply.add(_amount);
-        _totalMinted = _totalMinted.add(_amount);
+        totalMinted = totalMinted.add(_amount);
 
         require(_totalSupply < MAX_SUPPLY, "Max supply");
 
@@ -331,7 +330,7 @@ contract USDsL2 is Initializable, InitializableERC20Detailed, OwnableUpgradeable
     /**
      * @dev Burns tokens, decreasing totalSupply.
      */
-    function burn(address account, uint256 amount) external onlyVault {
+    function burn(address account, uint256 amount) external override onlyVault {
         _burn(account, amount);
     }
 
@@ -378,7 +377,7 @@ contract USDsL2 is Initializable, InitializableERC20Detailed, OwnableUpgradeable
         }
 
         _totalSupply = _totalSupply.sub(_amount);
-        _totalBurnt = _totalBurnt.add(_amount);
+        totalBurnt = totalBurnt.add(_amount);
         emit Transfer(_account, address(0), _amount);
     }
 
@@ -481,6 +480,7 @@ contract USDsL2 is Initializable, InitializableERC20Detailed, OwnableUpgradeable
      */
     function changeSupply(uint256 _newTotalSupply)
         external
+        override
         onlyVault
     {
         require(_totalSupply > 0, "Cannot increase 0 supply");

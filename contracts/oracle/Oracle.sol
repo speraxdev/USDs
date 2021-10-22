@@ -3,20 +3,18 @@
 // To-do: remove for testing purpose functions;
 // To-do: check USDsInOutRatio_prec;
 pragma solidity ^0.6.12;
-pragma experimental ABIEncoderV2; //What's this for?
-
+//pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
-//import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-//import "https://github.com/OpenZeppelin/openzeppelin-contracts-upgradeable/blob/v3.4.0/contracts/access/OwnableUpgradeable.sol";
-import "../libraries/openzeppelin/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+//import "../libraries/openzeppelin/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
 
 import "../vault/VaultCore.sol";
 import "../interfaces/AggregatorV3Interface.sol";
 import "../interfaces/IOracle.sol";
-import "../interfaces/IUniswapV2Pair.sol";
-import "../libraries/UniswapV2OracleLibrary.sol";
+import "../interfaces/IUSDs.sol";
+//import "@uniswap/v3-periphery/contracts/libraries/OracleLibrary.sol";
 import "../libraries/OracleLibrary.sol";
 
 /**
@@ -27,22 +25,23 @@ import "../libraries/OracleLibrary.sol";
  */
 
 contract Oracle is Initializable, IOracle, OwnableUpgradeable {
-    using SafeMathUpgradeable for *;
-    using OracleLibrary for *;
-
+    using SafeMathUpgradeable for uint;
     uint public override USDsInOutRatio; // USDsInOutRatio is accurate after 24 hours (one iteration)
     uint32 public constant override USDsInOutRatio_prec = 10**6;
-    uint8 public constant FREQUENCY = 24;
+    uint8 public constant FREQUENCY = 6;
     uint32 public updateNextIndex;
     uint32 public lastUpdateTime; // the timstamp of the lastest update
     uint32 public updatePeriod; // the default updatePeriod of one update is 1 hours
     uint public constant ETHprice_prec = 10**8;
     uint public constant SPAprice_prec = 10**18;
     uint public constant USDsPrice_prec = 10**18;
+    uint32 public movingAvgShortPeriod;
+    uint32 public movingAvgLongPeriod;
     AggregatorV3Interface priceFeedETH;
-    address public constant SPAaddr = address(0xbb5E27Ae27A6a7D092b181FbDdAc1A1004e9adff);
-    address public constant WETH9 = 0xd0A1E359811322d97991E03f863a0C30C2cF029C;
+    address public SPAaddr;
+    address public WETH9;
     address public VaultAddr;
+    address public USDsAddr;
     address public USDsOraclePool;
     address public SPAoraclePool;
     address public SPAoracleBaseTokenAddr;
@@ -55,8 +54,10 @@ contract Oracle is Initializable, IOracle, OwnableUpgradeable {
         uint32 timeStamp,
         uint index
     );
-    event updatePeriodChanged(
-        uint32 newPeriod
+    event periodChanged(
+        uint32 updatePeriod,
+        uint32 movingAvgShortPeriod,
+        uint32 movingAvgLongPeriod
     );
     event collateralInfoChanged(
         address _collateralAddr,
@@ -78,11 +79,24 @@ contract Oracle is Initializable, IOracle, OwnableUpgradeable {
     //
     // Initializer
     //
-    function initialize() public initializer {
+    function initialize(address _priceFeedETH, address _SPAaddr, address _WETH9) public initializer {
         OwnableUpgradeable.__Ownable_init();
-        updatePeriod = 1 hours;
+        updatePeriod = 12 hours;
         lastUpdateTime = uint32(now % 2**32);
-        priceFeedETH = AggregatorV3Interface(0x9326BFA02ADD2366b30bacB125260Af641031331);
+        priceFeedETH = AggregatorV3Interface(_priceFeedETH);
+        SPAaddr = _SPAaddr;
+        WETH9 = _WETH9;
+        movingAvgShortPeriod = 600;
+        movingAvgLongPeriod = 3600;
+    }
+
+    //for testing purpose
+    function updateUSDsAddress(address _USDsAddr) external onlyOwner {
+        USDsAddr = _USDsAddr;
+    }
+
+    function updateVaultAddress(address _VaultAddr) external onlyOwner {
+        VaultAddr = _VaultAddr;
     }
 
     function updateOraclePoolsAddress(address _SPAoracleBaseTokenAddr, address _USDsOracleBaseTokenAddr, address _USDsOraclePool, address _SPAoraclePool) external onlyOwner {
@@ -92,18 +106,24 @@ contract Oracle is Initializable, IOracle, OwnableUpgradeable {
         SPAoraclePool = _SPAoraclePool;
     }
 
-    function updateVaultAddress(address _VaultAddr) external onlyOwner {
-        VaultAddr = _VaultAddr;
+
+    function updatePriceMovingAvgPeriod(uint32 _movingAvgShortPeriod, uint32 _movingAvgLongPeriod) external onlyOwner {
+        movingAvgShortPeriod = _movingAvgShortPeriod;
+        movingAvgLongPeriod = _movingAvgLongPeriod;
     }
 
     /**
      * @notice change updatePeriod
      * @dev the frequency of update always remains the same
-     * @param newPeriod new minimal updatePeriod in between two updates
+     * @param _updatePeriod new minimal updatePeriod in between two updates
+     * @param _movingAvgShortPeriod new moving average range of SPA and USDs price
+     * @param _movingAvgLongPeriod new moving average range of USDs price on average (used in SwapFeeIn)
      */
-    function changePeriod(uint32 newPeriod) external onlyOwner {
-        updatePeriod = newPeriod;
-        emit updatePeriodChanged(updatePeriod);
+    function changePeriod(uint32 _updatePeriod, uint32 _movingAvgShortPeriod, uint32 _movingAvgLongPeriod) external onlyOwner {
+        updatePeriod = _updatePeriod;
+        movingAvgShortPeriod =_movingAvgShortPeriod;
+        movingAvgLongPeriod = _movingAvgLongPeriod;
+        emit periodChanged(updatePeriod, movingAvgShortPeriod, movingAvgLongPeriod);
     }
 
     function updateCollateralInfo(address _collateralAddr, bool _supported, AggregatorV3Interface _priceFeed, uint _price_prec) external onlyOwner {
@@ -123,12 +143,12 @@ contract Oracle is Initializable, IOracle, OwnableUpgradeable {
     function updateInOutRatio() external override {
         uint32 currTime = uint32(now % 2 ** 32);
         uint32 timeElapsed = currTime - lastUpdateTime;
-        require(currTime >= lastUpdateTime, "updateInOutRatio; error last update happened in the future");
+        require(currTime >= lastUpdateTime, "updateInOutRatio: error last update happened in the future");
         require(timeElapsed >= updatePeriod, "updateInOutRatio: the time elapsed is too short.");
         uint32 indexNew = updateNextIndex;
         uint32 indexOld = (indexNew + 1) % (FREQUENCY + 1);
-        USDsInflow[indexNew] = USDs(VaultAddr)._totalMinted();
-        USDsOnflow[indexNew] = USDs(VaultAddr)._totalBurnt();
+        USDsInflow[indexNew] = IUSDs(USDsAddr).totalMinted();
+        USDsOnflow[indexNew] = IUSDs(USDsAddr).totalBurnt();
         uint USDsInflow_average = USDsInflow[indexNew].sub(USDsInflow[indexOld]);
         uint USDsOnflow_average = USDsOnflow[indexNew].sub(USDsOnflow[indexOld]);
         if (USDsInOutRatio == 0) {
@@ -152,22 +172,34 @@ contract Oracle is Initializable, IOracle, OwnableUpgradeable {
 	}
 
     function getSPAprice() external view override returns (uint) {
-        int24 timeWeightedAverageTick = SPAoraclePool.consult(3600);
-        uint quoteAmount = timeWeightedAverageTick.getQuoteAtTick(uint128(SPAprice_prec), SPAaddr, SPAoracleBaseTokenAddr);
+        uint32 longestSec = OracleLibrary.getOldestObservationSecondsAgo(SPAoraclePool);
+        uint32 period = movingAvgShortPeriod < longestSec ? movingAvgShortPeriod : longestSec;
+        int24 timeWeightedAverageTick = OracleLibrary.consult(SPAoraclePool, period);
+        uint quoteAmount = OracleLibrary.getQuoteAtTick(timeWeightedAverageTick, uint128(SPAprice_prec), SPAaddr, SPAoracleBaseTokenAddr);
         uint SPAprice = _getETHprice().mul(quoteAmount).div(ETHprice_prec);
         return SPAprice;
     }
 
     function getUSDsPrice() external view override returns (uint) {
-        int24 timeWeightedAverageTick = USDsOraclePool.consult(3600);
-        uint quoteAmount = timeWeightedAverageTick.getQuoteAtTick(uint128(USDsPrice_prec), VaultAddr, USDsOracleBaseTokenAddr);
+        if (USDsOraclePool == address(0)) {
+            return USDsPrice_prec;
+        }
+        uint32 longestSec = OracleLibrary.getOldestObservationSecondsAgo(USDsOraclePool);
+        uint32 period = movingAvgShortPeriod < longestSec ? movingAvgShortPeriod : longestSec;
+        int24 timeWeightedAverageTick = OracleLibrary.consult(USDsOraclePool, period);
+        uint quoteAmount = OracleLibrary.getQuoteAtTick(timeWeightedAverageTick, uint128(USDsPrice_prec), VaultAddr, USDsOracleBaseTokenAddr);
         uint USDsPrice = _getCollateralPrice(USDsOracleBaseTokenAddr).mul(quoteAmount).div(_getCollateralPrice_prec(USDsOracleBaseTokenAddr));
         return USDsPrice;
     }
 
     function getUSDsPrice_average() external view override returns (uint) {
-        int24 timeWeightedAverageTick = USDsOraclePool.consult(86400);
-        uint quoteAmount = timeWeightedAverageTick.getQuoteAtTick(uint128(USDsPrice_prec), VaultAddr, USDsOracleBaseTokenAddr);
+        if (USDsOraclePool == address(0)){
+            return USDsPrice_prec;
+        }
+        uint32 longestSec = OracleLibrary.getOldestObservationSecondsAgo(USDsOraclePool);
+        uint32 period = movingAvgLongPeriod < longestSec ? movingAvgLongPeriod : longestSec;
+        int24 timeWeightedAverageTick = OracleLibrary.consult(USDsOraclePool, period);
+        uint quoteAmount = OracleLibrary.getQuoteAtTick(timeWeightedAverageTick, uint128(USDsPrice_prec), VaultAddr, USDsOracleBaseTokenAddr);
         uint USDsPrice_average = _getCollateralPrice(USDsOracleBaseTokenAddr).mul(quoteAmount).div(_getCollateralPrice_prec(USDsOracleBaseTokenAddr));
         return USDsPrice_average;
     }
