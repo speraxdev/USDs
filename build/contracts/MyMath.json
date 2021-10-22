@@ -1,23 +1,17 @@
 {
-  "contractName": "MyMath",
   "abi": [],
-  "metadata": "{\"compiler\":{\"version\":\"0.6.12+commit.27d51765\"},\"language\":\"Solidity\",\"output\":{\"abi\":[],\"devdoc\":{\"kind\":\"dev\",\"methods\":{},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{},\"version\":1}},\"settings\":{\"compilationTarget\":{\"/Volumes/Work/Sperax/USDs/contracts/libraries/MyMath.sol\":\"MyMath\"},\"evmVersion\":\"istanbul\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\"},\"optimizer\":{\"enabled\":true,\"runs\":200},\"remappings\":[]},\"sources\":{\"/Volumes/Work/Sperax/USDs/contracts/libraries/MyMath.sol\":{\"keccak256\":\"0xe570f3a21c0917cb553385eb0600c453ffc54fed9187c1f6419a170391493dfa\",\"urls\":[\"bzz-raw://c6570038bdb84855d91e04bfc7bb3b55c83892629f4ed9df20005cc2f903cd8d\",\"dweb:/ipfs/QmPyGz64BjGqobQzrhjEUWUsdhD9kDvAEDQMM19h5uZrpp\"]}},\"version\":1}",
-  "bytecode": "0x60566023600b82828239805160001a607314601657fe5b30600052607381538281f3fe73000000000000000000000000000000000000000030146080604052600080fdfea26469706673582212207dccf794fd01813f98d00b85fd0f14853b015272265708b6c77ea6f6e4dc42e364736f6c634300060c0033",
-  "deployedBytecode": "0x73000000000000000000000000000000000000000030146080604052600080fdfea26469706673582212207dccf794fd01813f98d00b85fd0f14853b015272265708b6c77ea6f6e4dc42e364736f6c634300060c0033",
-  "immutableReferences": {},
-  "sourceMap": "142:561:20:-:0;;;;;;;;;;;;;;;;;;;;;;;;;",
-  "deployedSourceMap": "142:561:20:-:0;;;;;;;;",
-  "source": "pragma solidity ^0.6.12;\n\n//inspired by https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/utils/math/SafeCast.sol\n\nlibrary MyMath {\n    //inspired by https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/utils/math/SafeCast.sol\n    /**\n     * @dev Returns the downcasted uint112 from uint256, reverting on\n     * overflow (when the input is greater than largest uint112).\n     *\n     *\n     * Requirements:\n     *\n     * - input must fit into 112 bits\n     */\n      function toUint112(uint256 value) internal pure returns (uint112) {\n          require(value < 2**112, \"SafeCast: value doesnt fit in 112 bits\");\n          return uint112(value);\n      }\n}\n",
-  "sourcePath": "/Volumes/Work/Sperax/USDs/contracts/libraries/MyMath.sol",
+  "allSourcePaths": {
+    "43": "contracts/libraries/MyMath.sol"
+  },
   "ast": {
-    "absolutePath": "/Volumes/Work/Sperax/USDs/contracts/libraries/MyMath.sol",
+    "absolutePath": "contracts/libraries/MyMath.sol",
     "exportedSymbols": {
       "MyMath": [
         4485
       ]
     },
     "id": 4486,
-    "license": null,
+    "license": "MIT",
     "nodeType": "SourceUnit",
     "nodes": [
       {
@@ -29,7 +23,7 @@
           ".12"
         ],
         "nodeType": "PragmaDirective",
-        "src": "0:24:20"
+        "src": "32:24:43"
       },
       {
         "abstract": false,
@@ -49,7 +43,7 @@
             "body": {
               "id": 4483,
               "nodeType": "Block",
-              "src": "582:119:20",
+              "src": "614:119:43",
               "statements": [
                 {
                   "expression": {
@@ -73,7 +67,7 @@
                           "nodeType": "Identifier",
                           "overloadedDeclarations": [],
                           "referencedDeclaration": 4464,
-                          "src": "602:5:20",
+                          "src": "634:5:43",
                           "typeDescriptions": {
                             "typeIdentifier": "t_uint256",
                             "typeString": "uint256"
@@ -102,7 +96,7 @@
                             "kind": "number",
                             "lValueRequested": false,
                             "nodeType": "Literal",
-                            "src": "610:1:20",
+                            "src": "642:1:43",
                             "subdenomination": null,
                             "typeDescriptions": {
                               "typeIdentifier": "t_rational_2_by_1",
@@ -122,7 +116,7 @@
                             "kind": "number",
                             "lValueRequested": false,
                             "nodeType": "Literal",
-                            "src": "613:3:20",
+                            "src": "645:3:43",
                             "subdenomination": null,
                             "typeDescriptions": {
                               "typeIdentifier": "t_rational_112_by_1",
@@ -130,13 +124,13 @@
                             },
                             "value": "112"
                           },
-                          "src": "610:6:20",
+                          "src": "642:6:43",
                           "typeDescriptions": {
                             "typeIdentifier": "t_rational_5192296858534827628530496329220096_by_1",
                             "typeString": "int_const 5192...(26 digits omitted)...0096"
                           }
                         },
-                        "src": "602:14:20",
+                        "src": "634:14:43",
                         "typeDescriptions": {
                           "typeIdentifier": "t_bool",
                           "typeString": "bool"
@@ -152,7 +146,7 @@
                         "kind": "string",
                         "lValueRequested": false,
                         "nodeType": "Literal",
-                        "src": "618:40:20",
+                        "src": "650:40:43",
                         "subdenomination": null,
                         "typeDescriptions": {
                           "typeIdentifier": "t_stringliteral_90812a5ddaa238984a0f5bdcc11c51e630005692b9ae9744b31f567e54cfee4f",
@@ -180,7 +174,7 @@
                         -18
                       ],
                       "referencedDeclaration": -18,
-                      "src": "594:7:20",
+                      "src": "626:7:43",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_require_pure$_t_bool_$_t_string_memory_ptr_$returns$__$",
                         "typeString": "function (bool,string memory) pure"
@@ -194,7 +188,7 @@
                     "lValueRequested": false,
                     "names": [],
                     "nodeType": "FunctionCall",
-                    "src": "594:65:20",
+                    "src": "626:65:43",
                     "tryCall": false,
                     "typeDescriptions": {
                       "typeIdentifier": "t_tuple$__$",
@@ -203,7 +197,7 @@
                   },
                   "id": 4477,
                   "nodeType": "ExpressionStatement",
-                  "src": "594:65:20"
+                  "src": "626:65:43"
                 },
                 {
                   "expression": {
@@ -216,7 +210,7 @@
                         "nodeType": "Identifier",
                         "overloadedDeclarations": [],
                         "referencedDeclaration": 4464,
-                        "src": "686:5:20",
+                        "src": "718:5:43",
                         "typeDescriptions": {
                           "typeIdentifier": "t_uint256",
                           "typeString": "uint256"
@@ -236,7 +230,7 @@
                       "isPure": true,
                       "lValueRequested": false,
                       "nodeType": "ElementaryTypeNameExpression",
-                      "src": "678:7:20",
+                      "src": "710:7:43",
                       "typeDescriptions": {
                         "typeIdentifier": "t_type$_t_uint112_$",
                         "typeString": "type(uint112)"
@@ -245,7 +239,7 @@
                         "id": 4478,
                         "name": "uint112",
                         "nodeType": "ElementaryTypeName",
-                        "src": "678:7:20",
+                        "src": "710:7:43",
                         "typeDescriptions": {
                           "typeIdentifier": null,
                           "typeString": null
@@ -260,7 +254,7 @@
                     "lValueRequested": false,
                     "names": [],
                     "nodeType": "FunctionCall",
-                    "src": "678:14:20",
+                    "src": "710:14:43",
                     "tryCall": false,
                     "typeDescriptions": {
                       "typeIdentifier": "t_uint112",
@@ -270,14 +264,14 @@
                   "functionReturnParameters": 4468,
                   "id": 4482,
                   "nodeType": "Return",
-                  "src": "671:21:20"
+                  "src": "703:21:43"
                 }
               ]
             },
             "documentation": {
               "id": 4462,
               "nodeType": "StructuredDocumentation",
-              "src": "282:227:20",
+              "src": "314:227:43",
               "text": " @dev Returns the downcasted uint112 from uint256, reverting on\n overflow (when the input is greater than largest uint112).\n Requirements:\n - input must fit into 112 bits"
             },
             "id": 4484,
@@ -299,7 +293,7 @@
                   "nodeType": "VariableDeclaration",
                   "overrides": null,
                   "scope": 4484,
-                  "src": "535:13:20",
+                  "src": "567:13:43",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -310,7 +304,7 @@
                     "id": 4463,
                     "name": "uint256",
                     "nodeType": "ElementaryTypeName",
-                    "src": "535:7:20",
+                    "src": "567:7:43",
                     "typeDescriptions": {
                       "typeIdentifier": "t_uint256",
                       "typeString": "uint256"
@@ -320,7 +314,7 @@
                   "visibility": "internal"
                 }
               ],
-              "src": "534:15:20"
+              "src": "566:15:43"
             },
             "returnParameters": {
               "id": 4468,
@@ -334,7 +328,7 @@
                   "nodeType": "VariableDeclaration",
                   "overrides": null,
                   "scope": 4484,
-                  "src": "573:7:20",
+                  "src": "605:7:43",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -345,7 +339,7 @@
                     "id": 4466,
                     "name": "uint112",
                     "nodeType": "ElementaryTypeName",
-                    "src": "573:7:20",
+                    "src": "605:7:43",
                     "typeDescriptions": {
                       "typeIdentifier": "t_uint112",
                       "typeString": "uint112"
@@ -355,426 +349,143 @@
                   "visibility": "internal"
                 }
               ],
-              "src": "572:9:20"
+              "src": "604:9:43"
             },
             "scope": 4485,
-            "src": "516:185:20",
+            "src": "548:185:43",
             "stateMutability": "pure",
             "virtual": false,
             "visibility": "internal"
           }
         ],
         "scope": 4486,
-        "src": "142:561:20"
+        "src": "174:561:43"
       }
     ],
-    "src": "0:704:20"
+    "src": "32:704:43"
   },
-  "legacyAST": {
-    "attributes": {
-      "absolutePath": "/Volumes/Work/Sperax/USDs/contracts/libraries/MyMath.sol",
-      "exportedSymbols": {
-        "MyMath": [
-          4485
-        ]
-      },
-      "license": null
-    },
-    "children": [
-      {
-        "attributes": {
-          "literals": [
-            "solidity",
-            "^",
-            "0.6",
-            ".12"
-          ]
-        },
-        "id": 4461,
-        "name": "PragmaDirective",
-        "src": "0:24:20"
-      },
-      {
-        "attributes": {
-          "abstract": false,
-          "baseContracts": [
-            null
-          ],
-          "contractDependencies": [
-            null
-          ],
-          "contractKind": "library",
-          "documentation": null,
-          "fullyImplemented": true,
-          "linearizedBaseContracts": [
-            4485
-          ],
-          "name": "MyMath",
-          "scope": 4486
-        },
-        "children": [
-          {
-            "attributes": {
-              "implemented": true,
-              "isConstructor": false,
-              "kind": "function",
-              "modifiers": [
-                null
-              ],
-              "name": "toUint112",
-              "overrides": null,
-              "scope": 4485,
-              "stateMutability": "pure",
-              "virtual": false,
-              "visibility": "internal"
-            },
-            "children": [
-              {
-                "attributes": {
-                  "text": " @dev Returns the downcasted uint112 from uint256, reverting on\n overflow (when the input is greater than largest uint112).\n Requirements:\n - input must fit into 112 bits"
-                },
-                "id": 4462,
-                "name": "StructuredDocumentation",
-                "src": "282:227:20"
-              },
-              {
-                "children": [
-                  {
-                    "attributes": {
-                      "constant": false,
-                      "mutability": "mutable",
-                      "name": "value",
-                      "overrides": null,
-                      "scope": 4484,
-                      "stateVariable": false,
-                      "storageLocation": "default",
-                      "type": "uint256",
-                      "value": null,
-                      "visibility": "internal"
-                    },
-                    "children": [
-                      {
-                        "attributes": {
-                          "name": "uint256",
-                          "type": "uint256"
-                        },
-                        "id": 4463,
-                        "name": "ElementaryTypeName",
-                        "src": "535:7:20"
-                      }
-                    ],
-                    "id": 4464,
-                    "name": "VariableDeclaration",
-                    "src": "535:13:20"
-                  }
-                ],
-                "id": 4465,
-                "name": "ParameterList",
-                "src": "534:15:20"
-              },
-              {
-                "children": [
-                  {
-                    "attributes": {
-                      "constant": false,
-                      "mutability": "mutable",
-                      "name": "",
-                      "overrides": null,
-                      "scope": 4484,
-                      "stateVariable": false,
-                      "storageLocation": "default",
-                      "type": "uint112",
-                      "value": null,
-                      "visibility": "internal"
-                    },
-                    "children": [
-                      {
-                        "attributes": {
-                          "name": "uint112",
-                          "type": "uint112"
-                        },
-                        "id": 4466,
-                        "name": "ElementaryTypeName",
-                        "src": "573:7:20"
-                      }
-                    ],
-                    "id": 4467,
-                    "name": "VariableDeclaration",
-                    "src": "573:7:20"
-                  }
-                ],
-                "id": 4468,
-                "name": "ParameterList",
-                "src": "572:9:20"
-              },
-              {
-                "children": [
-                  {
-                    "children": [
-                      {
-                        "attributes": {
-                          "argumentTypes": null,
-                          "isConstant": false,
-                          "isLValue": false,
-                          "isPure": false,
-                          "isStructConstructorCall": false,
-                          "lValueRequested": false,
-                          "names": [
-                            null
-                          ],
-                          "tryCall": false,
-                          "type": "tuple()",
-                          "type_conversion": false
-                        },
-                        "children": [
-                          {
-                            "attributes": {
-                              "argumentTypes": [
-                                {
-                                  "typeIdentifier": "t_bool",
-                                  "typeString": "bool"
-                                },
-                                {
-                                  "typeIdentifier": "t_stringliteral_90812a5ddaa238984a0f5bdcc11c51e630005692b9ae9744b31f567e54cfee4f",
-                                  "typeString": "literal_string \"SafeCast: value doesnt fit in 112 bits\""
-                                }
-                              ],
-                              "overloadedDeclarations": [
-                                -18,
-                                -18
-                              ],
-                              "referencedDeclaration": -18,
-                              "type": "function (bool,string memory) pure",
-                              "value": "require"
-                            },
-                            "id": 4469,
-                            "name": "Identifier",
-                            "src": "594:7:20"
-                          },
-                          {
-                            "attributes": {
-                              "argumentTypes": null,
-                              "commonType": {
-                                "typeIdentifier": "t_uint256",
-                                "typeString": "uint256"
-                              },
-                              "isConstant": false,
-                              "isLValue": false,
-                              "isPure": false,
-                              "lValueRequested": false,
-                              "operator": "<",
-                              "type": "bool"
-                            },
-                            "children": [
-                              {
-                                "attributes": {
-                                  "argumentTypes": null,
-                                  "overloadedDeclarations": [
-                                    null
-                                  ],
-                                  "referencedDeclaration": 4464,
-                                  "type": "uint256",
-                                  "value": "value"
-                                },
-                                "id": 4470,
-                                "name": "Identifier",
-                                "src": "602:5:20"
-                              },
-                              {
-                                "attributes": {
-                                  "argumentTypes": null,
-                                  "commonType": {
-                                    "typeIdentifier": "t_rational_5192296858534827628530496329220096_by_1",
-                                    "typeString": "int_const 5192...(26 digits omitted)...0096"
-                                  },
-                                  "isConstant": false,
-                                  "isLValue": false,
-                                  "isPure": true,
-                                  "lValueRequested": false,
-                                  "operator": "**",
-                                  "type": "int_const 5192...(26 digits omitted)...0096"
-                                },
-                                "children": [
-                                  {
-                                    "attributes": {
-                                      "argumentTypes": null,
-                                      "hexvalue": "32",
-                                      "isConstant": false,
-                                      "isLValue": false,
-                                      "isPure": true,
-                                      "lValueRequested": false,
-                                      "subdenomination": null,
-                                      "token": "number",
-                                      "type": "int_const 2",
-                                      "value": "2"
-                                    },
-                                    "id": 4471,
-                                    "name": "Literal",
-                                    "src": "610:1:20"
-                                  },
-                                  {
-                                    "attributes": {
-                                      "argumentTypes": null,
-                                      "hexvalue": "313132",
-                                      "isConstant": false,
-                                      "isLValue": false,
-                                      "isPure": true,
-                                      "lValueRequested": false,
-                                      "subdenomination": null,
-                                      "token": "number",
-                                      "type": "int_const 112",
-                                      "value": "112"
-                                    },
-                                    "id": 4472,
-                                    "name": "Literal",
-                                    "src": "613:3:20"
-                                  }
-                                ],
-                                "id": 4473,
-                                "name": "BinaryOperation",
-                                "src": "610:6:20"
-                              }
-                            ],
-                            "id": 4474,
-                            "name": "BinaryOperation",
-                            "src": "602:14:20"
-                          },
-                          {
-                            "attributes": {
-                              "argumentTypes": null,
-                              "hexvalue": "53616665436173743a2076616c756520646f65736e742066697420696e203131322062697473",
-                              "isConstant": false,
-                              "isLValue": false,
-                              "isPure": true,
-                              "lValueRequested": false,
-                              "subdenomination": null,
-                              "token": "string",
-                              "type": "literal_string \"SafeCast: value doesnt fit in 112 bits\"",
-                              "value": "SafeCast: value doesnt fit in 112 bits"
-                            },
-                            "id": 4475,
-                            "name": "Literal",
-                            "src": "618:40:20"
-                          }
-                        ],
-                        "id": 4476,
-                        "name": "FunctionCall",
-                        "src": "594:65:20"
-                      }
-                    ],
-                    "id": 4477,
-                    "name": "ExpressionStatement",
-                    "src": "594:65:20"
-                  },
-                  {
-                    "attributes": {
-                      "functionReturnParameters": 4468
-                    },
-                    "children": [
-                      {
-                        "attributes": {
-                          "argumentTypes": null,
-                          "isConstant": false,
-                          "isLValue": false,
-                          "isPure": false,
-                          "isStructConstructorCall": false,
-                          "lValueRequested": false,
-                          "names": [
-                            null
-                          ],
-                          "tryCall": false,
-                          "type": "uint112",
-                          "type_conversion": true
-                        },
-                        "children": [
-                          {
-                            "attributes": {
-                              "argumentTypes": [
-                                {
-                                  "typeIdentifier": "t_uint256",
-                                  "typeString": "uint256"
-                                }
-                              ],
-                              "isConstant": false,
-                              "isLValue": false,
-                              "isPure": true,
-                              "lValueRequested": false,
-                              "type": "type(uint112)"
-                            },
-                            "children": [
-                              {
-                                "attributes": {
-                                  "name": "uint112",
-                                  "type": null
-                                },
-                                "id": 4478,
-                                "name": "ElementaryTypeName",
-                                "src": "678:7:20"
-                              }
-                            ],
-                            "id": 4479,
-                            "name": "ElementaryTypeNameExpression",
-                            "src": "678:7:20"
-                          },
-                          {
-                            "attributes": {
-                              "argumentTypes": null,
-                              "overloadedDeclarations": [
-                                null
-                              ],
-                              "referencedDeclaration": 4464,
-                              "type": "uint256",
-                              "value": "value"
-                            },
-                            "id": 4480,
-                            "name": "Identifier",
-                            "src": "686:5:20"
-                          }
-                        ],
-                        "id": 4481,
-                        "name": "FunctionCall",
-                        "src": "678:14:20"
-                      }
-                    ],
-                    "id": 4482,
-                    "name": "Return",
-                    "src": "671:21:20"
-                  }
-                ],
-                "id": 4483,
-                "name": "Block",
-                "src": "582:119:20"
-              }
-            ],
-            "id": 4484,
-            "name": "FunctionDefinition",
-            "src": "516:185:20"
-          }
-        ],
-        "id": 4485,
-        "name": "ContractDefinition",
-        "src": "142:561:20"
-      }
-    ],
-    "id": 4486,
-    "name": "SourceUnit",
-    "src": "0:704:20"
-  },
+  "bytecode": "60566023600b82828239805160001a607314601657fe5b30600052607381538281f3fe73000000000000000000000000000000000000000030146080604052600080fdfea2646970667358221220e971e6b423d6f96dd46b6156f03a0ebc4f42a7b0ce176f854bd7cf9bdff1227164736f6c634300060c0033",
+  "bytecodeSha1": "3b4158955f564edb18bd7a8ffdb49859c904f0b7",
   "compiler": {
-    "name": "solc",
-    "version": "0.6.12+commit.27d51765.Emscripten.clang"
+    "evm_version": "istanbul",
+    "optimizer": {
+      "enabled": true,
+      "runs": 200
+    },
+    "version": "0.6.12+commit.27d51765"
   },
-  "networks": {},
-  "schemaVersion": "3.4.0",
-  "updatedAt": "2021-10-15T19:21:17.993Z",
-  "devdoc": {
+  "contractName": "MyMath",
+  "coverageMap": {
+    "branches": {
+      "43": {}
+    },
+    "statements": {
+      "43": {}
+    }
+  },
+  "dependencies": [],
+  "deployedBytecode": "73000000000000000000000000000000000000000030146080604052600080fdfea2646970667358221220e971e6b423d6f96dd46b6156f03a0ebc4f42a7b0ce176f854bd7cf9bdff1227164736f6c634300060c0033",
+  "deployedSourceMap": "174:561:43:-:0;;;;;;;;",
+  "language": "Solidity",
+  "natspec": {
     "kind": "dev",
     "methods": {},
     "version": 1
   },
-  "userdoc": {
-    "kind": "user",
-    "methods": {},
-    "version": 1
-  }
+  "offset": [
+    174,
+    735
+  ],
+  "opcodes": "PUSH20 0x0 ADDRESS EQ PUSH1 0x80 PUSH1 0x40 MSTORE PUSH1 0x0 DUP1 REVERT INVALID LOG2 PUSH5 0x6970667358 0x22 SLT KECCAK256 0xE9 PUSH18 0xE6B423D6F96DD46B6156F03A0EBC4F42A7B0 0xCE OR PUSH16 0x854BD7CF9BDFF1227164736F6C634300 MOD 0xC STOP CALLER ",
+  "pcMap": {
+    "0": {
+      "offset": [
+        174,
+        735
+      ],
+      "op": "PUSH20",
+      "path": "43",
+      "value": "0x0"
+    },
+    "21": {
+      "fn": null,
+      "offset": [
+        174,
+        735
+      ],
+      "op": "ADDRESS",
+      "path": "43"
+    },
+    "22": {
+      "fn": null,
+      "offset": [
+        174,
+        735
+      ],
+      "op": "EQ",
+      "path": "43"
+    },
+    "23": {
+      "fn": null,
+      "offset": [
+        174,
+        735
+      ],
+      "op": "PUSH1",
+      "path": "43",
+      "value": "0x80"
+    },
+    "25": {
+      "fn": null,
+      "offset": [
+        174,
+        735
+      ],
+      "op": "PUSH1",
+      "path": "43",
+      "value": "0x40"
+    },
+    "27": {
+      "fn": null,
+      "offset": [
+        174,
+        735
+      ],
+      "op": "MSTORE",
+      "path": "43"
+    },
+    "28": {
+      "fn": null,
+      "offset": [
+        174,
+        735
+      ],
+      "op": "PUSH1",
+      "path": "43",
+      "value": "0x0"
+    },
+    "30": {
+      "fn": null,
+      "offset": [
+        174,
+        735
+      ],
+      "op": "DUP1",
+      "path": "43"
+    },
+    "31": {
+      "fn": null,
+      "offset": [
+        174,
+        735
+      ],
+      "op": "REVERT",
+      "path": "43"
+    }
+  },
+  "sha1": "6e83f022cefa0c3daf208a350e3179280063530d",
+  "source": "// SPDX-License-Identifier: MIT\npragma solidity ^0.6.12;\n\n//inspired by https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/utils/math/SafeCast.sol\n\nlibrary MyMath {\n    //inspired by https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/utils/math/SafeCast.sol\n    /**\n     * @dev Returns the downcasted uint112 from uint256, reverting on\n     * overflow (when the input is greater than largest uint112).\n     *\n     *\n     * Requirements:\n     *\n     * - input must fit into 112 bits\n     */\n      function toUint112(uint256 value) internal pure returns (uint112) {\n          require(value < 2**112, \"SafeCast: value doesnt fit in 112 bits\");\n          return uint112(value);\n      }\n}\n",
+  "sourceMap": "174:561:43:-:0;;;;;;;;;;;;;;;;;;;;;;;;;",
+  "sourcePath": "contracts/libraries/MyMath.sol",
+  "type": "library"
 }
