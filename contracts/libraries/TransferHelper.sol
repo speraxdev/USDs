@@ -1,6 +1,7 @@
+// SPDX-License-Identifier: MIT
 pragma solidity >=0.6.0;
 
-import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
+import '@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol';
 
 library TransferHelper {
     /// @notice Transfers tokens from the targeted address to the given destination
@@ -16,7 +17,7 @@ library TransferHelper {
         uint256 value
     ) internal {
         (bool success, bytes memory data) =
-            token.call(abi.encodeWithSelector(IERC20.transferFrom.selector, from, to, value));
+            token.call(abi.encodeWithSelector(IERC20Upgradeable.transferFrom.selector, from, to, value));
         require(success && (data.length == 0 || abi.decode(data, (bool))), 'STF');
     }
 
@@ -30,7 +31,7 @@ library TransferHelper {
         address to,
         uint256 value
     ) internal {
-        (bool success, bytes memory data) = token.call(abi.encodeWithSelector(IERC20.transfer.selector, to, value));
+        (bool success, bytes memory data) = token.call(abi.encodeWithSelector(IERC20Upgradeable.transfer.selector, to, value));
         require(success && (data.length == 0 || abi.decode(data, (bool))), 'ST');
     }
 
@@ -44,7 +45,7 @@ library TransferHelper {
         address to,
         uint256 value
     ) internal {
-        (bool success, bytes memory data) = token.call(abi.encodeWithSelector(IERC20.approve.selector, to, value));
+        (bool success, bytes memory data) = token.call(abi.encodeWithSelector(IERC20Upgradeable.approve.selector, to, value));
         require(success && (data.length == 0 || abi.decode(data, (bool))), 'SA');
     }
 
