@@ -5,6 +5,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20Pausable.sol";
 import "arb-bridge-peripherals/contracts/tokenbridge/arbitrum/IArbToken.sol";
 
+
 contract MintPausable is Context {
     /**
      * @dev Emitted when the pause is triggered by `account`.
@@ -110,15 +111,17 @@ contract SperaxTokenL2 is ERC20Pausable, MintPausable, Ownable, IArbToken {
     // @dev record mintable accounts
     address [] public mintableAccounts;
 
-    // Arbitrum Bridge    
+    // Arbitrum Bridge
     address public l2Gateway;
     address public override l1Address;
 
     /**
      * @dev Initialize the contract give all tokens to the deployer
      */
-    constructor(string memory _name, string memory _symbol) 
+    constructor(string memory _name, string memory _symbol, address _l2Gateway, address _l1Address)
         ERC20(_name, _symbol) public {
+        l2Gateway = _l2Gateway;
+        l1Address = _l1Address;
     }
 
     /**
@@ -295,16 +298,6 @@ contract SperaxTokenL2 is ERC20Pausable, MintPausable, Ownable, IArbToken {
     }
 
     // Arbitrum Bridge
-    /**
-     * @dev change the arbitrum bridge address
-     * @param newL2Gateway the new bridge address
-     * @param newL1Address the new router address
-     */
-    function changeArbToken(address newL2Gateway, address newL1Address) external onlyOwner {
-        l2Gateway = newL2Gateway;
-        l1Address = newL1Address;
-    }
-
     modifier onlyGateway() {
         require(msg.sender == l2Gateway, "ONLY_l2GATEWAY");
         _;

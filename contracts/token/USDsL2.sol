@@ -13,14 +13,13 @@ pragma solidity ^0.6.12;
  * @author Sperax Inc
  */
 
-import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import { InitializableERC20Detailed } from "../libraries/InitializableERC20Detailed.sol";
 import { StableMath } from "../libraries/StableMath.sol";
 import "arb-bridge-peripherals/contracts/tokenbridge/arbitrum/IArbToken.sol";
 import "../interfaces/IUSDs.sol";
+import "arb-bridge-peripherals/contracts/tokenbridge/libraries/aeERC20.sol";
 
 /**
  * NOTE that this is an ERC20 token but the invariant that the sum of
@@ -28,7 +27,7 @@ import "../interfaces/IUSDs.sol";
  * rebasing design. Any integrations with USDs should be aware.
  */
 
-contract USDsL2 is Initializable, InitializableERC20Detailed, OwnableUpgradeable, IArbToken, IUSDs {
+contract USDsL2 is aeERC20, OwnableUpgradeable, IArbToken, IUSDs {
     using SafeMathUpgradeable for uint256;
     using StableMath for uint256;
 
@@ -66,12 +65,16 @@ contract USDsL2 is Initializable, InitializableERC20Detailed, OwnableUpgradeable
     function initialize(
         string calldata _nameArg,
         string calldata _symbolArg,
-        address _vaultAddress
+        address _vaultAddress,
+        address _l2Gateway,
+        address _l1Address
     ) external initializer {
-        InitializableERC20Detailed._initialize(_nameArg, _symbolArg, 18);
+        aeERC20._initialize(_nameArg, _symbolArg, 18);
         OwnableUpgradeable.__Ownable_init();
         rebasingCreditsPerToken = 1e18;
         vaultAddress = _vaultAddress;
+        l2Gateway = _l2Gateway;
+        l1Address = _l1Address;
     }
 
     /**
@@ -519,16 +522,6 @@ contract USDsL2 is Initializable, InitializableERC20Detailed, OwnableUpgradeable
     }
 
     // Arbitrum Bridge
-
-    /**
-     * @dev change the arbitrum bridge address
-     * @param newL2Gateway the new bridge address
-     * @param newL1Address the new router address
-     */
-    function changeArbToken(address newL2Gateway, address newL1Address) external onlyOwner {
-        l2Gateway = newL2Gateway;
-        l1Address = newL1Address;
-    }
 
     modifier onlyGateway() {
         require(msg.sender == l2Gateway, "ONLY_l2GATEWAY");

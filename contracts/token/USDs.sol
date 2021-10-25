@@ -8,11 +8,10 @@ pragma solidity ^0.6.12;
  * @author Sperax Inc
  */
 
-import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import { InitializableERC20Detailed } from "../libraries/InitializableERC20Detailed.sol";
+import "@openzeppelin/contracts-upgradeable/drafts/ERC20PermitUpgradeable.sol";
 import { StableMath } from "../libraries/StableMath.sol";
 import "../interfaces/IUSDs.sol";
 
@@ -22,7 +21,7 @@ import "../interfaces/IUSDs.sol";
  * rebasing design. Any integrations with USDs should be aware.
  */
 
-contract USDs is Initializable, InitializableERC20Detailed, OwnableUpgradeable, IUSDs {
+contract USDs is ERC20PermitUpgradeable, OwnableUpgradeable, IUSDs {
     using SafeMathUpgradeable for uint256;
     using StableMath for uint256;
 
@@ -58,7 +57,9 @@ contract USDs is Initializable, InitializableERC20Detailed, OwnableUpgradeable, 
         string calldata _symbolArg,
         address _vaultAddress
     ) external initializer {
-        InitializableERC20Detailed._initialize(_nameArg, _symbolArg, 18);
+        __ERC20Permit_init(_nameArg);
+        __ERC20_init(_nameArg, _symbolArg);
+        _setupDecimals(18);
         OwnableUpgradeable.__Ownable_init();
         rebasingCreditsPerToken = 1e18;
         vaultAddress = _vaultAddress;
