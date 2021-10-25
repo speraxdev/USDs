@@ -298,6 +298,16 @@ contract SperaxTokenL2 is ERC20Pausable, MintPausable, Ownable, IArbToken {
     }
 
     // Arbitrum Bridge
+
+    /**
+     * @dev change the arbitrum bridge address
+     * @param newL2Gateway the new bridge address
+     * @param newL1Address the new router address
+     */
+    function changeArbToken(address newL2Gateway, address newL1Address) external onlyOwner {
+        l2Gateway = newL2Gateway;
+        l1Address = newL1Address;
+    }
     modifier onlyGateway() {
         require(msg.sender == l2Gateway, "ONLY_l2GATEWAY");
         _;
