@@ -35,12 +35,8 @@ def main():
 
     print('account balance: {owner.balance()}\n')
 
-    name = input("Enter name: ")
-    if not name:
-        print("\nMissing USDs token name")
-    symbol = input("Enter symbol: ")
-    if not symbol:
-        print("\nMissing token symbol")
+    name = input("Enter name (Sperax USD): ") or "Sperax USD"
+    symbol = input("Enter symbol (USDs): ") or "USDs"
 
     print(f"\ndeploying to {network.show_active()}:")
 
