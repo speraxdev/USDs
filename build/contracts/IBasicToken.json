@@ -28,7 +28,7 @@
     }
   ],
   "allSourcePaths": {
-    "32": "contracts/interfaces/IBasicToken.sol"
+    "37": "contracts/interfaces/IBasicToken.sol"
   },
   "ast": {
     "absolutePath": "contracts/interfaces/IBasicToken.sol",
@@ -50,7 +50,7 @@
           ".11"
         ],
         "nodeType": "PragmaDirective",
-        "src": "32:25:32"
+        "src": "32:25:37"
       },
       {
         "abstract": false,
@@ -81,7 +81,7 @@
               "id": 202,
               "nodeType": "ParameterList",
               "parameters": [],
-              "src": "102:2:32"
+              "src": "102:2:37"
             },
             "returnParameters": {
               "id": 205,
@@ -95,7 +95,7 @@
                   "nodeType": "VariableDeclaration",
                   "overrides": null,
                   "scope": 206,
-                  "src": "128:13:32",
+                  "src": "128:13:37",
                   "stateVariable": false,
                   "storageLocation": "memory",
                   "typeDescriptions": {
@@ -106,7 +106,7 @@
                     "id": 203,
                     "name": "string",
                     "nodeType": "ElementaryTypeName",
-                    "src": "128:6:32",
+                    "src": "128:6:37",
                     "typeDescriptions": {
                       "typeIdentifier": "t_string_storage_ptr",
                       "typeString": "string"
@@ -116,10 +116,10 @@
                   "visibility": "internal"
                 }
               ],
-              "src": "127:15:32"
+              "src": "127:15:37"
             },
             "scope": 212,
-            "src": "87:56:32",
+            "src": "87:56:37",
             "stateMutability": "view",
             "virtual": false,
             "visibility": "external"
@@ -139,7 +139,7 @@
               "id": 207,
               "nodeType": "ParameterList",
               "parameters": [],
-              "src": "166:2:32"
+              "src": "166:2:37"
             },
             "returnParameters": {
               "id": 210,
@@ -153,7 +153,7 @@
                   "nodeType": "VariableDeclaration",
                   "overrides": null,
                   "scope": 211,
-                  "src": "192:5:32",
+                  "src": "192:5:37",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -164,7 +164,7 @@
                     "id": 208,
                     "name": "uint8",
                     "nodeType": "ElementaryTypeName",
-                    "src": "192:5:32",
+                    "src": "192:5:37",
                     "typeDescriptions": {
                       "typeIdentifier": "t_uint8",
                       "typeString": "uint8"
@@ -174,20 +174,20 @@
                   "visibility": "internal"
                 }
               ],
-              "src": "191:7:32"
+              "src": "191:7:37"
             },
             "scope": 212,
-            "src": "149:50:32",
+            "src": "149:50:37",
             "stateMutability": "view",
             "virtual": false,
             "visibility": "external"
           }
         ],
         "scope": 213,
-        "src": "59:142:32"
+        "src": "59:142:37"
       }
     ],
-    "src": "32:170:32"
+    "src": "32:170:37"
   },
   "bytecode": "",
   "bytecodeSha1": "da39a3ee5e6b4b0d3255bfef95601890afd80709",

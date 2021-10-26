@@ -27,4 +27,4 @@ Symbol: ETH
 Block Explorer URL: https://rinkeby-explorer.arbitrum.io/#/
 
 Add Arbitrum testnet configuration to Brownie:
-brownie networks add Arbitrum arbitrum-testnet host=https://rinkeby.arbitrum.io/rpc name='Arbitrum Testnet' chainid=421611 explorer=https://rinkeby-explorer.arbitrum.io/#/
+brownie networks add Arbitrum arbitrum-rinkeby host=https://rinkeby.arbitrum.io/rpc name='Arbitrum Testnet' chainid=421611 explorer=https://rinkeby-explorer.arbitrum.io/#/

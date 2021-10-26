@@ -33,85 +33,104 @@ def main():
         print("\nFile not found: ~/.brownie/accounts/minter.json")
         return
 
-    print('account balance: {owner.balance()}\n')
+    initial_balance = owner.balance()
+    print('account balance: {initial_balance}\n')
 
     name = input("Enter name (Sperax USD): ") or "Sperax USD"
     symbol = input("Enter symbol (USDs): ") or "USDs"
 
-    print(f"\ndeploying to {network.show_active()}:")
+    l2_gateway = '0x9b014455AcC2Fe90c52803849d0002aeEC184a06'
+    price_feed_eth_arbitrum_testnet = '0x5f0423B1a6935dc5596e7A24d98532b67A0AeFd8'
+    weth_arbitrum_testnet = '0xb47e6a5f8b33b3f17603c83a0535a9dcd7e32681'
+
+    if network.show_active() == 'arbitrum-mainnet':
+        l2_gateway = '0x9b014455AcC2Fe90c52803849d0002aeEC184a06'
+        price_feed_eth_arbitrum_testnet = '0x5f0423B1a6935dc5596e7A24d98532b67A0AeFd8'
+        weth_arbitrum_testnet = '0xb47e6a5f8b33b3f17603c83a0535a9dcd7e32681'
 
     # deploy smart contracts
     bancor = BancorFormula.deploy(
-        {"from": owner},
+        {'from': owner, 'gas_limit': 1000000000},
 #        publish_source=False,
     )
-    print(f"Bancor Formula address: {bancor.address}\n")
-    bancor.init()
+    txn = bancor.init()
+
+    core = VaultCoreLibrary.deploy(
+        {'from': owner, 'gas_limit': 1000000000},
+#        publish_source=False,
+    )
+
+    vault = VaultCore.deploy(
+        {'from': owner, 'gas_limit': 1000000000},
+#        publish_source=False,
+    )
+
+    oracle = Oracle.deploy(
+        {'from': owner, 'gas_limit': 1000000000},
+#        publish_source=False,
+    )
+
+    usds = USDsL2.deploy(
+        {'from': owner, 'gas_limit': 1000000000},
+#        publish_source=False,
+    )
 
     spa = SperaxTokenL2.deploy(
         'Sperax',
         'SPA',
-        {"from": owner},
+        l2_gateway,
+        usds.address,
+        {'from': owner, 'gas_limit': 1000000000},
 #        publish_source=False,
     )
-    print(f"SPA layer 2 address: {spa.address}\n")
 
-    core = VaultCoreLibrary.deploy(
-            {"from": owner},
-            publish_source=False,
-        )
-    print(f"Vault Core Library address: {core.address}\n")
-
-    vault = VaultCore.deploy(
-        {"from": owner},
-#        publish_source=False,
-    )
-    print(f"Vault Core address: {vault.address}\n")
-    vault.initialize(
+    txn = vault.initialize(
         spa.address,
         bancor.address,
-        {"from": owner}
+        {'from': owner, 'gas_limit': 1000000000}
     )
 
-    oracle = Oracle.deploy(
-        {"from": owner},
-#        publish_source=False,
-    )
-    print(f"Oracle address: {oracle.address}\n")
-
-    price_feed_eth_arbitrum_testnet = '0x5f0423B1a6935dc5596e7A24d98532b67A0AeFd8'
-    weth_arbitrum_testnet = '0xb47e6a5f8b33b3f17603c83a0535a9dcd7e32681'
-
-    oracle.initialize(
+    txn = oracle.initialize(
         price_feed_eth_arbitrum_testnet,
         spa.address,
         weth_arbitrum_testnet,
-        {"from": owner}
+        {'from': owner, 'gas_limit': 1000000000}
     )
 
-    usds = USDsL2.deploy(
-            {"from": owner},
-    #        publish_source=False,
-        )
-    print(f"USDs layer 2 address: {usds.address}\n")
-    usds.initialize(
+    l1_address = '0x377ff873b648b678608b216467ee94713116c4cd' # USDs address on layer 1 [rinkeby]
+    txn = usds.initialize(
         name,
         symbol,
         vault.address,
-        {"from": owner}
+        l2_gateway,
+        l1_address,
+        {'from': owner, 'gas_limit': 1000000000}
     )
 
     # configure VaultCore contract with USDs contract address
-    vault.updateUSDsAddress(
+    txn = vault.updateUSDsAddress(
         usds,
-        {'from': owner}
+        {'from': owner, 'gas_limit': 1000000000}
     )
     # configure VaultCore contract with Oracle contract address
-    vault.updateOracleAddress(
+    txn = vault.updateOracleAddress(
         oracle.address,
-        {'from': owner}
+        {'from': owner, 'gas_limit': 1000000000}
     )
     # add collateral
     #vault.addCollateral(
     #    {'from': owner}
     #)
+
+    print(f"\n{network.show_active()}:")
+    print(f"Bancor Formula address: {bancor.address}\n")
+    print(f"Vault Core Library address: {core.address}\n")
+    print(f"Vault Core address: {vault.address}\n")
+    print(f"Oracle address: {oracle.address}\n")
+    print(f"USDs layer 2 address: {usds.address}\n")
+    print(f"SPA layer 2 address: {spa.address}\n")
+
+    final_balance = owner.balance()
+    print('account balance: {final_balance}\n')
+    gas_cost = initial_balance - final_balance
+    print('gas cost: {gas_cost}\n')
