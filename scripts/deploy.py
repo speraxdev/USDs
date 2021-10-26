@@ -38,15 +38,19 @@ def main():
 
     name = input("Enter name (Sperax USD): ") or "Sperax USD"
     symbol = input("Enter symbol (USDs): ") or "USDs"
+    print('\n')
 
+    # Arbitrum rinkeby:
     l2_gateway = '0x9b014455AcC2Fe90c52803849d0002aeEC184a06'
     price_feed_eth_arbitrum_testnet = '0x5f0423B1a6935dc5596e7A24d98532b67A0AeFd8'
     weth_arbitrum_testnet = '0xb47e6a5f8b33b3f17603c83a0535a9dcd7e32681'
+    l1_address = '0x377ff873b648b678608b216467ee94713116c4cd' # USDs address on layer 1 [rinkeby]
 
     if network.show_active() == 'arbitrum-mainnet':
-        l2_gateway = '0x9b014455AcC2Fe90c52803849d0002aeEC184a06'
-        price_feed_eth_arbitrum_testnet = '0x5f0423B1a6935dc5596e7A24d98532b67A0AeFd8'
-        weth_arbitrum_testnet = '0xb47e6a5f8b33b3f17603c83a0535a9dcd7e32681'
+        l2_gateway = ''
+        price_feed_eth_arbitrum_testnet = ''
+        weth_arbitrum_testnet = ''
+        l1_address = '' # USDs address on layer 1 [rinkeby]
 
     # deploy smart contracts
     bancor = BancorFormula.deploy(
@@ -71,8 +75,12 @@ def main():
     )
 
     usds = USDsL2.deploy(
-        {'from': owner, 'gas_limit': 1000000000},
-#        publish_source=False,
+        name,
+        symbol,
+        vault.address,
+        l2_gateway,
+        l1_address,
+        {'from': owner, 'gas_limit': 1000000000}
     )
 
     spa = SperaxTokenL2.deploy(
@@ -97,16 +105,6 @@ def main():
         {'from': owner, 'gas_limit': 1000000000}
     )
 
-    l1_address = '0x377ff873b648b678608b216467ee94713116c4cd' # USDs address on layer 1 [rinkeby]
-    txn = usds.initialize(
-        name,
-        symbol,
-        vault.address,
-        l2_gateway,
-        l1_address,
-        {'from': owner, 'gas_limit': 1000000000}
-    )
-
     # configure VaultCore contract with USDs contract address
     txn = vault.updateUSDsAddress(
         usds,
@@ -122,15 +120,16 @@ def main():
     #    {'from': owner}
     #)
 
-    print(f"\n{network.show_active()}:")
-    print(f"Bancor Formula address: {bancor.address}\n")
-    print(f"Vault Core Library address: {core.address}\n")
-    print(f"Vault Core address: {vault.address}\n")
-    print(f"Oracle address: {oracle.address}\n")
-    print(f"USDs layer 2 address: {usds.address}\n")
-    print(f"SPA layer 2 address: {spa.address}\n")
+    print(f"\n{network.show_active()}:\n")
+    print(f"Bancor Formula address: {bancor.address}")
+    print(f"Vault Core Library address: {core.address}")
+    print(f"Vault Core address: {vault.address}")
+    print(f"Oracle address: {oracle.address}")
+    print(f"USDs layer 2 address: {usds.address}")
+    print(f"SPA layer 2 address: {spa.address}")
 
     final_balance = owner.balance()
-    print('account balance: {final_balance}\n')
+    print(f'account balance: {final_balance}')
     gas_cost = initial_balance - final_balance
-    print('gas cost: {gas_cost}\n')
+    gas_cost = "{:,}".format(gas_cost) # format with comma delimiters
+    print(f'gas cost: {gas_cost} gwei\n')
