@@ -62,13 +62,13 @@ contract USDsL2 is aeERC20, OwnableUpgradeable, IArbToken, IUSDs {
     address public l2Gateway;
     address public override l1Address;
 
-    function initialize(
-        string calldata _nameArg,
-        string calldata _symbolArg,
+    constructor(
+        string memory _nameArg,
+        string memory _symbolArg,
         address _vaultAddress,
         address _l2Gateway,
         address _l1Address
-    ) external initializer {
+    ) public {
         aeERC20._initialize(_nameArg, _symbolArg, 18);
         OwnableUpgradeable.__Ownable_init();
         rebasingCreditsPerToken = 1e18;
