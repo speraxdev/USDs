@@ -6,7 +6,7 @@ from brownie.test import given, strategy
 #@given(amount=strategy('uint256', min_value=1, max_value=2**256-1))
 @given(amount=strategy('uint256', min_value=1, max_value=2**128-1))
 @given(percent=strategy('uint256', min_value=1, max_value=100))
-def test_valid_mint(usds2, vault, accounts, amount, percent):
+def test_mint_with_usd(usds2, vault, accounts, amount, percent):
     print('amount: ', amount)
     first_owner = accounts[3]
     approver = accounts[4]

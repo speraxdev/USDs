@@ -1,8 +1,8 @@
 {
   "abi": [],
   "allSourcePaths": {
-    "37": "contracts/interfaces/IBasicToken.sol",
-    "50": "contracts/libraries/Helpers.sol"
+    "38": "contracts/interfaces/IBasicToken.sol",
+    "51": "contracts/libraries/Helpers.sol"
   },
   "ast": {
     "absolutePath": "contracts/libraries/Helpers.sol",
@@ -24,7 +24,7 @@
           ".11"
         ],
         "nodeType": "PragmaDirective",
-        "src": "32:25:50"
+        "src": "32:25:51"
       },
       {
         "absolutePath": "contracts/interfaces/IBasicToken.sol",
@@ -33,7 +33,7 @@
         "nodeType": "ImportDirective",
         "scope": 4358,
         "sourceUnit": 213,
-        "src": "59:60:50",
+        "src": "59:60:51",
         "symbolAliases": [
           {
             "foreign": {
@@ -43,7 +43,7 @@
               "nodeType": "Identifier",
               "overloadedDeclarations": [],
               "referencedDeclaration": null,
-              "src": "68:11:50",
+              "src": "68:11:51",
               "typeDescriptions": {
                 "typeIdentifier": null,
                 "typeString": null
@@ -72,7 +72,7 @@
             "body": {
               "id": 4325,
               "nodeType": "Block",
-              "src": "433:91:50",
+              "src": "433:91:51",
               "statements": [
                 {
                   "assignments": [
@@ -87,7 +87,7 @@
                       "nodeType": "VariableDeclaration",
                       "overrides": null,
                       "scope": 4325,
-                      "src": "443:20:50",
+                      "src": "443:20:51",
                       "stateVariable": false,
                       "storageLocation": "memory",
                       "typeDescriptions": {
@@ -98,7 +98,7 @@
                         "id": 4315,
                         "name": "string",
                         "nodeType": "ElementaryTypeName",
-                        "src": "443:6:50",
+                        "src": "443:6:51",
                         "typeDescriptions": {
                           "typeIdentifier": "t_string_storage_ptr",
                           "typeString": "string"
@@ -124,7 +124,7 @@
                             "nodeType": "Identifier",
                             "overloadedDeclarations": [],
                             "referencedDeclaration": 4310,
-                            "src": "478:6:50",
+                            "src": "478:6:51",
                             "typeDescriptions": {
                               "typeIdentifier": "t_address",
                               "typeString": "address"
@@ -143,7 +143,7 @@
                           "nodeType": "Identifier",
                           "overloadedDeclarations": [],
                           "referencedDeclaration": 212,
-                          "src": "466:11:50",
+                          "src": "466:11:51",
                           "typeDescriptions": {
                             "typeIdentifier": "t_type$_t_contract$_IBasicToken_$212_$",
                             "typeString": "type(contract IBasicToken)"
@@ -157,7 +157,7 @@
                         "lValueRequested": false,
                         "names": [],
                         "nodeType": "FunctionCall",
-                        "src": "466:19:50",
+                        "src": "466:19:51",
                         "tryCall": false,
                         "typeDescriptions": {
                           "typeIdentifier": "t_contract$_IBasicToken_$212",
@@ -172,7 +172,7 @@
                       "memberName": "symbol",
                       "nodeType": "MemberAccess",
                       "referencedDeclaration": 206,
-                      "src": "466:26:50",
+                      "src": "466:26:51",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_external_view$__$returns$_t_string_memory_ptr_$",
                         "typeString": "function () view external returns (string memory)"
@@ -186,7 +186,7 @@
                     "lValueRequested": false,
                     "names": [],
                     "nodeType": "FunctionCall",
-                    "src": "466:28:50",
+                    "src": "466:28:51",
                     "tryCall": false,
                     "typeDescriptions": {
                       "typeIdentifier": "t_string_memory_ptr",
@@ -194,7 +194,7 @@
                     }
                   },
                   "nodeType": "VariableDeclarationStatement",
-                  "src": "443:51:50"
+                  "src": "443:51:51"
                 },
                 {
                   "expression": {
@@ -204,7 +204,7 @@
                     "nodeType": "Identifier",
                     "overloadedDeclarations": [],
                     "referencedDeclaration": 4316,
-                    "src": "511:6:50",
+                    "src": "511:6:51",
                     "typeDescriptions": {
                       "typeIdentifier": "t_string_memory_ptr",
                       "typeString": "string memory"
@@ -213,14 +213,14 @@
                   "functionReturnParameters": 4314,
                   "id": 4324,
                   "nodeType": "Return",
-                  "src": "504:13:50"
+                  "src": "504:13:51"
                 }
               ]
             },
             "documentation": {
               "id": 4308,
               "nodeType": "StructuredDocumentation",
-              "src": "143:212:50",
+              "src": "143:212:51",
               "text": " @notice Fetch the `symbol()` from an ERC20 token\n @dev Grabs the `symbol()` from a contract\n @param _token Address of the ERC20 token\n @return string Symbol of the ERC20 token"
             },
             "id": 4326,
@@ -242,7 +242,7 @@
                   "nodeType": "VariableDeclaration",
                   "overrides": null,
                   "scope": 4326,
-                  "src": "379:14:50",
+                  "src": "379:14:51",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -253,7 +253,7 @@
                     "id": 4309,
                     "name": "address",
                     "nodeType": "ElementaryTypeName",
-                    "src": "379:7:50",
+                    "src": "379:7:51",
                     "stateMutability": "nonpayable",
                     "typeDescriptions": {
                       "typeIdentifier": "t_address",
@@ -264,7 +264,7 @@
                   "visibility": "internal"
                 }
               ],
-              "src": "378:16:50"
+              "src": "378:16:51"
             },
             "returnParameters": {
               "id": 4314,
@@ -278,7 +278,7 @@
                   "nodeType": "VariableDeclaration",
                   "overrides": null,
                   "scope": 4326,
-                  "src": "418:13:50",
+                  "src": "418:13:51",
                   "stateVariable": false,
                   "storageLocation": "memory",
                   "typeDescriptions": {
@@ -289,7 +289,7 @@
                     "id": 4312,
                     "name": "string",
                     "nodeType": "ElementaryTypeName",
-                    "src": "418:6:50",
+                    "src": "418:6:51",
                     "typeDescriptions": {
                       "typeIdentifier": "t_string_storage_ptr",
                       "typeString": "string"
@@ -299,10 +299,10 @@
                   "visibility": "internal"
                 }
               ],
-              "src": "417:15:50"
+              "src": "417:15:51"
             },
             "scope": 4357,
-            "src": "360:164:50",
+            "src": "360:164:51",
             "stateMutability": "view",
             "virtual": false,
             "visibility": "internal"
@@ -311,7 +311,7 @@
             "body": {
               "id": 4355,
               "nodeType": "Block",
-              "src": "903:221:50",
+              "src": "903:221:51",
               "statements": [
                 {
                   "assignments": [
@@ -326,7 +326,7 @@
                       "nodeType": "VariableDeclaration",
                       "overrides": null,
                       "scope": 4355,
-                      "src": "913:16:50",
+                      "src": "913:16:51",
                       "stateVariable": false,
                       "storageLocation": "default",
                       "typeDescriptions": {
@@ -337,7 +337,7 @@
                         "id": 4334,
                         "name": "uint256",
                         "nodeType": "ElementaryTypeName",
-                        "src": "913:7:50",
+                        "src": "913:7:51",
                         "typeDescriptions": {
                           "typeIdentifier": "t_uint256",
                           "typeString": "uint256"
@@ -363,7 +363,7 @@
                             "nodeType": "Identifier",
                             "overloadedDeclarations": [],
                             "referencedDeclaration": 4329,
-                            "src": "944:6:50",
+                            "src": "944:6:51",
                             "typeDescriptions": {
                               "typeIdentifier": "t_address",
                               "typeString": "address"
@@ -382,7 +382,7 @@
                           "nodeType": "Identifier",
                           "overloadedDeclarations": [],
                           "referencedDeclaration": 212,
-                          "src": "932:11:50",
+                          "src": "932:11:51",
                           "typeDescriptions": {
                             "typeIdentifier": "t_type$_t_contract$_IBasicToken_$212_$",
                             "typeString": "type(contract IBasicToken)"
@@ -396,7 +396,7 @@
                         "lValueRequested": false,
                         "names": [],
                         "nodeType": "FunctionCall",
-                        "src": "932:19:50",
+                        "src": "932:19:51",
                         "tryCall": false,
                         "typeDescriptions": {
                           "typeIdentifier": "t_contract$_IBasicToken_$212",
@@ -411,7 +411,7 @@
                       "memberName": "decimals",
                       "nodeType": "MemberAccess",
                       "referencedDeclaration": 211,
-                      "src": "932:28:50",
+                      "src": "932:28:51",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_external_view$__$returns$_t_uint8_$",
                         "typeString": "function () view external returns (uint8)"
@@ -425,7 +425,7 @@
                     "lValueRequested": false,
                     "names": [],
                     "nodeType": "FunctionCall",
-                    "src": "932:30:50",
+                    "src": "932:30:51",
                     "tryCall": false,
                     "typeDescriptions": {
                       "typeIdentifier": "t_uint8",
@@ -433,7 +433,7 @@
                     }
                   },
                   "nodeType": "VariableDeclarationStatement",
-                  "src": "913:49:50"
+                  "src": "913:49:51"
                 },
                 {
                   "expression": {
@@ -468,7 +468,7 @@
                             "nodeType": "Identifier",
                             "overloadedDeclarations": [],
                             "referencedDeclaration": 4335,
-                            "src": "993:8:50",
+                            "src": "993:8:51",
                             "typeDescriptions": {
                               "typeIdentifier": "t_uint256",
                               "typeString": "uint256"
@@ -486,7 +486,7 @@
                             "kind": "number",
                             "lValueRequested": false,
                             "nodeType": "Literal",
-                            "src": "1005:1:50",
+                            "src": "1005:1:51",
                             "subdenomination": null,
                             "typeDescriptions": {
                               "typeIdentifier": "t_rational_4_by_1",
@@ -494,7 +494,7 @@
                             },
                             "value": "4"
                           },
-                          "src": "993:13:50",
+                          "src": "993:13:51",
                           "typeDescriptions": {
                             "typeIdentifier": "t_bool",
                             "typeString": "bool"
@@ -520,7 +520,7 @@
                             "nodeType": "Identifier",
                             "overloadedDeclarations": [],
                             "referencedDeclaration": 4335,
-                            "src": "1010:8:50",
+                            "src": "1010:8:51",
                             "typeDescriptions": {
                               "typeIdentifier": "t_uint256",
                               "typeString": "uint256"
@@ -538,7 +538,7 @@
                             "kind": "number",
                             "lValueRequested": false,
                             "nodeType": "Literal",
-                            "src": "1022:2:50",
+                            "src": "1022:2:51",
                             "subdenomination": null,
                             "typeDescriptions": {
                               "typeIdentifier": "t_rational_18_by_1",
@@ -546,13 +546,13 @@
                             },
                             "value": "18"
                           },
-                          "src": "1010:14:50",
+                          "src": "1010:14:51",
                           "typeDescriptions": {
                             "typeIdentifier": "t_bool",
                             "typeString": "bool"
                           }
                         },
-                        "src": "993:31:50",
+                        "src": "993:31:51",
                         "typeDescriptions": {
                           "typeIdentifier": "t_bool",
                           "typeString": "bool"
@@ -568,7 +568,7 @@
                         "kind": "string",
                         "lValueRequested": false,
                         "nodeType": "Literal",
-                        "src": "1038:43:50",
+                        "src": "1038:43:51",
                         "subdenomination": null,
                         "typeDescriptions": {
                           "typeIdentifier": "t_stringliteral_7633a3f2f7a1a8c7f918128b856f945006388588d216ef89b3d309afbfb7d4f9",
@@ -596,7 +596,7 @@
                         -18
                       ],
                       "referencedDeclaration": -18,
-                      "src": "972:7:50",
+                      "src": "972:7:51",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_require_pure$_t_bool_$_t_string_memory_ptr_$returns$__$",
                         "typeString": "function (bool,string memory) pure"
@@ -610,7 +610,7 @@
                     "lValueRequested": false,
                     "names": [],
                     "nodeType": "FunctionCall",
-                    "src": "972:119:50",
+                    "src": "972:119:51",
                     "tryCall": false,
                     "typeDescriptions": {
                       "typeIdentifier": "t_tuple$__$",
@@ -619,7 +619,7 @@
                   },
                   "id": 4352,
                   "nodeType": "ExpressionStatement",
-                  "src": "972:119:50"
+                  "src": "972:119:51"
                 },
                 {
                   "expression": {
@@ -629,7 +629,7 @@
                     "nodeType": "Identifier",
                     "overloadedDeclarations": [],
                     "referencedDeclaration": 4335,
-                    "src": "1109:8:50",
+                    "src": "1109:8:51",
                     "typeDescriptions": {
                       "typeIdentifier": "t_uint256",
                       "typeString": "uint256"
@@ -638,14 +638,14 @@
                   "functionReturnParameters": 4333,
                   "id": 4354,
                   "nodeType": "Return",
-                  "src": "1102:15:50"
+                  "src": "1102:15:51"
                 }
               ]
             },
             "documentation": {
               "id": 4327,
               "nodeType": "StructuredDocumentation",
-              "src": "530:299:50",
+              "src": "530:299:51",
               "text": " @notice Fetch the `decimals()` from an ERC20 token\n @dev Grabs the `decimals()` from a contract and fails if\n      the decimal value does not live within a certain range\n @param _token Address of the ERC20 token\n @return uint256 Decimals of the ERC20 token"
             },
             "id": 4356,
@@ -667,7 +667,7 @@
                   "nodeType": "VariableDeclaration",
                   "overrides": null,
                   "scope": 4356,
-                  "src": "855:14:50",
+                  "src": "855:14:51",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -678,7 +678,7 @@
                     "id": 4328,
                     "name": "address",
                     "nodeType": "ElementaryTypeName",
-                    "src": "855:7:50",
+                    "src": "855:7:51",
                     "stateMutability": "nonpayable",
                     "typeDescriptions": {
                       "typeIdentifier": "t_address",
@@ -689,7 +689,7 @@
                   "visibility": "internal"
                 }
               ],
-              "src": "854:16:50"
+              "src": "854:16:51"
             },
             "returnParameters": {
               "id": 4333,
@@ -703,7 +703,7 @@
                   "nodeType": "VariableDeclaration",
                   "overrides": null,
                   "scope": 4356,
-                  "src": "894:7:50",
+                  "src": "894:7:51",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -714,7 +714,7 @@
                     "id": 4331,
                     "name": "uint256",
                     "nodeType": "ElementaryTypeName",
-                    "src": "894:7:50",
+                    "src": "894:7:51",
                     "typeDescriptions": {
                       "typeIdentifier": "t_uint256",
                       "typeString": "uint256"
@@ -724,20 +724,20 @@
                   "visibility": "internal"
                 }
               ],
-              "src": "893:9:50"
+              "src": "893:9:51"
             },
             "scope": 4357,
-            "src": "834:290:50",
+            "src": "834:290:51",
             "stateMutability": "view",
             "virtual": false,
             "visibility": "internal"
           }
         ],
         "scope": 4358,
-        "src": "121:1005:50"
+        "src": "121:1005:51"
       }
     ],
-    "src": "32:1095:50"
+    "src": "32:1095:51"
   },
   "bytecode": "60566023600b82828239805160001a607314601657fe5b30600052607381538281f3fe73000000000000000000000000000000000000000030146080604052600080fdfea2646970667358221220bc1abdd16872e3cabe5e9ec886feb552a29d0207fb4208f8a24ef859ce3ea6e064736f6c634300060c0033",
   "bytecodeSha1": "3b4158955f564edb18bd7a8ffdb49859c904f0b7",
@@ -752,19 +752,19 @@
   "contractName": "Helpers",
   "coverageMap": {
     "branches": {
-      "37": {},
-      "50": {}
+      "38": {},
+      "51": {}
     },
     "statements": {
-      "37": {},
-      "50": {}
+      "38": {},
+      "51": {}
     }
   },
   "dependencies": [
     "IBasicToken"
   ],
   "deployedBytecode": "73000000000000000000000000000000000000000030146080604052600080fdfea2646970667358221220bc1abdd16872e3cabe5e9ec886feb552a29d0207fb4208f8a24ef859ce3ea6e064736f6c634300060c0033",
-  "deployedSourceMap": "121:1005:50:-:0;;;;;;;;",
+  "deployedSourceMap": "121:1005:51:-:0;;;;;;;;",
   "language": "Solidity",
   "natspec": {
     "kind": "dev",
@@ -783,7 +783,7 @@
         1126
       ],
       "op": "PUSH20",
-      "path": "50",
+      "path": "51",
       "value": "0x0"
     },
     "21": {
@@ -793,7 +793,7 @@
         1126
       ],
       "op": "ADDRESS",
-      "path": "50"
+      "path": "51"
     },
     "22": {
       "fn": null,
@@ -802,7 +802,7 @@
         1126
       ],
       "op": "EQ",
-      "path": "50"
+      "path": "51"
     },
     "23": {
       "fn": null,
@@ -811,7 +811,7 @@
         1126
       ],
       "op": "PUSH1",
-      "path": "50",
+      "path": "51",
       "value": "0x80"
     },
     "25": {
@@ -821,7 +821,7 @@
         1126
       ],
       "op": "PUSH1",
-      "path": "50",
+      "path": "51",
       "value": "0x40"
     },
     "27": {
@@ -831,7 +831,7 @@
         1126
       ],
       "op": "MSTORE",
-      "path": "50"
+      "path": "51"
     },
     "28": {
       "fn": null,
@@ -840,7 +840,7 @@
         1126
       ],
       "op": "PUSH1",
-      "path": "50",
+      "path": "51",
       "value": "0x0"
     },
     "30": {
@@ -850,7 +850,7 @@
         1126
       ],
       "op": "DUP1",
-      "path": "50"
+      "path": "51"
     },
     "31": {
       "fn": null,
@@ -859,12 +859,12 @@
         1126
       ],
       "op": "REVERT",
-      "path": "50"
+      "path": "51"
     }
   },
   "sha1": "873dfe368e6ce3412f9a6d41c6508be1fc1d9bab",
   "source": "// SPDX-License-Identifier: MIT\npragma solidity >=0.5.11;\n\nimport { IBasicToken } from \"../interfaces/IBasicToken.sol\";\n\nlibrary Helpers {\n    /**\n     * @notice Fetch the `symbol()` from an ERC20 token\n     * @dev Grabs the `symbol()` from a contract\n     * @param _token Address of the ERC20 token\n     * @return string Symbol of the ERC20 token\n     */\n    function getSymbol(address _token) internal view returns (string memory) {\n        string memory symbol = IBasicToken(_token).symbol();\n        return symbol;\n    }\n\n    /**\n     * @notice Fetch the `decimals()` from an ERC20 token\n     * @dev Grabs the `decimals()` from a contract and fails if\n     *      the decimal value does not live within a certain range\n     * @param _token Address of the ERC20 token\n     * @return uint256 Decimals of the ERC20 token\n     */\n    function getDecimals(address _token) internal view returns (uint256) {\n        uint256 decimals = IBasicToken(_token).decimals();\n        require(\n            decimals >= 4 && decimals <= 18,\n            \"Token must have sufficient decimal places\"\n        );\n\n        return decimals;\n    }\n}\n",
-  "sourceMap": "121:1005:50:-:0;;;;;;;;;;;;;;;;;;;;;;;;;",
+  "sourceMap": "121:1005:51:-:0;;;;;;;;;;;;;;;;;;;;;;;;;",
   "sourcePath": "contracts/libraries/Helpers.sol",
   "type": "library"
 }

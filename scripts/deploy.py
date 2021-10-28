@@ -2,6 +2,8 @@ import os
 import sys
 import signal
 from brownie import (
+    TransparentUpgradeableProxy,
+    ProxyAdmin,
     Oracle,
     BancorFormula,
     SperaxTokenL2,
@@ -10,7 +12,9 @@ from brownie import (
     USDsL2,
     accounts,
     network,
+    Contract,
 )
+import eth_utils
 
 def signal_handler(signal, frame):
     sys.exit(0)
@@ -23,11 +27,21 @@ def main():
     #    print("\nEnvironment variable WEB3_INFURA_PROJECT_ID is not set\n")
     #    return
 
-    print("\nEnter minter account password:")
+    print("\nEnter admin account password:")
+    try:
+        admin = accounts.load(filename="admin.keystore")
+    except ValueError:
+        print("\nInvalid admin wallet or password\n")
+        return
+    except FileNotFoundError:
+        print("\nFile not found: ~/.brownie/accounts/admin.json")
+        return
+
+    print("\nEnter owner account password:")
     try:
         owner = accounts.load(filename="minter.keystore")
     except ValueError:
-        print("\nInvalid wallet or password\n")
+        print("\nInvalid owner wallet or password\n")
         return
     except FileNotFoundError:
         print("\nFile not found: ~/.brownie/accounts/minter.json")
@@ -52,6 +66,11 @@ def main():
         weth_arbitrum_testnet = ''
         l1_address = '' # USDs address on layer 1 [rinkeby]
 
+    # admin contract
+    proxy_admin = ProxyAdmin.deploy(
+        {'from': owner, 'gas_limit': 1000000000},
+    )
+
     # deploy smart contracts
     bancor = BancorFormula.deploy(
         {'from': owner, 'gas_limit': 1000000000},
@@ -68,16 +87,30 @@ def main():
         {'from': owner, 'gas_limit': 1000000000},
 #        publish_source=False,
     )
+    proxy = TransparentUpgradeableProxy.deploy(
+        vault.address,
+        proxy_admin.address,
+        eth_utils.to_bytes(hexstr="0x"),
+        {'from': owner, 'gas_limit': 1000000000},
+    )
+    vault_proxy = Contract.from_abi("VaultCore", proxy.address, VaultCore.abi)
 
     oracle = Oracle.deploy(
         {'from': owner, 'gas_limit': 1000000000},
 #        publish_source=False,
     )
+    proxy = TransparentUpgradeableProxy.deploy(
+        oracle.address,
+        proxy_admin.address,
+        eth_utils.to_bytes(hexstr="0x"),
+        {'from': owner, 'gas_limit': 1000000000},
+    )
+    oracle_proxy = Contract.from_abi("Oracle", proxy.address, Oracle.abi)
 
     usds = USDsL2.deploy(
         name,
         symbol,
-        vault.address,
+        vault_proxy.address,
         l2_gateway,
         l1_address,
         {'from': owner, 'gas_limit': 1000000000}
@@ -92,44 +125,47 @@ def main():
 #        publish_source=False,
     )
 
-    txn = vault.initialize(
-        spa.address,
-        bancor.address,
-        {'from': owner, 'gas_limit': 1000000000}
-    )
-
-    txn = oracle.initialize(
+    txn = oracle_proxy.initialize(
         price_feed_eth_arbitrum_testnet,
         spa.address,
         weth_arbitrum_testnet,
         {'from': owner, 'gas_limit': 1000000000}
     )
 
+    txn = vault_proxy.initialize(
+        spa.address,
+        bancor.address,
+        {'from': owner, 'gas_limit': 1000000000}
+    )
+
     # configure VaultCore contract with USDs contract address
-    txn = vault.updateUSDsAddress(
+    txn = vault_proxy.updateUSDsAddress(
         usds,
         {'from': owner, 'gas_limit': 1000000000}
     )
     # configure VaultCore contract with Oracle contract address
-    txn = vault.updateOracleAddress(
-        oracle.address,
+    txn = vault_proxy.updateOracleAddress(
+        oracle_proxy.address,
         {'from': owner, 'gas_limit': 1000000000}
     )
-    # add collateral
-    #vault.addCollateral(
-    #    {'from': owner}
-    #)
 
     print(f"\n{network.show_active()}:\n")
     print(f"Bancor Formula address: {bancor.address}")
     print(f"Vault Core Library address: {core.address}")
-    print(f"Vault Core address: {vault.address}")
-    print(f"Oracle address: {oracle.address}")
+
+    print(f"Vault Core:")
+    print(f"\taddress: {vault.address}")
+    print(f"\tproxy address: {vault_proxy.address}")
+
+    print(f"Oracle:")
+    print(f"\taddress: {oracle.address}")
+    print(f"\tproxy address: {oracle_proxy.address}")
+
     print(f"USDs layer 2 address: {usds.address}")
     print(f"SPA layer 2 address: {spa.address}")
 
     final_balance = owner.balance()
-    print(f'account balance: {final_balance}')
+    print(f'\naccount balance: {final_balance}')
     gas_cost = initial_balance - final_balance
     gas_cost = "{:,}".format(gas_cost) # format with comma delimiters
     print(f'gas cost: {gas_cost} gwei\n')

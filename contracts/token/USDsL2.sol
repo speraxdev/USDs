@@ -4,7 +4,7 @@
  */
 
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.6.12;
+pragma solidity >=0.6.12;
 
 /**
  * @title USDs Token Contract

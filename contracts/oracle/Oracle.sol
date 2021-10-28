@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: MIT
 // To-do: remove for testing purpose functions;
 // To-do: check USDsInOutRatio_prec;
-pragma solidity ^0.6.12;
+pragma solidity >=0.6.12;
 //pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
