@@ -4,9 +4,11 @@ import brownie
 from brownie.test import given, strategy
 
 #@given(amount=strategy('uint256', min_value=1, max_value=2**256-1))
-@given(amount=strategy('uint256', min_value=1, max_value=2**128-1))
+@given(amount=strategy('uint256', min_value=1, max_value=100))
 @given(percent=strategy('uint256', min_value=1, max_value=100))
-def test_valid_mint(usds2, vault, accounts, amount, percent):
+def test_valid_mint(sperax, accounts, amount, percent):
+    (spa, usds2, vault) = sperax
+
     print('amount: ', amount)
     first_owner = accounts[3]
     approver = accounts[4]
@@ -14,7 +16,7 @@ def test_valid_mint(usds2, vault, accounts, amount, percent):
     failed_owner = accounts[6]
     third_owner = accounts[7]
     # mint stablecoin
-    usds2.mint(first_owner, amount, {'from': vault})
+    usds2.mint(first_owner, amount, {'from': vault.address})
     assert usds2.balanceOf(first_owner) == amount
     assert usds2.totalSupply() == amount
 
@@ -45,6 +47,6 @@ def test_valid_mint(usds2, vault, accounts, amount, percent):
         usds2.burn(third_owner, amount_to_burn, {'from': second_owner})
 
     # new owner stablecoins can only be burned by vault 
-    usds2.burn(third_owner, amount_to_burn, {'from': vault})
+    usds2.burn(third_owner, amount_to_burn, {'from': vault.address})
     assert txn
     assert usds2.totalSupply() == amount - amount_to_burn

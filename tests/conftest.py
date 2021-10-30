@@ -23,31 +23,61 @@ def owner_l2(accounts):
     return accounts[1]
 
 @pytest.fixture(scope="module", autouse=True)
-def vault(VaultCore, VaultCoreLibrary, accounts):
-    owner_vault = accounts[2]
-    core = VaultCoreLibrary.deploy(
-        {'from': owner_vault}
+def sperax(BancorFormula, USDsL2, SperaxTokenL2, Oracle, VaultCore, VaultCoreLibrary, usds1, owner_l2):
+    # Arbitrum rinkeby:
+    price_feed_eth_arbitrum_testnet = '0x5f0423B1a6935dc5596e7A24d98532b67A0AeFd8'
+    weth_arbitrum_testnet = '0xb47e6a5f8b33b3f17603c83a0535a9dcd7e32681'
+    l2_gateway = '0x9b014455AcC2Fe90c52803849d0002aeEC184a06'
+
+    bancor = BancorFormula.deploy(
+        {'from': owner_l2}
+    )
+    bancor.init()
+    oracle = Oracle.deploy(
+        {'from': owner_l2}
+    )
+    VaultCoreLibrary.deploy(
+        {'from': owner_l2}
     )
     vault = VaultCore.deploy(
-        {'from': owner_vault}
-    )
-    vault.initialize(
-        {'from': owner_vault}
-    )
-    return vault
-
-@pytest.fixture(scope="module", autouse=True)
-def usds2(USDsL2, vault, owner_l2):
-    usds2 = USDsL2.deploy(
         {'from': owner_l2}
     )
-    usds2.initialize(
+    usds2 = USDsL2.deploy(
         'USDs Layer 2',
         'USDs2',
-        vault, 
+        vault.address, 
+        l2_gateway,
+        usds1.address,
         {'from': owner_l2}
     )
-    return usds2
+    spa = SperaxTokenL2.deploy(
+        'Sperax',
+        'SPA',
+        l2_gateway,
+        usds2.address,
+        {'from': owner_l2},
+    )
+
+    oracle.initialize(
+        price_feed_eth_arbitrum_testnet,
+        spa.address,
+        weth_arbitrum_testnet,
+        {'from': owner_l2}
+    )
+    vault.initialize(
+        spa.address,
+        bancor.address,
+        {'from': owner_l2}
+    )
+    vault.updateUSDsAddress(
+        usds2.address,
+        {'from': owner_l2}
+    )
+    vault.updateOracleAddress(
+        oracle.address,
+        {'from': owner_l2}
+    )
+    return (spa, usds2, vault)
 
 
 @pytest.fixture(autouse=True)
