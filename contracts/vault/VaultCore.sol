@@ -28,6 +28,7 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 	address public USDsAddr;
 	address public override oracleAddr;
 	address public SPAvault;
+	address public _feeVault;
 	address public vaultCoreToolsAddr;
 	uint public override startBlockHeight;
 	uint public SPAminted;
@@ -103,7 +104,7 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 	collateralStruct[] allCollaterals;	// the list of all added collaterals
 	strategyStruct[] allStrategies;	// the list of all strategy addresses
 
-	function initialize(address _SPAaddr, address _vaultCoreToolsAddr) public initializer {
+	function initialize(address _SPAaddr, address _vaultCoreToolsAddr, address _feeVault) public initializer {
 		OwnableUpgradeable.__Ownable_init();
 		AccessControlUpgradeable.__AccessControl_init();
 		ReentrancyGuardUpgradeable.__ReentrancyGuard_init();
@@ -123,6 +124,7 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 		swapFee_theta = swapFee_theta_prec * 50;
 		swapFee_a = swapFee_a_prec * 12 / 10;
 		swapFee_A = swapFee_A_prec * 20;
+		feeVault = _feeVault;
 		_setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
 	}
 
@@ -296,7 +298,7 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 		}
 		// mint USDs and collect swapIn fees
 		IUSDs(USDsAddr).mint(msg.sender, USDsAmt);
-		IUSDs(USDsAddr).mint(address(this), swapFeeAmount);
+		IUSDs(USDsAddr).mint(feeVault, swapFeeAmount);
 		emit USDsMinted(msg.sender, USDsAmt, collateralDepAmt, SPABurnAmt, swapFeeAmount);
 	}
 
@@ -349,7 +351,7 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 			IERC20Upgradeable(collateralAddr).safeTransfer(msg.sender, collateralUnlockedAmt);
 		}
 		IUSDs(USDsAddr).burn(msg.sender, USDsBurntAmt);
-		IERC20Upgradeable(USDsAddr).safeTransferFrom(msg.sender, address(this), swapFeeAmount);
+		IERC20Upgradeable(USDsAddr).safeTransferFrom(msg.sender, feeVault, swapFeeAmount);
 
 		emit USDsRedeemed(msg.sender, USDsBurntAmt, collateralUnlockedAmt,SPAMintAmt, swapFeeAmount);
 	}
