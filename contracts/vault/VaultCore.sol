@@ -28,7 +28,7 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 	address public USDsAddr;
 	address public override oracleAddr;
 	address public SPAvault;
-	address public _feeVault;
+	address public feeVault;
 	address public vaultCoreToolsAddr;
 	uint public override startBlockHeight;
 	uint public SPAminted;
