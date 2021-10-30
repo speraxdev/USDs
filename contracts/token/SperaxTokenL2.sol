@@ -117,6 +117,8 @@ contract SperaxTokenL2 is ERC20Pausable, MintPausable, Ownable, IArbToken {
 
     /**
      * @dev Initialize the contract give all tokens to the deployer
+     * @param _l2Gateway address of Arbitrum custom L2 Gateway
+     * @param _l2Gateway address of SperaxTokenL1 on L1
      */
     constructor(string memory _name, string memory _symbol, address _l2Gateway, address _l1Address)
         ERC20(_name, _symbol) public {

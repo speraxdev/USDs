@@ -1,4 +1,3 @@
-
 // SPDX-License-Identifier: MIT
 // To-do: remove for testing purpose functions;
 // To-do: check USDsInOutRatio_prec;
@@ -39,7 +38,7 @@ contract Oracle is Initializable, IOracle, OwnableUpgradeable {
     uint32 public movingAvgLongPeriod;
     AggregatorV3Interface priceFeedETH;
     address public SPAaddr;
-    address public WETH9;
+    address public WETH;
     address public VaultAddr;
     address public USDsAddr;
     address public USDsOraclePool;
@@ -79,13 +78,13 @@ contract Oracle is Initializable, IOracle, OwnableUpgradeable {
     //
     // Initializer
     //
-    function initialize(address _priceFeedETH, address _SPAaddr, address _WETH9) public initializer {
+    function initialize(address _priceFeedETH, address _SPAaddr, address _WETH) public initializer {
         OwnableUpgradeable.__Ownable_init();
         updatePeriod = 12 hours;
         lastUpdateTime = uint32(now % 2**32);
         priceFeedETH = AggregatorV3Interface(_priceFeedETH);
         SPAaddr = _SPAaddr;
-        WETH9 = _WETH9;
+        WETH = _WETH;
         movingAvgShortPeriod = 600;
         movingAvgLongPeriod = 3600;
     }
@@ -104,12 +103,6 @@ contract Oracle is Initializable, IOracle, OwnableUpgradeable {
         USDsOracleBaseTokenAddr = _USDsOracleBaseTokenAddr;
         USDsOraclePool = _USDsOraclePool;
         SPAoraclePool = _SPAoraclePool;
-    }
-
-
-    function updatePriceMovingAvgPeriod(uint32 _movingAvgShortPeriod, uint32 _movingAvgLongPeriod) external onlyOwner {
-        movingAvgShortPeriod = _movingAvgShortPeriod;
-        movingAvgLongPeriod = _movingAvgLongPeriod;
     }
 
     /**

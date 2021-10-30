@@ -3,15 +3,23 @@ pragma solidity >=0.6.12;
 
 import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/SafeERC20Upgradeable.sol";
-import "../libraries/BancorFormula.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "../utils/BancorFormula.sol";
 import "../interfaces/IOracle.sol";
 import "../interfaces/IVaultCore.sol";
 import "../libraries/StableMath.sol";
+import "../utils/BancorFormula.sol";
 
-library VaultCoreLibrary {
+contract VaultCoreTools is Initializable {
 	using SafeERC20Upgradeable for ERC20Upgradeable;
 	using SafeMathUpgradeable for uint;
 	using StableMath for uint;
+
+	BancorFormula public BancorInstance;
+
+	function initialize(address _BancorFormulaAddr) public initializer {
+		BancorInstance = BancorFormula(_BancorFormulaAddr);
+	}
 
 	/**
 	 * @dev calculate chiTarget by the formula in section 2.2 of the whitepaper
@@ -95,7 +103,7 @@ library VaultCoreLibrary {
 			if (exponentWithPrec >= 2^32) {
 				return uint(_vaultContract.swapFee_prec());
 			}
-			(uint powResWithPrec, uint8 powResPrec) = BancorFormula(_vaultContract.BancorInstance()).power(
+			(uint powResWithPrec, uint8 powResPrec) = BancorInstance.power(
 				uint(_vaultContract.swapFee_A()), uint(_vaultContract.swapFee_A_prec()), uint32(exponentWithPrec), USDsInOutRatio_prec
 			);
 			uint toReturn = uint(powResWithPrec >> powResPrec).mul(uint(_vaultContract.swapFee_prec())) / 100;

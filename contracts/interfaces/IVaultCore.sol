@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.6.12;
-import "../libraries/BancorFormula.sol";
 
 interface IVaultCore {
     function mintRedeemAllowed() external view returns (bool);
@@ -10,7 +9,6 @@ interface IVaultCore {
     function swapfeeOutAllowed() external view returns (bool);
     function oracleAddr() external view returns (address);
     function startBlockHeight() external view returns (uint);
-    function BancorInstance() external view returns (BancorFormula);
     function chi_alpha() external view returns (uint32);
     function chi_alpha_prec() external view returns (uint64);
     function chi_prec() external view returns (uint64);
@@ -28,7 +26,6 @@ interface IVaultCore {
     function swapFee_a_prec() external view returns (uint16);
     function swapFee_A() external view returns (uint32);
     function swapFee_A_prec() external view returns (uint16);
-    function allocatePrecentage() external view returns (uint32);
-    function allocatePrecentage_prec() external view returns (uint16);
+    function allocatePrecentage_prec() external view returns (uint8);
     function collateralRatio() external view returns (uint);
 }

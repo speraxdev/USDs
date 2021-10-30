@@ -16,6 +16,7 @@ pragma solidity >=0.6.12;
 import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import { StableMath } from "../libraries/StableMath.sol";
 import "arb-bridge-peripherals/contracts/tokenbridge/arbitrum/IArbToken.sol";
 import "../interfaces/IUSDs.sol";
@@ -27,7 +28,7 @@ import "arb-bridge-peripherals/contracts/tokenbridge/libraries/aeERC20.sol";
  * rebasing design. Any integrations with USDs should be aware.
  */
 
-contract USDsL2 is aeERC20, OwnableUpgradeable, IArbToken, IUSDs {
+contract USDsL2 is aeERC20, OwnableUpgradeable, IArbToken, IUSDs, ReentrancyGuardUpgradeable {
     using SafeMathUpgradeable for uint256;
     using StableMath for uint256;
 
@@ -71,6 +72,7 @@ contract USDsL2 is aeERC20, OwnableUpgradeable, IArbToken, IUSDs {
     ) public {
         aeERC20._initialize(_nameArg, _symbolArg, 18);
         OwnableUpgradeable.__Ownable_init();
+        ReentrancyGuardUpgradeable.__ReentrancyGuard_init();
         rebasingCreditsPerToken = 1e18;
         vaultAddress = _vaultAddress;
         l2Gateway = _l2Gateway;
@@ -304,7 +306,7 @@ contract USDsL2 is aeERC20, OwnableUpgradeable, IArbToken, IUSDs {
      * @param _account the account address the newly minted USDs will be attributed to
      * @param _amount the amount of USDs that will be minted
      */
-    function _mint(address _account, uint256 _amount) internal override {
+    function _mint(address _account, uint256 _amount) internal override nonReentrant {
         require(_account != address(0), "Mint to the zero address");
 
         bool isNonRebasingAccount = _isNonRebasingAccount(_account);
@@ -348,7 +350,7 @@ contract USDsL2 is aeERC20, OwnableUpgradeable, IArbToken, IUSDs {
      * - `_account` cannot be the zero address.
      * - `_account` must have at least `_amount` tokens.
      */
-    function _burn(address _account, uint256 _amount) internal override {
+    function _burn(address _account, uint256 _amount) internal override nonReentrant {
         require(_account != address(0), "Burn from the zero address");
         if (_amount == 0) {
             return;
@@ -434,7 +436,7 @@ contract USDsL2 is aeERC20, OwnableUpgradeable, IArbToken, IUSDs {
      * address's balance will be part of rebases so the account will be exposed
      * to upside and downside.
      */
-    function rebaseOptIn() public onlyOwner {
+    function rebaseOptIn() public onlyOwner nonReentrant {
         require(_isNonRebasingAccount(msg.sender), "Account has not opted out");
 
         // Convert balance into the same amount at the current exchange rate
@@ -460,7 +462,7 @@ contract USDsL2 is aeERC20, OwnableUpgradeable, IArbToken, IUSDs {
     /**
      * @dev Remove a contract address to the non rebasing exception list.
      */
-    function rebaseOptOut() public onlyOwner {
+    function rebaseOptOut() public onlyOwner nonReentrant {
         require(!_isNonRebasingAccount(msg.sender), "Account has not opted in");
 
         // Increase non rebasing supply
@@ -485,6 +487,7 @@ contract USDsL2 is aeERC20, OwnableUpgradeable, IArbToken, IUSDs {
         external
         override
         onlyVault
+        nonReentrant
     {
         require(_totalSupply > 0, "Cannot increase 0 supply");
 
