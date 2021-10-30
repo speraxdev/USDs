@@ -28,6 +28,7 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 	address public USDsAddr;
 	address public override oracleAddr;
 	address public SPAvault;
+	address public _feeVault;
 	address public vaultCoreToolsAddr;
 	uint public override startBlockHeight;
 	uint public SPAminted;
@@ -103,7 +104,7 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 	collateralStruct[] allCollaterals;	// the list of all added collaterals
 	strategyStruct[] allStrategies;	// the list of all strategy addresses
 
-	function initialize(address _SPAaddr, address _vaultCoreToolsAddr) public initializer {
+	function initialize(address _SPAaddr, address _vaultCoreToolsAddr, address _feeVault) public initializer {
 		OwnableUpgradeable.__Ownable_init();
 		AccessControlUpgradeable.__AccessControl_init();
 		ReentrancyGuardUpgradeable.__ReentrancyGuard_init();
@@ -123,6 +124,7 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 		swapFee_theta = swapFee_theta_prec * 50;
 		swapFee_a = swapFee_a_prec * 12 / 10;
 		swapFee_A = swapFee_A_prec * 20;
+		feeVault = _feeVault;
 		_setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
 	}
 
@@ -296,7 +298,7 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 		}
 		// mint USDs and collect swapIn fees
 		IUSDs(USDsAddr).mint(msg.sender, USDsAmt);
-		IUSDs(USDsAddr).mint(address(this), swapFeeAmount);
+		IUSDs(USDsAddr).mint(feeVault, swapFeeAmount);
 		emit USDsMinted(msg.sender, USDsAmt, collateralDepAmt, SPABurnAmt, swapFeeAmount);
 	}
 
@@ -349,60 +351,60 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 			IERC20Upgradeable(collateralAddr).safeTransfer(msg.sender, collateralUnlockedAmt);
 		}
 		IUSDs(USDsAddr).burn(msg.sender, USDsBurntAmt);
-		IERC20Upgradeable(USDsAddr).safeTransferFrom(msg.sender, address(this), swapFeeAmount);
+		IERC20Upgradeable(USDsAddr).safeTransferFrom(msg.sender, feeVault, swapFeeAmount);
 
 		emit USDsRedeemed(msg.sender, USDsBurntAmt, collateralUnlockedAmt,SPAMintAmt, swapFeeAmount);
 	}
 
-	function rebase() external whenRebaseAllowed nonReentrant {
-		require(hasRole(REBASER_ROLE, msg.sender), "Caller is not a burner");
-		uint USDsIncrement = _harvest();
-		uint USDsNewSupply = IERC20Upgradeable(USDsAddr).totalSupply().add(USDsIncrement);
-		IUSDs(USDsAddr).burn(address(this), USDsIncrement);
-		IUSDs(USDsAddr).changeSupply(USDsNewSupply);
-		emit Rebase(IERC20Upgradeable(USDsAddr).totalSupply(), USDsNewSupply);
-	}
+	// function rebase() external whenRebaseAllowed nonReentrant {
+	// 	require(hasRole(REBASER_ROLE, msg.sender), "Caller is not a burner");
+	// 	uint USDsIncrement = _harvest();
+	// 	uint USDsNewSupply = IERC20Upgradeable(USDsAddr).totalSupply().add(USDsIncrement);
+	// 	IUSDs(USDsAddr).burn(address(this), USDsIncrement);
+	// 	IUSDs(USDsAddr).changeSupply(USDsNewSupply);
+	// 	emit Rebase(IERC20Upgradeable(USDsAddr).totalSupply(), USDsNewSupply);
+	// }
+	//
+	// function _harvest() internal returns (uint USDsIncrement) {
+	// 	IStrategy strategy;
+	// 	collateralStruct memory collateral;
+	// 	for (uint y = 0; y < allCollaterals.length; y++) {
+	// 		collateral = allCollaterals[y];
+	// 		strategy = IStrategy(collateral.defaultStrategyAddr);
+	// 		if (strategy.supportsCollateral(collateral.collateralAddr) && collateral.rebaseAllowed) {
+	// 			uint interestEarned = strategy.checkInterestEarned(collateral.collateralAddr);
+	// 			if (interestEarned > 0) {
+	// 				strategy.withdraw(address(this), collateral.collateralAddr, interestEarned);
+	// 				uint USDsReceived = IBuyback(collateral.buyBackAddr).swap(interestEarned);
+	// 				IUSDs(USDsAddr).burn(address(this), USDsReceived);
+	// 				USDsIncrement = USDsIncrement.add(USDsReceived);
+	// 			}
+	// 		}
+	// 	}
+	// }
 
-	function _harvest() internal returns (uint USDsIncrement) {
-		IStrategy strategy;
-		collateralStruct memory collateral;
-		for (uint y = 0; y < allCollaterals.length; y++) {
-			collateral = allCollaterals[y];
-			strategy = IStrategy(collateral.defaultStrategyAddr);
-			if (strategy.supportsCollateral(collateral.collateralAddr) && collateral.rebaseAllowed) {
-				uint interestEarned = strategy.checkInterestEarned(collateral.collateralAddr);
-				if (interestEarned > 0) {
-					strategy.withdraw(address(this), collateral.collateralAddr, interestEarned);
-					uint USDsReceived = IBuyback(collateral.buyBackAddr).swap(interestEarned);
-					IUSDs(USDsAddr).burn(address(this), USDsReceived);
-					USDsIncrement = USDsIncrement.add(USDsReceived);
-				}
-			}
-		}
-	}
-
-	/**
-	* @notice Allocate unallocated funds on Vault to strategies.
-	* @dev Allocate unallocated funds on Vault to strategies.
-	**/
-	function allocate() external whenAllocationAllowed nonReentrant {
-		IStrategy strategy;
-		collateralStruct memory collateral;
-		for (uint y = 0; y < allCollaterals.length; y++) {
-			collateral = allCollaterals[y];
-			strategy = IStrategy(collateral.defaultStrategyAddr);
-			if (collateral.allocationAllowed && collateral.defaultStrategyAddr != address(0) && strategy.supportsCollateral(collateral.collateralAddr)) {
-				uint valueInStrategy = _valueInStrategy(collateral.collateralAddr);
-				uint valueInVault = _valueInVault(collateral.collateralAddr);
-				uint valueInStrategy_optimal = valueInStrategy.add(valueInVault).mul(collateral.allocatePrecentage).div(allocatePrecentage_prec);
-				if (valueInStrategy_optimal < valueInStrategy) {
-					uint amtToAllocate = valueInStrategy.sub(valueInStrategy_optimal);
-					strategy.deposit(collateral.collateralAddr, amtToAllocate);
-					emit CollateralAllocated(collateral.collateralAddr, collateral.defaultStrategyAddr, amtToAllocate);
-				}
-			}
-		}
-	}
+	// /**
+	// * @notice Allocate unallocated funds on Vault to strategies.
+	// * @dev Allocate unallocated funds on Vault to strategies.
+	// **/
+	// function allocate() external whenAllocationAllowed nonReentrant {
+	// 	IStrategy strategy;
+	// 	collateralStruct memory collateral;
+	// 	for (uint y = 0; y < allCollaterals.length; y++) {
+	// 		collateral = allCollaterals[y];
+	// 		strategy = IStrategy(collateral.defaultStrategyAddr);
+	// 		if (collateral.allocationAllowed && collateral.defaultStrategyAddr != address(0) && strategy.supportsCollateral(collateral.collateralAddr)) {
+	// 			uint valueInStrategy = _valueInStrategy(collateral.collateralAddr);
+	// 			uint valueInVault = _valueInVault(collateral.collateralAddr);
+	// 			uint valueInStrategy_optimal = valueInStrategy.add(valueInVault).mul(collateral.allocatePrecentage).div(allocatePrecentage_prec);
+	// 			if (valueInStrategy_optimal < valueInStrategy) {
+	// 				uint amtToAllocate = valueInStrategy.sub(valueInStrategy_optimal);
+	// 				strategy.deposit(collateral.collateralAddr, amtToAllocate);
+	// 				emit CollateralAllocated(collateral.collateralAddr, collateral.defaultStrategyAddr, amtToAllocate);
+	// 			}
+	// 		}
+	// 	}
+	// }
 
 	function collateralRatio() public view override returns (uint ratio) {
 		uint totalValueLocked = totalValueLocked();
@@ -414,7 +416,8 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 	}
 
 	function totalValueLocked() public view returns (uint value) {
-		value = totalValueInVault().add(totalValueInStrategies());
+		//value = totalValueInVault().add(totalValueInStrategies());
+		value = totalValueInVault();
 	}
 
 	function totalValueInVault() public view returns (uint value) {
@@ -434,24 +437,24 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 		value = collateralTotalValueInVault_18;
 	}
 
-	function totalValueInStrategies() public view returns (uint value) {
-		for (uint y = 0; y < allCollaterals.length; y++) {
-			collateralStruct memory collateral = allCollaterals[y];
-			value = value.add(_valueInStrategy(collateral.collateralAddr));
-		}
-	}
-
-	function _valueInStrategy(address _collateralAddr) internal view returns (uint value) {
-		collateralStruct memory collateral = collateralsInfo[_collateralAddr];
-		IStrategy strategy = IStrategy(collateral.defaultStrategyAddr);
-		uint priceColla = IOracle(oracleAddr).getCollateralPrice(collateral.collateralAddr);
-		uint precisionColla = IOracle(oracleAddr).getCollateralPrice_prec(collateral.collateralAddr);
-		uint collateralAddrDecimal = uint(ERC20Upgradeable(collateral.collateralAddr).decimals());
-		uint collateralTotalValueInStrategy = strategy.checkBalance(collateral.collateralAddr).mul(priceColla).div(precisionColla);
-		uint collateralTotalValueInStrategy_18 = collateralTotalValueInStrategy.mul(10**(uint(18).sub(collateralAddrDecimal)));
-		value = collateralTotalValueInStrategy_18;
-		if (!strategy.supportsCollateral(collateral.collateralAddr)) {
-			value = 0;
-		}
-	}
+	// function totalValueInStrategies() public view returns (uint value) {
+	// 	for (uint y = 0; y < allCollaterals.length; y++) {
+	// 		collateralStruct memory collateral = allCollaterals[y];
+	// 		value = value.add(_valueInStrategy(collateral.collateralAddr));
+	// 	}
+	// }
+	//
+	// function _valueInStrategy(address _collateralAddr) internal view returns (uint value) {
+	// 	collateralStruct memory collateral = collateralsInfo[_collateralAddr];
+	// 	IStrategy strategy = IStrategy(collateral.defaultStrategyAddr);
+	// 	uint priceColla = IOracle(oracleAddr).getCollateralPrice(collateral.collateralAddr);
+	// 	uint precisionColla = IOracle(oracleAddr).getCollateralPrice_prec(collateral.collateralAddr);
+	// 	uint collateralAddrDecimal = uint(ERC20Upgradeable(collateral.collateralAddr).decimals());
+	// 	uint collateralTotalValueInStrategy = strategy.checkBalance(collateral.collateralAddr).mul(priceColla).div(precisionColla);
+	// 	uint collateralTotalValueInStrategy_18 = collateralTotalValueInStrategy.mul(10**(uint(18).sub(collateralAddrDecimal)));
+	// 	value = collateralTotalValueInStrategy_18;
+	// 	if (!strategy.supportsCollateral(collateral.collateralAddr)) {
+	// 		value = 0;
+	// 	}
+	// }
 }
