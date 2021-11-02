@@ -62,3 +62,23 @@ def test_upgrade_vault(sperax, VaultCoreV2, Contract, admin, owner_l2, accounts)
             oracle_proxy.address,
             {'from': admin}
         )
+
+    # configure collateral 
+    collaterals = [
+        '0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8', # USDC
+        '0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9', # USDT
+        '0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1', # DAI
+        '0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f', # WBTC
+    ]
+    # equivalent to address(0) in solidity
+    zero_address = brownie.convert.to_address('0x0000000000000000000000000000000000000000')
+    for collateral in collaterals:
+        vault_proxy.addCollateral(
+            collateral, # address of: USDC, USDT, DAI or WBTC
+            zero_address, # _defaultStrategyAddr: CURVE, AAVE, etc
+            False, # _allocationAllowed
+            0, # _allocatePercentage
+            zero_address, # _buyBackAddr
+            False, # _rebaseAllowed
+            {'from': owner_l2}
+        )

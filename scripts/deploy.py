@@ -169,28 +169,41 @@ def main():
         {'from': owner, 'gas_limit': 1000000000}
     )
 
-    # configure collateral 
-    arbitrum_mainnet = [
-        '0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8', # USDC
-        '0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9', # USDT
-        '0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1', # DAI
-        '0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f'
-    ]
-    arbitrum_rinkeby = [
-        '0x09b98f8b2395d076514037ff7d39a091a536206c', # USDC
-    ]
+    # Arbitrum mainnet collaterals:
+    arbitrum_mainnet = {
+        # USDC
+        '0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8': '0x50834F3163758fcC1Df9973b6e91f0F0F0434aD3',
+        # USDT
+        '0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9': '0x3f3f5dF88dC9F13eac63DF89EC16ef6e7E25DdE7',
+        # DAI
+        '0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1': '0xc5C8E77B397E531B8EC06BFb0048328B30E9eCfB', 
+        # WBTC
+        '0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f': '0x6ce185860a4963106506C203335A2910413708e9',
+    }
+    arbitrum_rinkeby = {
+        # USDC
+        '0x09b98f8b2395d076514037ff7d39a091a536206c': '0xe020609A0C31f4F96dCBB8DF9882218952dD95c4',
+    }
     collaterals = arbitrum_mainnet
     if network.show_active() == 'arbitrum-rinkeby':
         collaterals = arbitrum_rinkeby
 
-    for collateral in collaterals:
-        txn = vault_proxy.addCollateral(
+    precision = 10**8
+    for collateral, chainlink in collaterals.items():
+        vault_proxy.addCollateral(
             collateral, # address of: USDC, USDT, DAI or WBTC
             convert.to_address(0), # _defaultStrategyAddr: CURVE, AAVE, etc
             False, # _allocationAllowed
             0, # _allocatePercentage
             convert.to_address(0), # _buyBackAddr
             False, # _rebaseAllowed
+            {'from': owner, 'gas_limit': 1000000000}
+        )
+        oracle_proxy.updateCollateralInfo(
+            collateral, # ERC20 address
+            True, # supported
+            chainlink, # chainlink price feed address
+            precision, # chainlink price feed precision
             {'from': owner, 'gas_limit': 1000000000}
         )
 
