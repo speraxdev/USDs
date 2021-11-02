@@ -356,55 +356,81 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 		emit USDsRedeemed(msg.sender, USDsBurntAmt, collateralUnlockedAmt,SPAMintAmt, swapFeeAmount);
 	}
 
-	// function rebase() external whenRebaseAllowed nonReentrant {
-	// 	require(hasRole(REBASER_ROLE, msg.sender), "Caller is not a burner");
-	// 	uint USDsIncrement = _harvest();
-	// 	uint USDsNewSupply = IERC20Upgradeable(USDsAddr).totalSupply().add(USDsIncrement);
-	// 	IUSDs(USDsAddr).burn(address(this), USDsIncrement);
-	// 	IUSDs(USDsAddr).changeSupply(USDsNewSupply);
-	// 	emit Rebase(IERC20Upgradeable(USDsAddr).totalSupply(), USDsNewSupply);
-	// }
-	//
-	// function _harvest() internal returns (uint USDsIncrement) {
-	// 	IStrategy strategy;
-	// 	collateralStruct memory collateral;
-	// 	for (uint y = 0; y < allCollaterals.length; y++) {
-	// 		collateral = allCollaterals[y];
-	// 		strategy = IStrategy(collateral.defaultStrategyAddr);
-	// 		if (strategy.supportsCollateral(collateral.collateralAddr) && collateral.rebaseAllowed) {
-	// 			uint interestEarned = strategy.checkInterestEarned(collateral.collateralAddr);
-	// 			if (interestEarned > 0) {
-	// 				strategy.withdraw(address(this), collateral.collateralAddr, interestEarned);
-	// 				uint USDsReceived = IBuyback(collateral.buyBackAddr).swap(interestEarned);
-	// 				IUSDs(USDsAddr).burn(address(this), USDsReceived);
-	// 				USDsIncrement = USDsIncrement.add(USDsReceived);
-	// 			}
-	// 		}
-	// 	}
-	// }
+	function rebase() external whenRebaseAllowed nonReentrant {
+		require(hasRole(REBASER_ROLE, msg.sender), "Caller is not a rebaser");
+		uint USDsIncrement = _harvest();
+		uint USDsOldSupply = IERC20Upgradeable(USDsAddr).totalSupply();
+		if (USDsIncrement > 0) {
+			uint USDsNewSupply = IERC20Upgradeable(USDsAddr).totalSupply().add(USDsIncrement);
+			IUSDs(USDsAddr).burn(address(this), USDsIncrement);
+			IUSDs(USDsAddr).changeSupply(USDsNewSupply);
+			emit Rebase(USDsOldSupply, USDsNewSupply);
+		} else {
+			emit Rebase(USDsOldSupply, USDsOldSupply);
+		}
+	}
 
-	// /**
-	// * @notice Allocate unallocated funds on Vault to strategies.
-	// * @dev Allocate unallocated funds on Vault to strategies.
-	// **/
-	// function allocate() external whenAllocationAllowed nonReentrant {
-	// 	IStrategy strategy;
-	// 	collateralStruct memory collateral;
-	// 	for (uint y = 0; y < allCollaterals.length; y++) {
-	// 		collateral = allCollaterals[y];
-	// 		strategy = IStrategy(collateral.defaultStrategyAddr);
-	// 		if (collateral.allocationAllowed && collateral.defaultStrategyAddr != address(0) && strategy.supportsCollateral(collateral.collateralAddr)) {
-	// 			uint valueInStrategy = _valueInStrategy(collateral.collateralAddr);
-	// 			uint valueInVault = _valueInVault(collateral.collateralAddr);
-	// 			uint valueInStrategy_optimal = valueInStrategy.add(valueInVault).mul(collateral.allocatePrecentage).div(allocatePrecentage_prec);
-	// 			if (valueInStrategy_optimal < valueInStrategy) {
-	// 				uint amtToAllocate = valueInStrategy.sub(valueInStrategy_optimal);
-	// 				strategy.deposit(collateral.collateralAddr, amtToAllocate);
-	// 				emit CollateralAllocated(collateral.collateralAddr, collateral.defaultStrategyAddr, amtToAllocate);
-	// 			}
-	// 		}
-	// 	}
-	// }
+	function _harvest() internal returns (uint USDsIncrement) {
+		IStrategy strategy;
+		collateralStruct memory collateral;
+		for (uint y = 0; y < allCollaterals.length; y++) {
+			collateral = allCollaterals[y];
+			strategy = IStrategy(collateral.defaultStrategyAddr);
+			if (strategy.supportsCollateral(collateral.collateralAddr) && collateral.rebaseAllowed) {
+				uint USDsIncrement_viaReward = _harvestReward(strategy);
+				uint USDsIncrement_viaInterest = _harvestInterest(strategy, collateral.collateralAddr);
+				USDsIncrement = USDsIncrement.add(USDsIncrement_viaReward).add(USDsIncrement_viaInterest);
+			}
+		}
+	}
+
+	function _harvestReward(IStrategy strategy) internal returns (uint USDsIncrement_viaReward) {
+		address rewardTokenAddress = strategy.rewardTokenAddress();
+        if (rewardTokenAddress != address(0)) {
+            uint liquidationThreshold = strategy.rewardLiquidationThreshold();
+			uint rewardTokenAmount = IERC20Upgradeable(rewardTokenAddress).balanceOf(address(this));
+			if (liquidationThreshold == 0) {
+				strategy.collectRewardToken();
+				uint rewardAmt = IERC20Upgradeable(rewardTokenAddress).balanceOf(address(this));
+				USDsIncrement_viaReward = IBuyback(strategy.rewardTokenBuybackAddress()).swap(rewardAmt);
+			} else if (rewardTokenAmount >= liquidationThreshold)
+            if (rewardTokenAmount >= liquidationThreshold) {
+
+            }
+		}
+	}
+
+	function _harvestInterest(IStrategy strategy, address collateralAddr) internal returns (uint USDsIncrement_viaInterest) {
+		collateralStruct memory collateral = collateralsInfo[collateralAddr];
+		uint interestEarned = strategy.checkInterestEarned(collateralAddr);
+		if (interestEarned > 0) {
+			strategy.withdraw(address(this), collateral.collateralAddr, interestEarned);
+			USDsIncrement_viaInterest = IBuyback(collateral.buyBackAddr).swap(interestEarned);
+		}
+	}
+
+	/**
+	* @notice Allocate unallocated funds on Vault to strategies.
+	* @dev Allocate unallocated funds on Vault to strategies.
+	**/
+	function allocate() external whenAllocationAllowed nonReentrant {
+		IStrategy strategy;
+		collateralStruct memory collateral;
+		for (uint y = 0; y < allCollaterals.length; y++) {
+			collateral = allCollaterals[y];
+			strategy = IStrategy(collateral.defaultStrategyAddr);
+			if (collateral.allocationAllowed && collateral.defaultStrategyAddr != address(0) && strategy.supportsCollateral(collateral.collateralAddr)) {
+				uint valueInStrategy = _valueInStrategy(collateral.collateralAddr);
+				uint valueInVault = _valueInVault(collateral.collateralAddr);
+				uint valueInStrategy_optimal = valueInStrategy.add(valueInVault).mul(collateral.allocatePrecentage).div(allocatePrecentage_prec);
+				if (valueInStrategy_optimal < valueInStrategy) {
+					uint amtToAllocate = valueInStrategy.sub(valueInStrategy_optimal);
+					strategy.deposit(collateral.collateralAddr, amtToAllocate);
+					emit CollateralAllocated(collateral.collateralAddr, collateral.defaultStrategyAddr, amtToAllocate);
+				}
+			}
+		}
+	}
 
 	function collateralRatio() public view override returns (uint ratio) {
 		uint totalValueLocked = totalValueLocked();
@@ -437,24 +463,24 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 		value = collateralTotalValueInVault_18;
 	}
 
-	// function totalValueInStrategies() public view returns (uint value) {
-	// 	for (uint y = 0; y < allCollaterals.length; y++) {
-	// 		collateralStruct memory collateral = allCollaterals[y];
-	// 		value = value.add(_valueInStrategy(collateral.collateralAddr));
-	// 	}
-	// }
-	//
-	// function _valueInStrategy(address _collateralAddr) internal view returns (uint value) {
-	// 	collateralStruct memory collateral = collateralsInfo[_collateralAddr];
-	// 	IStrategy strategy = IStrategy(collateral.defaultStrategyAddr);
-	// 	uint priceColla = IOracle(oracleAddr).getCollateralPrice(collateral.collateralAddr);
-	// 	uint precisionColla = IOracle(oracleAddr).getCollateralPrice_prec(collateral.collateralAddr);
-	// 	uint collateralAddrDecimal = uint(ERC20Upgradeable(collateral.collateralAddr).decimals());
-	// 	uint collateralTotalValueInStrategy = strategy.checkBalance(collateral.collateralAddr).mul(priceColla).div(precisionColla);
-	// 	uint collateralTotalValueInStrategy_18 = collateralTotalValueInStrategy.mul(10**(uint(18).sub(collateralAddrDecimal)));
-	// 	value = collateralTotalValueInStrategy_18;
-	// 	if (!strategy.supportsCollateral(collateral.collateralAddr)) {
-	// 		value = 0;
-	// 	}
-	// }
+	function totalValueInStrategies() public view returns (uint value) {
+		for (uint y = 0; y < allCollaterals.length; y++) {
+			collateralStruct memory collateral = allCollaterals[y];
+			value = value.add(_valueInStrategy(collateral.collateralAddr));
+		}
+	}
+
+	function _valueInStrategy(address _collateralAddr) internal view returns (uint value) {
+		collateralStruct memory collateral = collateralsInfo[_collateralAddr];
+		IStrategy strategy = IStrategy(collateral.defaultStrategyAddr);
+		uint priceColla = IOracle(oracleAddr).getCollateralPrice(collateral.collateralAddr);
+		uint precisionColla = IOracle(oracleAddr).getCollateralPrice_prec(collateral.collateralAddr);
+		uint collateralAddrDecimal = uint(ERC20Upgradeable(collateral.collateralAddr).decimals());
+		uint collateralTotalValueInStrategy = strategy.checkBalance(collateral.collateralAddr).mul(priceColla).div(precisionColla);
+		uint collateralTotalValueInStrategy_18 = collateralTotalValueInStrategy.mul(10**(uint(18).sub(collateralAddrDecimal)));
+		value = collateralTotalValueInStrategy_18;
+		if (!strategy.supportsCollateral(collateral.collateralAddr)) {
+			value = 0;
+		}
+	}
 }

@@ -4,11 +4,15 @@
 pragma solidity ^0.6.12;
 pragma experimental ABIEncoderV2;
 
+import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
+import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import '../libraries/TransferHelper.sol';
 import '../interfaces/ISwapRouter.sol';
 import '../interfaces/IBuyback.sol';
 
 contract BuybackSingle is IBuyback {
+    using SafeERC20 for IERC20;
+
     ISwapRouter public immutable swapRouter;
     address public immutable USDs;
     address public immutable inputToken;
@@ -57,5 +61,6 @@ contract BuybackSingle is IBuyback {
             });
         // The call to `exactInputSingle` executes the swap.
         amountOut = swapRouter.exactInputSingle(params);
+        IERC20(USDs).safeTransfer(vaultAddr, amountOut);
     }
 }

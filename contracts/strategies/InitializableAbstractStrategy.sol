@@ -31,6 +31,8 @@ abstract contract InitializableAbstractStrategy is Initializable, OwnableUpgrade
     // asset => pToken (Platform Specific Token Address)
     mapping(address => address) public assetToPToken;
 
+    mapping(address => uint256) public allocatedAmt;
+
     // Full list of all assets supported here
     address[] internal assetsMapped;
 
@@ -242,6 +244,26 @@ abstract contract InitializableAbstractStrategy is Initializable, OwnableUpgrade
     ) external virtual;
 
     /**
+     * @dev Withdraw an amount of asset from the platform to vault
+     * @param _asset             Address of the asset
+     * @param _amount            Units of asset to withdraw
+     */
+    function withdrawToVault(
+        address _asset,
+        uint256 _amount
+    ) external virtual;
+
+    /**
+     * @dev Withdraw the interest earned of asset from the platform.
+     * @param _recipient         Address to which the asset should be sent
+     * @param _asset             Address of the asset
+     */
+    function withdrawInterest(
+        address _recipient,
+        address _asset
+    ) external virtual;
+
+    /**
      * @dev Withdraw all assets from strategy sending assets to Vault.
      */
     function withdrawAll() external virtual;
@@ -257,6 +279,13 @@ abstract contract InitializableAbstractStrategy is Initializable, OwnableUpgrade
         view
         virtual
         returns (uint256 balance);
+
+
+    function checkInterestEarned(address _asset)
+        external
+        view
+        virtual
+        returns (uint256 interestEarned);
 
     /**
      * @dev Check if an asset is supported.
