@@ -12,7 +12,7 @@ import "../interfaces/IUSDs.sol";
 import "../interfaces/IBuyback.sol";
 import "./VaultCoreTools.sol";
 
-contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeable, ReentrancyGuardUpgradeable, IVaultCore {
+contract VaultCoreV2 is Initializable, OwnableUpgradeable, AccessControlUpgradeable, ReentrancyGuardUpgradeable, IVaultCore {
 	using SafeERC20Upgradeable for IERC20Upgradeable;
 	using SafeMathUpgradeable for uint;
 	using StableMath for uint;
@@ -128,6 +128,9 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 		_setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
 	}
 
+	function version() external view returns (string memory) {
+		return "Vault v.2";
+	}
 	//for testing purpose
 	function updateUSDsAddress(address _USDsAddr) external onlyOwner {
 		USDsAddr = _USDsAddr;

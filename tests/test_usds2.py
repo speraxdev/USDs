@@ -3,11 +3,13 @@ import pytest
 import brownie
 from brownie.test import given, strategy
 
-#@given(amount=strategy('uint256', min_value=1, max_value=2**256-1))
-@given(amount=strategy('uint256', min_value=1, max_value=100))
-@given(percent=strategy('uint256', min_value=1, max_value=100))
-def test_valid_mint(sperax, accounts, amount, percent):
-    (spa, usds2, vault) = sperax
+#
+# DON'T USE accounts[0-3]. 0-3 ARE RESERVED BY conftest.py
+#
+
+@given(amount=strategy('uint256', min_value=1, max_value=2**256-1))
+def test_valid_mint(sperax, accounts, amount):
+    (proxy_admin, spa, usds2, vault_core_tools, vault_proxy) = sperax
 
     print('amount: ', amount)
     first_owner = accounts[3]
@@ -40,7 +42,7 @@ def test_valid_mint(sperax, accounts, amount, percent):
     assert usds2.totalSupply() == amount
 
     # amount of stablecoins to burn
-    amount_to_burn = (amount + percent - 1) // percent
+    amount_to_burn = amount - (amount // 2)
     print('number of tokens to burn: ', amount_to_burn)
     # stablecoin owner cannot burn their own tokens
     with brownie.reverts():
@@ -48,5 +50,4 @@ def test_valid_mint(sperax, accounts, amount, percent):
 
     # new owner stablecoins can only be burned by vault 
     usds2.burn(third_owner, amount_to_burn, {'from': vault.address})
-    assert txn
     assert usds2.totalSupply() == amount - amount_to_burn
