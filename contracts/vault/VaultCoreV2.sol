@@ -50,14 +50,14 @@ contract VaultCoreV2 is Initializable, OwnableUpgradeable, AccessControlUpgradea
 	uint16 public override constant swapFee_a_prec = 10**4;
 	uint32 public override swapFee_A;
 	uint16 public override constant swapFee_A_prec = 10**4;
-	uint8 public override constant allocatePrecentage_prec = 10**2;
+	uint8 public override constant allocatePercentage_prec = 10**2;
 
 	event parametersUpdated(uint _chiInit, uint32 _chi_beta, uint32 _chi_gamma, uint32 _swapFee_p, uint32 _swapFee_theta, uint32 _swapFee_a, uint32 _swapFee_A);
 	event USDsMinted(address indexed wallet, uint indexed USDsAmt, uint collateralAmt, uint SPAsAmt, uint feeAmt);
 	event USDsRedeemed(address indexed wallet, uint indexed USDsAmt, uint collateralAmt, uint SPAsAmt, uint feeAmt);
 	event Rebase(uint indexed oldSupply, uint indexed newSupply);
-	event CollateralAdded(address indexed collateralAddr, bool addded, address defaultStrategyAddr, bool allocationAllowed, uint8 allocatePrecentage, address buyBackAddr, bool rebaseAllowed);
-	event CollateralChanged(address indexed collateralAddr, bool addded, address defaultStrategyAddr, bool allocationAllowed, uint8 allocatePrecentage, address buyBackAddr, bool rebaseAllowed);
+	event CollateralAdded(address indexed collateralAddr, bool addded, address defaultStrategyAddr, bool allocationAllowed, uint8 allocatePercentage, address buyBackAddr, bool rebaseAllowed);
+	event CollateralChanged(address indexed collateralAddr, bool addded, address defaultStrategyAddr, bool allocationAllowed, uint8 allocatePercentage, address buyBackAddr, bool rebaseAllowed);
 	event StrategyAdded(address strategyAddr, bool added);
 	event MintRedeemPermssionChanged(bool indexed permission);
 	event AllocationPermssionChanged(bool indexed permission);
@@ -91,7 +91,7 @@ contract VaultCoreV2 is Initializable, OwnableUpgradeable, AccessControlUpgradea
 		bool added;
 		address defaultStrategyAddr;
 		bool allocationAllowed;
-		uint8 allocatePrecentage;
+		uint8 allocatePercentage;
 		address buyBackAddr;
 		bool rebaseAllowed;
 	}
@@ -176,13 +176,15 @@ contract VaultCoreV2 is Initializable, OwnableUpgradeable, AccessControlUpgradea
 
 	function addCollateral(address _collateralAddr, address _defaultStrategyAddr, bool _allocationAllowed, uint8 _allocatePercentage, address _buyBackAddr, bool _rebaseAllowed) external onlyOwner {
 		require(!collateralsInfo[_collateralAddr].added, "Collateral added");
-		require(ERC20Upgradeable(_collateralAddr).decimals() <= 18, "Collaterals decimals need to be less tehn 18");
+		require(ERC20Upgradeable(_collateralAddr).decimals() <= 18, "Collaterals decimals need to be less than 18");
 		collateralStruct storage addingCollateral = collateralsInfo[_collateralAddr];
 		addingCollateral.collateralAddr = _collateralAddr;
 		addingCollateral.added = true;
 		addingCollateral.defaultStrategyAddr = _defaultStrategyAddr;
 		addingCollateral.allocationAllowed = _allocationAllowed;
+		addingCollateral.allocatePercentage = _allocatePercentage;
 		addingCollateral.buyBackAddr = _buyBackAddr;
+		addingCollateral.rebaseAllowed = _rebaseAllowed;
 		allCollaterals.push(addingCollateral);
 		emit CollateralAdded(_collateralAddr, addingCollateral.added, _defaultStrategyAddr, _allocationAllowed, _allocatePercentage, _buyBackAddr, _rebaseAllowed);
 	}

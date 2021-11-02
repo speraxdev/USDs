@@ -26,6 +26,6 @@ interface IVaultCore {
     function swapFee_a_prec() external view returns (uint16);
     function swapFee_A() external view returns (uint32);
     function swapFee_A_prec() external view returns (uint16);
-    function allocatePrecentage_prec() external view returns (uint8);
+    function allocatePercentage_prec() external view returns (uint8);
     function collateralRatio() external view returns (uint);
 }
