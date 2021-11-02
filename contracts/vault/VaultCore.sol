@@ -249,14 +249,14 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 		_mint(collateralAddr, collateralAmt, 2, slippageUSDs, collateralAmt, slippageSPA, deadline);
 	}
 
-	/**
-	 * @dev mint USDs by ETH
-	 * note: this function needs changes when USDs is deployed on other blockchain platform
-	 */
-	function mintWithEth(uint slippageUSDs, uint slippageSPA, uint deadline) public payable whenMintRedeemAllowed nonReentrant {
-		require(msg.value > 0, "Need to pay Ether");
-		_mint(address(0), msg.value, 3, slippageUSDs, msg.value, slippageSPA, deadline);
-	}
+	// /**
+	//  * @dev mint USDs by ETH
+	//  * note: this function needs changes when USDs is deployed on other blockchain platform
+	//  */
+	// function mintWithEth(uint slippageUSDs, uint slippageSPA, uint deadline) public payable whenMintRedeemAllowed nonReentrant {
+	// 	require(msg.value > 0, "Need to pay Ether");
+	// 	_mint(address(0), msg.value, 3, slippageUSDs, msg.value, slippageSPA, deadline);
+	// }
 
 
 	/**
@@ -315,17 +315,17 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 		_redeem(collateralAddr, USDsAmt, slippageCollat, slippageSPA, deadline);
 	}
 
-	/**
-	 *
-	 */
-	function redeemWithEth(uint USDsAmt, uint slippageEth, uint slippageSPA, uint deadline)
-		public
-		whenMintRedeemAllowed
-		nonReentrant
-	{
-		require(USDsAmt > 0, "Amount needs to be greater than 0");
-		_redeem(address(0), USDsAmt, slippageEth, slippageSPA, deadline);
-	}
+	// /**
+	//  *
+	//  */
+	// function redeemWithEth(uint USDsAmt, uint slippageEth, uint slippageSPA, uint deadline)
+	// 	public
+	// 	whenMintRedeemAllowed
+	// 	nonReentrant
+	// {
+	// 	require(USDsAmt > 0, "Amount needs to be greater than 0");
+	// 	_redeem(address(0), USDsAmt, slippageEth, slippageSPA, deadline);
+	// }
 
 	function _redeem(
 		address collateralAddr,
@@ -344,12 +344,13 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 		ISperaxToken(SPAaddr).mintForUSDs(msg.sender, SPAMintAmt);
 		SPAminted = SPAminted.add(SPAMintAmt);
 
-		if (collateralAddr == address(0)) {
-			(bool sent, ) = msg.sender.call{value: collateralUnlockedAmt}("");
-			require(sent, "Failed to send Ether");
-		} else {
-			IERC20Upgradeable(collateralAddr).safeTransfer(msg.sender, collateralUnlockedAmt);
-		}
+		// if (collateralAddr == address(0)) {
+		// 	(bool sent, ) = msg.sender.call{value: collateralUnlockedAmt}("");
+		// 	require(sent, "Failed to send Ether");
+		// } else {
+		// 	IERC20Upgradeable(collateralAddr).safeTransfer(msg.sender, collateralUnlockedAmt);
+		// }
+		IERC20Upgradeable(collateralAddr).safeTransfer(msg.sender, collateralUnlockedAmt);
 		IUSDs(USDsAddr).burn(msg.sender, USDsBurntAmt);
 		IERC20Upgradeable(USDsAddr).safeTransferFrom(msg.sender, feeVault, swapFeeAmount);
 
