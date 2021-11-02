@@ -356,7 +356,7 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 		emit USDsRedeemed(msg.sender, USDsBurntAmt, collateralUnlockedAmt,SPAMintAmt, swapFeeAmount);
 	}
 
-	function rebase() external whenRebaseAllowed nonReentrant {
+	function rebase() external whenRebaseAllowed onlyOwner nonReentrant {
 		require(hasRole(REBASER_ROLE, msg.sender), "Caller is not a rebaser");
 		uint USDsIncrement = _harvest();
 		uint USDsOldSupply = IERC20Upgradeable(USDsAddr).totalSupply();
@@ -413,7 +413,7 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 	* @notice Allocate unallocated funds on Vault to strategies.
 	* @dev Allocate unallocated funds on Vault to strategies.
 	**/
-	function allocate() external whenAllocationAllowed nonReentrant {
+	function allocate() external whenAllocationAllowed onlyOwner nonReentrant {
 		IStrategy strategy;
 		collateralStruct memory collateral;
 		for (uint y = 0; y < allCollaterals.length; y++) {
@@ -442,8 +442,7 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 	}
 
 	function totalValueLocked() public view returns (uint value) {
-		//value = totalValueInVault().add(totalValueInStrategies());
-		value = totalValueInVault();
+		value = totalValueInVault().add(totalValueInStrategies());
 	}
 
 	function totalValueInVault() public view returns (uint value) {
@@ -461,5 +460,26 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 		uint collateralTotalValueInVault = IERC20Upgradeable(collateral.collateralAddr).balanceOf(address(this)).mul(priceColla).div(precisionColla);
 		uint collateralTotalValueInVault_18 = collateralTotalValueInVault.mul(10**(uint(18).sub(collateralAddrDecimal)));
 		value = collateralTotalValueInVault_18;
+	}
+
+	function totalValueInStrategies() public view returns (uint value) {
+		for (uint y = 0; y < allCollaterals.length; y++) {
+			collateralStruct memory collateral = allCollaterals[y];
+			value = value.add(_valueInStrategy(collateral.collateralAddr));
+		}
+	}
+
+	function _valueInStrategy(address _collateralAddr) internal view returns (uint value) {
+		collateralStruct memory collateral = collateralsInfo[_collateralAddr];
+		IStrategy strategy = IStrategy(collateral.defaultStrategyAddr);
+		uint priceColla = IOracle(oracleAddr).getCollateralPrice(collateral.collateralAddr);
+		uint precisionColla = IOracle(oracleAddr).getCollateralPrice_prec(collateral.collateralAddr);
+		uint collateralAddrDecimal = uint(ERC20Upgradeable(collateral.collateralAddr).decimals());
+		uint collateralTotalValueInStrategy = strategy.checkBalance(collateral.collateralAddr).mul(priceColla).div(precisionColla);
+		uint collateralTotalValueInStrategy_18 = collateralTotalValueInStrategy.mul(10**(uint(18).sub(collateralAddrDecimal)));
+		value = collateralTotalValueInStrategy_18;
+		if (!strategy.supportsCollateral(collateral.collateralAddr)) {
+			value = 0;
+		}
 	}
 }

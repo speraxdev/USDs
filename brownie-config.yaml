@@ -26,3 +26,4 @@ compiler:
           - "arb-bridge-eth/contracts=packages/arb-bridge-eth/contracts"
 # automatically fetch contract sources from Etherscan
 autofetch_sources: True
+dotenv: .env
