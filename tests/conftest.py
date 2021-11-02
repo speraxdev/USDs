@@ -1,9 +1,14 @@
 #!/usr/bin/python3
 import pytest
+import eth_utils
+
+@pytest.fixture(scope="module", autouse=True)
+def admin(accounts):
+    return accounts[0]
 
 @pytest.fixture(scope="module", autouse=True)
 def owner_l1(accounts):
-    return accounts[0]
+    return accounts[1]
 
 @pytest.fixture(scope="module", autouse=True)
 def usds1(USDsL1, owner_l1):
@@ -20,28 +25,70 @@ def usds1(USDsL1, owner_l1):
 
 @pytest.fixture(scope="module", autouse=True)
 def owner_l2(accounts):
-    return accounts[1]
+    return accounts[2]
 
 @pytest.fixture(scope="module", autouse=True)
-def sperax(BancorFormula, USDsL2, SperaxTokenL2, Oracle, VaultCore, VaultCoreLibrary, usds1, owner_l2):
+def fee_vault(accounts):
+    return accounts[3]
+
+@pytest.fixture(scope="module", autouse=True)
+def sperax(
+    ProxyAdmin,
+    TransparentUpgradeableProxy,
+    BancorFormula,
+    VaultCoreTools,
+    USDsL2,
+    SperaxTokenL2,
+    Oracle,
+    VaultCore,
+    usds1,
+    Contract,
+    admin,
+    owner_l2,
+    fee_vault
+):
     # Arbitrum rinkeby:
     price_feed_eth_arbitrum_testnet = '0x5f0423B1a6935dc5596e7A24d98532b67A0AeFd8'
     weth_arbitrum_testnet = '0xb47e6a5f8b33b3f17603c83a0535a9dcd7e32681'
     l2_gateway = '0x9b014455AcC2Fe90c52803849d0002aeEC184a06'
 
+    # admin contract
+    proxy_admin = ProxyAdmin.deploy(
+        {'from': admin}
+    )
+
     bancor = BancorFormula.deploy(
         {'from': owner_l2}
     )
     bancor.init()
-    oracle = Oracle.deploy(
+
+    vault_core_tools = VaultCoreTools.deploy(
         {'from': owner_l2}
     )
-    VaultCoreLibrary.deploy(
-        {'from': owner_l2}
-    )
+    vault_core_tools.initialize(bancor.address)
+
     vault = VaultCore.deploy(
         {'from': owner_l2}
     )
+    proxy = TransparentUpgradeableProxy.deploy(
+        vault.address,
+        proxy_admin.address,
+        eth_utils.to_bytes(hexstr="0x"),
+        {'from': admin}
+    )
+    vault_proxy = Contract.from_abi("VaultCore", proxy.address, VaultCore.abi)
+
+    oracle = Oracle.deploy(
+        {'from': owner_l2}
+    )
+    proxy = TransparentUpgradeableProxy.deploy(
+        oracle.address,
+        proxy_admin.address,
+        eth_utils.to_bytes(hexstr="0x"),
+        {'from': admin}
+    )
+    oracle_proxy = Contract.from_abi("Oracle", proxy.address, Oracle.abi)
+
     usds2 = USDsL2.deploy(
         'USDs Layer 2',
         'USDs2',
@@ -58,26 +105,35 @@ def sperax(BancorFormula, USDsL2, SperaxTokenL2, Oracle, VaultCore, VaultCoreLib
         {'from': owner_l2},
     )
 
-    oracle.initialize(
+    oracle_proxy.initialize(
         price_feed_eth_arbitrum_testnet,
         spa.address,
         weth_arbitrum_testnet,
         {'from': owner_l2}
     )
-    vault.initialize(
-        spa.address,
-        bancor.address,
-        {'from': owner_l2}
-    )
-    vault.updateUSDsAddress(
+    oracle_proxy.updateUSDsAddress(
         usds2.address,
         {'from': owner_l2}
     )
-    vault.updateOracleAddress(
+
+    vault_proxy.initialize(
+        spa.address,
+        vault_core_tools.address,
+        fee_vault,
+        {'from': owner_l2}
+    )
+    vault_proxy.updateUSDsAddress(
+        usds2.address,
+        {'from': owner_l2}
+    )
+    vault_proxy.updateOracleAddress(
         oracle.address,
         {'from': owner_l2}
     )
-    return (spa, usds2, vault)
+#    vault_proxy.addCollateral(
+#        {'from': owner_l2}
+#    )
+    return (proxy_admin, spa, usds2, vault_core_tools, vault_proxy, oracle_proxy)
 
 
 @pytest.fixture(autouse=True)

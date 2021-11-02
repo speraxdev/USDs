@@ -12,7 +12,7 @@ import "../interfaces/IUSDs.sol";
 import "../interfaces/IBuyback.sol";
 import "./VaultCoreTools.sol";
 
-contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeable, ReentrancyGuardUpgradeable, IVaultCore {
+contract VaultCoreV2 is Initializable, OwnableUpgradeable, AccessControlUpgradeable, ReentrancyGuardUpgradeable, IVaultCore {
 	using SafeERC20Upgradeable for IERC20Upgradeable;
 	using SafeMathUpgradeable for uint;
 	using StableMath for uint;
@@ -128,6 +128,9 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 		_setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
 	}
 
+	function version() external view returns (string memory) {
+		return "Vault v.2";
+	}
 	//for testing purpose
 	function updateUSDsAddress(address _USDsAddr) external onlyOwner {
 		USDsAddr = _USDsAddr;
@@ -356,82 +359,6 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 		emit USDsRedeemed(msg.sender, USDsBurntAmt, collateralUnlockedAmt,SPAMintAmt, swapFeeAmount);
 	}
 
-	function rebase() external whenRebaseAllowed nonReentrant {
-		require(hasRole(REBASER_ROLE, msg.sender), "Caller is not a rebaser");
-		uint USDsIncrement = _harvest();
-		uint USDsOldSupply = IERC20Upgradeable(USDsAddr).totalSupply();
-		if (USDsIncrement > 0) {
-			uint USDsNewSupply = IERC20Upgradeable(USDsAddr).totalSupply().add(USDsIncrement);
-			IUSDs(USDsAddr).burn(address(this), USDsIncrement);
-			IUSDs(USDsAddr).changeSupply(USDsNewSupply);
-			emit Rebase(USDsOldSupply, USDsNewSupply);
-		} else {
-			emit Rebase(USDsOldSupply, USDsOldSupply);
-		}
-	}
-
-	function _harvest() internal returns (uint USDsIncrement) {
-		IStrategy strategy;
-		collateralStruct memory collateral;
-		for (uint y = 0; y < allCollaterals.length; y++) {
-			collateral = allCollaterals[y];
-			strategy = IStrategy(collateral.defaultStrategyAddr);
-			if (strategy.supportsCollateral(collateral.collateralAddr) && collateral.rebaseAllowed) {
-				uint USDsIncrement_viaReward = _harvestReward(strategy);
-				uint USDsIncrement_viaInterest = _harvestInterest(strategy, collateral.collateralAddr);
-				USDsIncrement = USDsIncrement.add(USDsIncrement_viaReward).add(USDsIncrement_viaInterest);
-			}
-		}
-	}
-
-	function _harvestReward(IStrategy strategy) internal returns (uint USDsIncrement_viaReward) {
-		address rewardTokenAddress = strategy.rewardTokenAddress();
-        if (rewardTokenAddress != address(0)) {
-            uint liquidationThreshold = strategy.rewardLiquidationThreshold();
-			uint rewardTokenAmount = IERC20Upgradeable(rewardTokenAddress).balanceOf(address(this));
-			if (liquidationThreshold == 0) {
-				strategy.collectRewardToken();
-				uint rewardAmt = IERC20Upgradeable(rewardTokenAddress).balanceOf(address(this));
-				USDsIncrement_viaReward = IBuyback(strategy.rewardTokenBuybackAddress()).swap(rewardAmt);
-			} else if (rewardTokenAmount >= liquidationThreshold)
-            if (rewardTokenAmount >= liquidationThreshold) {
-
-            }
-		}
-	}
-
-	function _harvestInterest(IStrategy strategy, address collateralAddr) internal returns (uint USDsIncrement_viaInterest) {
-		collateralStruct memory collateral = collateralsInfo[collateralAddr];
-		uint interestEarned = strategy.checkInterestEarned(collateralAddr);
-		if (interestEarned > 0) {
-			strategy.withdraw(address(this), collateral.collateralAddr, interestEarned);
-			USDsIncrement_viaInterest = IBuyback(collateral.buyBackAddr).swap(interestEarned);
-		}
-	}
-
-	/**
-	* @notice Allocate unallocated funds on Vault to strategies.
-	* @dev Allocate unallocated funds on Vault to strategies.
-	**/
-	function allocate() external whenAllocationAllowed nonReentrant {
-		IStrategy strategy;
-		collateralStruct memory collateral;
-		for (uint y = 0; y < allCollaterals.length; y++) {
-			collateral = allCollaterals[y];
-			strategy = IStrategy(collateral.defaultStrategyAddr);
-			if (collateral.allocationAllowed && collateral.defaultStrategyAddr != address(0) && strategy.supportsCollateral(collateral.collateralAddr)) {
-				uint valueInStrategy = _valueInStrategy(collateral.collateralAddr);
-				uint valueInVault = _valueInVault(collateral.collateralAddr);
-				uint valueInStrategy_optimal = valueInStrategy.add(valueInVault).mul(collateral.allocatePrecentage).div(allocatePrecentage_prec);
-				if (valueInStrategy_optimal < valueInStrategy) {
-					uint amtToAllocate = valueInStrategy.sub(valueInStrategy_optimal);
-					strategy.deposit(collateral.collateralAddr, amtToAllocate);
-					emit CollateralAllocated(collateral.collateralAddr, collateral.defaultStrategyAddr, amtToAllocate);
-				}
-			}
-		}
-	}
-
 	function collateralRatio() public view override returns (uint ratio) {
 		uint totalValueLocked = totalValueLocked();
 		uint USDsSupply = IERC20Upgradeable(USDsAddr).totalSupply();
@@ -462,4 +389,5 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 		uint collateralTotalValueInVault_18 = collateralTotalValueInVault.mul(10**(uint(18).sub(collateralAddrDecimal)));
 		value = collateralTotalValueInVault_18;
 	}
+
 }
