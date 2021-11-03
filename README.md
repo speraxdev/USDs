@@ -3,11 +3,15 @@
 ## Deploy 
 To deploy and configure the smart contracts, run the script/deploy.py script:
 
-Testnet:
+Testnet (Arbitrum rinkeby):
 ```
 brownie run deploy --network arbitrum-rinkeby
 ```
 
+Testnet (Ethereum rinkeby):
+```
+brownie run deploy --network rinkeby
+```
 ## Upgrade
 To upgrade the two upgradeable smart contracts, Vault and Oracle, run the script/upgrade.py script:
 

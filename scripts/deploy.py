@@ -184,9 +184,17 @@ def main():
         # USDC
         '0x09b98f8b2395d076514037ff7d39a091a536206c': '0xe020609A0C31f4F96dCBB8DF9882218952dD95c4',
     }
+    ethereum_rinkeby = {
+        # USDC
+        # USDT
+        # DAI
+        # WBTC
+    }
     collaterals = arbitrum_mainnet
     if network.show_active() == 'arbitrum-rinkeby':
         collaterals = arbitrum_rinkeby
+    if network.show_active() == 'rinkeby':
+        collaterals = ethereum_rinkeby
 
     precision = 10**8
     for collateral, chainlink in collaterals.items():

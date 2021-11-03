@@ -128,10 +128,11 @@ contract VaultCoreV2 is Initializable, OwnableUpgradeable, AccessControlUpgradea
 		_setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
 	}
 
+	//for testing purpose
 	function version() external view returns (string memory) {
 		return "Vault v.2";
 	}
-	//for testing purpose
+
 	function updateUSDsAddress(address _USDsAddr) external onlyOwner {
 		USDsAddr = _USDsAddr;
 	}
@@ -391,5 +392,4 @@ contract VaultCoreV2 is Initializable, OwnableUpgradeable, AccessControlUpgradea
 		uint collateralTotalValueInVault_18 = collateralTotalValueInVault.mul(10**(uint(18).sub(collateralAddrDecimal)));
 		value = collateralTotalValueInVault_18;
 	}
-
 }
