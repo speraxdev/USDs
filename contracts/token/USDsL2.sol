@@ -63,13 +63,13 @@ contract USDsL2 is aeERC20, OwnableUpgradeable, IArbToken, IUSDs, ReentrancyGuar
     address public l2Gateway;
     address public override l1Address;
 
-    constructor(
+    function initialize(
         string memory _nameArg,
         string memory _symbolArg,
         address _vaultAddress,
         address _l2Gateway,
         address _l1Address
-    ) public {
+    ) public initializer {
         aeERC20._initialize(_nameArg, _symbolArg, 18);
         OwnableUpgradeable.__Ownable_init();
         ReentrancyGuardUpgradeable.__ReentrancyGuard_init();
