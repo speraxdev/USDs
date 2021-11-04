@@ -99,8 +99,8 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 		address strategyAddr;
 		bool added;
 	}
-	mapping(address => collateralStruct) collateralsInfo;
-	mapping(address => strategyStruct) strategiesInfo;
+	mapping(address => collateralStruct) public collateralsInfo;
+	mapping(address => strategyStruct) public strategiesInfo;
 	collateralStruct[] allCollaterals;	// the list of all added collaterals
 	strategyStruct[] allStrategies;	// the list of all strategy addresses
 
@@ -252,16 +252,6 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 	}
 
 	/**
-	 * @dev mint USDs by ETH
-	 * note: this function needs changes when USDs is deployed on other blockchain platform
-	 */
-	function mintWithEth(uint slippageUSDs, uint slippageSPA, uint deadline) public payable whenMintRedeemAllowed nonReentrant {
-		require(msg.value > 0, "Need to pay Ether");
-		_mint(address(0), msg.value, 3, slippageUSDs, msg.value, slippageSPA, deadline);
-	}
-
-
-	/**
 	 * @dev the generic, internal mint function
 	 * @param collateralAddr the address of the collateral
 	 * @param valueAmt the amount of tokens (the specific meaning depends on valueType)
@@ -269,7 +259,6 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 	 *		valueType = 0: mintWithUSDs
 	 *		valueType = 1: mintWithSPA
 	 *		valueType = 2: mintWithColla
-	 *		valueType = 3: mintWithETH
 	 */
 	function _mint(
 		address collateralAddr,
@@ -295,9 +284,8 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 		ISperaxToken(SPAaddr).burnFrom(msg.sender, SPABurnAmt);
 		SPAburnt = SPAburnt.add(SPABurnAmt);
 		// if it it not mintWithETH, stake collaterals
-		if (valueType != 3) {
-			IERC20Upgradeable(collateralAddr).safeTransferFrom(msg.sender, address(this), collateralDepAmt);
-		}
+		IERC20Upgradeable(collateralAddr).safeTransferFrom(msg.sender, address(this), collateralDepAmt);
+
 		// mint USDs and collect swapIn fees
 		IUSDs(USDsAddr).mint(msg.sender, USDsAmt);
 		IUSDs(USDsAddr).mint(feeVault, swapFeeAmount);
@@ -317,18 +305,6 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 		_redeem(collateralAddr, USDsAmt, slippageCollat, slippageSPA, deadline);
 	}
 
-	/**
-	 *
-	 */
-	function redeemWithEth(uint USDsAmt, uint slippageEth, uint slippageSPA, uint deadline)
-		public
-		whenMintRedeemAllowed
-		nonReentrant
-	{
-		require(USDsAmt > 0, "Amount needs to be greater than 0");
-		_redeem(address(0), USDsAmt, slippageEth, slippageSPA, deadline);
-	}
-
 	function _redeem(
 		address collateralAddr,
 		uint USDsAmt,
@@ -342,20 +318,101 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 		require(collateralUnlockedAmt >= slippageCollat, "Collateral amount is lower than the maximum slippage");
 		require(SPAMintAmt >= slippageSPA, "SPA amount is lower than the maximum slippage");
 		require(block.timestamp <= deadline, "Deadline expired");
+		collateralStruct memory collateral = collateralsInfo[collateralAddr];
 
 		ISperaxToken(SPAaddr).mintForUSDs(msg.sender, SPAMintAmt);
 		SPAminted = SPAminted.add(SPAMintAmt);
 
-		if (collateralAddr == address(0)) {
-			(bool sent, ) = msg.sender.call{value: collateralUnlockedAmt}("");
-			require(sent, "Failed to send Ether");
-		} else {
+		if (IERC20Upgradeable(collateralAddr).balanceOf(address(this)) >= collateralUnlockedAmt) {
 			IERC20Upgradeable(collateralAddr).safeTransfer(msg.sender, collateralUnlockedAmt);
+		} else if (collateral.defaultStrategyAddr != address(0)) {
+			IStrategy strategy = IStrategy(collateral.defaultStrategyAddr);
+			if (strategy.supportsCollateral(collateralAddr)) {
+				strategy.withdraw(msg.sender, collateralAddr, collateralUnlockedAmt);
+			}
+		} else {
+			revert("No enough collateral in Vault or Strategy");
 		}
 		IUSDs(USDsAddr).burn(msg.sender, USDsBurntAmt);
 		IERC20Upgradeable(USDsAddr).safeTransferFrom(msg.sender, feeVault, swapFeeAmount);
 
-		emit USDsRedeemed(msg.sender, USDsBurntAmt, collateralUnlockedAmt,SPAMintAmt, swapFeeAmount);
+		emit USDsRedeemed(msg.sender, USDsBurntAmt, collateralUnlockedAmt, SPAMintAmt, swapFeeAmount);
+	}
+
+	function rebase() external whenRebaseAllowed nonReentrant {
+		require(hasRole(REBASER_ROLE, msg.sender), "Caller is not a rebaser");
+		uint USDsIncrement = _harvest();
+		uint USDsOldSupply = IERC20Upgradeable(USDsAddr).totalSupply();
+		if (USDsIncrement > 0) {
+			uint USDsNewSupply = IERC20Upgradeable(USDsAddr).totalSupply().add(USDsIncrement);
+			IUSDs(USDsAddr).burn(address(this), USDsIncrement);
+			IUSDs(USDsAddr).changeSupply(USDsNewSupply);
+			emit Rebase(USDsOldSupply, USDsNewSupply);
+		} else {
+			emit Rebase(USDsOldSupply, USDsOldSupply);
+		}
+	}
+
+	function _harvest() internal returns (uint USDsIncrement) {
+		IStrategy strategy;
+		collateralStruct memory collateral;
+		for (uint y = 0; y < allCollaterals.length; y++) {
+			collateral = allCollaterals[y];
+			strategy = IStrategy(collateral.defaultStrategyAddr);
+			if (strategy.supportsCollateral(collateral.collateralAddr) && collateral.rebaseAllowed) {
+				uint USDsIncrement_viaReward = _harvestReward(strategy);
+				uint USDsIncrement_viaInterest = _harvestInterest(strategy, collateral.collateralAddr);
+				USDsIncrement = USDsIncrement.add(USDsIncrement_viaReward).add(USDsIncrement_viaInterest);
+			}
+		}
+	}
+
+	function _harvestReward(IStrategy strategy) internal returns (uint USDsIncrement_viaReward) {
+		address rewardTokenAddress = strategy.rewardTokenAddress();
+        if (rewardTokenAddress != address(0)) {
+            uint liquidationThreshold = strategy.rewardLiquidationThreshold();
+			uint rewardTokenAmount = IERC20Upgradeable(rewardTokenAddress).balanceOf(address(this));
+			if (liquidationThreshold == 0) {
+				strategy.collectRewardToken();
+				uint rewardAmt = IERC20Upgradeable(rewardTokenAddress).balanceOf(address(this));
+				USDsIncrement_viaReward = IBuyback(strategy.rewardTokenBuybackAddress()).swap(rewardAmt);
+			} else if (rewardTokenAmount >= liquidationThreshold)
+            if (rewardTokenAmount >= liquidationThreshold) {
+
+            }
+		}
+	}
+
+	function _harvestInterest(IStrategy strategy, address collateralAddr) internal returns (uint USDsIncrement_viaInterest) {
+		collateralStruct memory collateral = collateralsInfo[collateralAddr];
+		uint interestEarned = strategy.checkInterestEarned(collateralAddr);
+		if (interestEarned > 0) {
+			strategy.withdraw(address(this), collateral.collateralAddr, interestEarned);
+			USDsIncrement_viaInterest = IBuyback(collateral.buyBackAddr).swap(interestEarned);
+		}
+	}
+
+	/**
+	* @notice Allocate unallocated funds on Vault to strategies.
+	* @dev Allocate unallocated funds on Vault to strategies.
+	**/
+	function allocate() external whenAllocationAllowed onlyOwner nonReentrant {
+		IStrategy strategy;
+		collateralStruct memory collateral;
+		for (uint y = 0; y < allCollaterals.length; y++) {
+			collateral = allCollaterals[y];
+			strategy = IStrategy(collateral.defaultStrategyAddr);
+			if (collateral.allocationAllowed && collateral.defaultStrategyAddr != address(0) && strategy.supportsCollateral(collateral.collateralAddr)) {
+				uint valueInStrategy = _valueInStrategy(collateral.collateralAddr);
+				uint valueInVault = _valueInVault(collateral.collateralAddr);
+				uint valueInStrategy_optimal = valueInStrategy.add(valueInVault).mul(collateral.allocatePrecentage).div(allocatePrecentage_prec);
+				if (valueInStrategy_optimal > valueInStrategy) {
+					uint amtToAllocate = valueInStrategy.sub(valueInStrategy_optimal);
+					strategy.deposit(collateral.collateralAddr, amtToAllocate);
+					emit CollateralAllocated(collateral.collateralAddr, collateral.defaultStrategyAddr, amtToAllocate);
+				}
+			}
+		}
 	}
 
 	function collateralRatio() public view override returns (uint ratio) {
@@ -368,8 +425,7 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 	}
 
 	function totalValueLocked() public view returns (uint value) {
-		//value = totalValueInVault().add(totalValueInStrategies());
-		value = totalValueInVault();
+		value = totalValueInVault().add(totalValueInStrategies());
 	}
 
 	function totalValueInVault() public view returns (uint value) {
@@ -387,5 +443,26 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 		uint collateralTotalValueInVault = IERC20Upgradeable(collateral.collateralAddr).balanceOf(address(this)).mul(priceColla).div(precisionColla);
 		uint collateralTotalValueInVault_18 = collateralTotalValueInVault.mul(10**(uint(18).sub(collateralAddrDecimal)));
 		value = collateralTotalValueInVault_18;
+	}
+
+	function totalValueInStrategies() public view returns (uint value) {
+		for (uint y = 0; y < allCollaterals.length; y++) {
+			collateralStruct memory collateral = allCollaterals[y];
+			value = value.add(_valueInStrategy(collateral.collateralAddr));
+		}
+	}
+
+	function _valueInStrategy(address _collateralAddr) internal view returns (uint value) {
+		collateralStruct memory collateral = collateralsInfo[_collateralAddr];
+		IStrategy strategy = IStrategy(collateral.defaultStrategyAddr);
+		uint priceColla = IOracle(oracleAddr).getCollateralPrice(collateral.collateralAddr);
+		uint precisionColla = IOracle(oracleAddr).getCollateralPrice_prec(collateral.collateralAddr);
+		uint collateralAddrDecimal = uint(ERC20Upgradeable(collateral.collateralAddr).decimals());
+		uint collateralTotalValueInStrategy = strategy.checkBalance(collateral.collateralAddr).mul(priceColla).div(precisionColla);
+		uint collateralTotalValueInStrategy_18 = collateralTotalValueInStrategy.mul(10**(uint(18).sub(collateralAddrDecimal)));
+		value = collateralTotalValueInStrategy_18;
+		if (!strategy.supportsCollateral(collateral.collateralAddr)) {
+			value = 0;
+		}
 	}
 }
