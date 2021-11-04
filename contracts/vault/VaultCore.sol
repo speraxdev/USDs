@@ -405,7 +405,7 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 			if (collateral.allocationAllowed && collateral.defaultStrategyAddr != address(0) && strategy.supportsCollateral(collateral.collateralAddr)) {
 				uint valueInStrategy = _valueInStrategy(collateral.collateralAddr);
 				uint valueInVault = _valueInVault(collateral.collateralAddr);
-				uint valueInStrategy_optimal = valueInStrategy.add(valueInVault).mul(collateral.allocatePrecentage).div(allocatePrecentage_prec);
+				uint valueInStrategy_optimal = valueInStrategy.add(valueInVault).mul(collateral.allocatePercentage).div(allocatePercentage_prec);
 				if (valueInStrategy_optimal > valueInStrategy) {
 					uint amtToAllocate = valueInStrategy.sub(valueInStrategy_optimal);
 					strategy.deposit(collateral.collateralAddr, amtToAllocate);
