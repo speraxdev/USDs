@@ -198,6 +198,7 @@ def main():
 
     precision = 10**8
     for collateral, chainlink in collaterals.items():
+        # authorize a new collateral
         vault_proxy.addCollateral(
             collateral, # address of: USDC, USDT, DAI or WBTC
             convert.to_address(0), # _defaultStrategyAddr: CURVE, AAVE, etc
@@ -207,6 +208,7 @@ def main():
             False, # _rebaseAllowed
             {'from': owner, 'gas_limit': 1000000000}
         )
+        # wire up price feed for the added collateral
         oracle_proxy.updateCollateralInfo(
             collateral, # ERC20 address
             True, # supported
