@@ -407,7 +407,8 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 				uint valueInVault = _valueInVault(collateral.collateralAddr);
 				uint valueInStrategy_optimal = valueInStrategy.add(valueInVault).mul(collateral.allocatePercentage).div(allocatePercentage_prec);
 				if (valueInStrategy_optimal > valueInStrategy) {
-					uint amtToAllocate = valueInStrategy.sub(valueInStrategy_optimal);
+					uint amtToAllocate = valueInStrategy_optimal.sub(valueInStrategy);
+					IERC20Upgradeable(collateral.collateralAddr).safeTransfer(collateral.defaultStrategyAddr, amtToAllocate);
 					strategy.deposit(collateral.collateralAddr, amtToAllocate);
 					emit CollateralAllocated(collateral.collateralAddr, collateral.defaultStrategyAddr, amtToAllocate);
 				}
