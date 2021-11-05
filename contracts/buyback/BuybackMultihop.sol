@@ -1,4 +1,3 @@
-// https://docs.uniswap.org/protocol/guides/swaps/multihop-swaps
 //pragma solidity =0.7.6;
 //pragma abicoder v2;
 pragma solidity ^0.6.12;
@@ -10,6 +9,13 @@ import '../libraries/TransferHelper.sol';
 import '../interfaces/ISwapRouter.sol';
 import '../interfaces/IBuyback.sol';
 
+/**
+ * @title buyback contract of USDs protocol
+ * @dev unfinished
+ * @dev ERC20 compatible contract for USDs
+ * @dev reference: https://docs.uniswap.org/protocol/guides/swaps/multihop-swaps
+ * @author Sperax Foundation
+ */
 contract BuybackMultihop is IBuyback {
     using SafeERC20 for IERC20;
 

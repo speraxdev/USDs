@@ -1,19 +1,18 @@
 // SPDX-License-Identifier: agpl-3.0
 //pragma solidity ^0.8.0;
 pragma solidity >=0.6.12;
-/**
- * @title OUSD Compound Strategy
- * @notice Investment strategy for investing stablecoins via Compound
- * @author Origin Protocol Inc
- */
-//import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+
 import "@openzeppelin/contracts-upgradeable/token/ERC20/SafeERC20Upgradeable.sol";
 import { ICERC20 } from "./ICompound.sol";
 import { IComptroller } from "../interfaces/IComptroller.sol";
 import { InitializableAbstractStrategy } from "./InitializableAbstractStrategy.sol";
-
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 
+/**
+ * @title USDs CREAM Strategy
+ * @notice Investment strategy for investing ERC20 via CREAM
+ * @author Sperax Foundation
+ */
 contract CompoundStrategy is InitializableAbstractStrategy {
     using SafeERC20Upgradeable for IERC20Upgradeable;
 

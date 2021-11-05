@@ -1,17 +1,6 @@
-/**
-    Questions:
-    1. in changeSupply, why we need to first check if _totalSupply > 0?
- */
-
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.6.12;
 
-/**
- * @title USDs Token Contract
- * @dev ERC20 compatible contract for USDs
- * @dev Implements an elastic supply
- * @author Sperax Inc
- */
 
 import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
@@ -23,7 +12,11 @@ import "arb-bridge-peripherals/contracts/tokenbridge/ethereum/ICustomToken.sol";
 import "arb-bridge-peripherals/contracts/tokenbridge/ethereum/gateway/L1CustomGateway.sol";
 import "arb-bridge-peripherals/contracts/tokenbridge/ethereum/gateway/L1GatewayRouter.sol";
 
-
+/**
+ * @title USDs Token Contract on L1
+ * @dev a simple ERC20 token with ICustomToken interface to interact with Arbitrum gateways
+ * @author Sperax Foundation
+ */
 contract USDsL1 is Initializable, ERC20Upgradeable, OwnableUpgradeable, ICustomToken {
     using SafeMathUpgradeable for uint256;
     using StableMath for uint256;

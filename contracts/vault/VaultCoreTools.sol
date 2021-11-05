@@ -10,6 +10,13 @@ import "../interfaces/IVaultCore.sol";
 import "../libraries/StableMath.sol";
 import "../utils/BancorFormula.sol";
 
+
+/**
+ * @title supporting VaultCore of USDs protocol
+ * @dev calculation of chi, swap fees associated with USDs's mint and redeem
+ * @dev view functions of USDs's mint and redeem
+ * @author Sperax Foundation
+ */
 contract VaultCoreTools is Initializable {
 	using SafeERC20Upgradeable for ERC20Upgradeable;
 	using SafeMathUpgradeable for uint;

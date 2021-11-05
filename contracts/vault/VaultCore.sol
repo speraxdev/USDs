@@ -12,6 +12,12 @@ import "../interfaces/IUSDs.sol";
 import "../interfaces/IBuyback.sol";
 import "./VaultCoreTools.sol";
 
+/**
+ * @title Vault of USDs protocol
+ * @dev Control Mint, Redeem, Allocate and Rebase of USDs
+ * @dev Live on Arbitrum Layer 2
+ * @author Sperax Foundation
+ */
 contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeable, ReentrancyGuardUpgradeable, IVaultCore {
 	using SafeERC20Upgradeable for IERC20Upgradeable;
 	using SafeMathUpgradeable for uint;
@@ -72,7 +78,7 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 		_;
 	}
 	/**
-	 * @dev check if re-investment of collaterals is allowed
+	 * @dev check if re-investment of collaterals into strategies is allowed
 	 */
 	modifier whenAllocationAllowed {
 		require(allocationAllowed, "Allocate paused");
@@ -104,6 +110,12 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 	collateralStruct[] allCollaterals;	// the list of all added collaterals
 	strategyStruct[] allStrategies;	// the list of all strategy addresses
 
+	/**
+	 * @dev contract initializer
+	 * @param _SPAaddr SperaxTokenL2 address
+	 * @param _vaultCoreToolsAddr VaultCoreTools address
+	 * @param _feeVault address of wallet storing swap fees
+	 */
 	function initialize(address _SPAaddr, address _vaultCoreToolsAddr, address _feeVault) public initializer {
 		OwnableUpgradeable.__Ownable_init();
 		AccessControlUpgradeable.__AccessControl_init();
@@ -128,15 +140,25 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 		_setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
 	}
 
-	//for testing purpose
+	/**
+	 * @dev change registered USDs address on this contract
+	 * @param _USDsAddr updated USDs address
+	 */
 	function updateUSDsAddress(address _USDsAddr) external onlyOwner {
 		USDsAddr = _USDsAddr;
 	}
 
+	/**
+	 * @dev change registered Oracle address on this contract
+	 * @param _oracleAddr updated oracle address
+	 */
 	function updateOracleAddress(address _oracleAddr) external onlyOwner {
 		oracleAddr =  _oracleAddr;
 	}
 
+	/**
+	 * @dev change economics parameters related to chi ratio and swap fee
+	 */
 	function updateParameters(uint _chiInit, uint32 _chi_beta, uint32 _chi_gamma, uint32 _swapFee_p, uint32 _swapFee_theta, uint32 _swapFee_a, uint32 _swapFee_A) external onlyOwner {
 		chiInit = _chiInit;
 		chi_beta = _chi_beta;
@@ -149,21 +171,23 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 	}
 
 	/**
-	 * @dev disable USDs mint & redeem
+	 * @dev enable/disable USDs mint & redeem
 	 */
 	function updateMintBurnPermission(bool _mintRedeemAllowed) external onlyOwner {
 		mintRedeemAllowed = _mintRedeemAllowed;
 		emit MintRedeemPermssionChanged(mintRedeemAllowed);
 	}
+
 	/**
-	 * @dev disable collateral re-investment
+	 * @dev enable/disable collateral re-investment
 	 */
 	function updateAllocationPermission(bool _allocationAllowed) external onlyOwner {
 		allocationAllowed = _allocationAllowed;
 		emit AllocationPermssionChanged(allocationAllowed);
 	}
+
 	/**
-	 * @dev disable swapInFee, i.e. mint becomes free
+	 * @dev enable/disable swapInFee, i.e. mint becomes free
 	 */
 	function updateSwapInOutFeePermission(bool _swapfeeInAllowed, bool _swapfeeOutAllowed) external onlyOwner {
 		swapfeeInAllowed = _swapfeeInAllowed;
@@ -171,6 +195,15 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 		emit SwapFeeInOutPermissionChanged(swapfeeInAllowed, swapfeeOutAllowed);
 	}
 
+	/**
+	 * @dev authorize an ERC20 token as one of the collaterals supported by USDs mint/redeem
+	 * @param _collateralAddr ERC20 address to be authorized
+	 * @param _defaultStrategyAddr strategy address of which the collateral is allocated into on allocate()
+	 * @param _allocationAllowed if allocate() is allowed on this collateral
+	 * @param _allocatePercentage ideally after allocate(), _allocatePercentage% of the collateral is in strategy, (100 - _allocatePercentage)% in VaultCore
+	 * @param _buyBackAddr contract address providing swap function to swap interestEarned to USDsSupply
+	 * @param _rebaseAllowed if rebase is allowed on this collateral
+	 */
 	function addCollateral(address _collateralAddr, address _defaultStrategyAddr, bool _allocationAllowed, uint8 _allocatePercentage, address _buyBackAddr, bool _rebaseAllowed) external onlyOwner {
 		require(!collateralsInfo[_collateralAddr].added, "Collateral added");
 		require(ERC20Upgradeable(_collateralAddr).decimals() <= 18, "Collaterals decimals need to be less than 18");
@@ -186,6 +219,9 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 		emit CollateralAdded(_collateralAddr, addingCollateral.added, _defaultStrategyAddr, _allocationAllowed, _allocatePercentage, _buyBackAddr, _rebaseAllowed);
 	}
 
+	/**
+	 * @dev update setting of an authorized collateral. refer to addCollateral() for parameters description
+	 */
 	function updateCollateralInfo(address _collateralAddr, address _defaultStrategyAddr, bool _allocationAllowed, uint8 _allocatePercentage, address _buyBackAddr, bool _rebaseAllowed) external onlyOwner {
 		require(collateralsInfo[_collateralAddr].added, "Collateral not added");
 		collateralStruct storage updatedCollateral = collateralsInfo[_collateralAddr];
@@ -196,6 +232,10 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 		emit CollateralChanged(_collateralAddr, updatedCollateral.added, _defaultStrategyAddr, _allocationAllowed, _allocatePercentage, _buyBackAddr, _rebaseAllowed);
 	}
 
+	/**
+	 * @dev authorize an strategy
+	 * @param _strategyAddr
+	 */
 	function addStrategy(address _strategyAddr) external onlyOwner {
 		require(!strategiesInfo[_strategyAddr].added, "Strategy added");
 		strategyStruct storage addingStrategy = strategiesInfo[_strategyAddr];
@@ -206,9 +246,12 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 	}
 
 	/**
-	 * @dev mint USDs by entering USDs amount
+	 * @dev mint USDs (burn SPA, lock collateral) by entering USDs amount
 	 * @param collateralAddr the address of user's chosen collateral
 	 * @param USDsMintAmt the amount of USDs to be minted
+	 * @param slippageSPA maximum amount of SPA burnt
+	 * @param slippageCollateral maximum amount of collateral locked
+	 * @param deadline transaction deadline
 	 */
 	function mintWithUSDs(address collateralAddr, uint USDsMintAmt, uint slippageCollateral, uint slippageSPA, uint deadline)
 		public
@@ -221,11 +264,13 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 	}
 
 	/**
-	 * @dev mint USDs by entering SPA amount
+	 * @dev mint USDs (burn SPA, lock collateral) by entering SPA amount
 	 * @param collateralAddr the address of user's chosen collateral
 	 * @param SPAamt the amount of SPA to burn
+	 * @param slippageUSDs minimum amount of USDs minted
+	 * @param slippageCollateral maximum amount of collateral locked
+	 * @param deadline transaction deadline
 	 */
-
 	function mintWithSPA(address collateralAddr, uint SPAamt, uint slippageUSDs, uint slippageCollateral, uint deadline)
 		public
 		whenMintRedeemAllowed
@@ -237,9 +282,12 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 	}
 
 	/**
-	 * @dev mint USDs by entering collateral amount (excluding ETH)
+	 * @dev mint USDs (burn SPA, lock collateral) by entering collateral amount
 	 * @param collateralAddr the address of user's chosen collateral
-	 * @param collateralAmt the amount of collateral to stake
+	 * @param collateralAmt the amount of collateral locked
+	 * @param slippageUSDs minimum amount of USDs minted
+	 * @param slippageSPA maximum amount of SPA burnt
+	 * @param deadline transaction deadline
 	 */
 	function mintWithColla(address collateralAddr, uint collateralAmt, uint slippageUSDs, uint slippageSPA, uint deadline)
 		public
@@ -271,7 +319,6 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 	) internal whenMintRedeemAllowed {
 		// calculate all necessary related quantities based on user inputs
 		(uint SPABurnAmt, uint collateralDepAmt, uint USDsAmt, uint swapFeeAmount) = VaultCoreTools(vaultCoreToolsAddr).mintView(collateralAddr, valueAmt, valueType, address(this));
-
 		// slippageUSDs is the minimum value of the minted USDs
 		// slippageCollat is the maximum value of the required collateral
 		// slippageSPA is the maximum value of the required spa
@@ -279,13 +326,11 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 		require(collateralDepAmt <= slippageCollat, "Collateral amount is more than the maximum slippage");
 		require(SPABurnAmt <= slippageSPA, "SPA amount is more than the maximum slippage");
 		require(block.timestamp <= deadline, "Deadline expired");
-
 		// burn SPA tokens
 		ISperaxToken(SPAaddr).burnFrom(msg.sender, SPABurnAmt);
 		SPAburnt = SPAburnt.add(SPABurnAmt);
 		// if it it not mintWithETH, stake collaterals
 		IERC20Upgradeable(collateralAddr).safeTransferFrom(msg.sender, address(this), collateralDepAmt);
-
 		// mint USDs and collect swapIn fees
 		IUSDs(USDsAddr).mint(msg.sender, USDsAmt);
 		IUSDs(USDsAddr).mint(feeVault, swapFeeAmount);
@@ -293,7 +338,12 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 	}
 
 	/**
-	 *
+	 * @dev redeem USDs to collateral and SPA by entering USDs amount
+	 * @param collateralAddr the address of user's chosen collateral
+	 * @param USDsAmt the amount of USDs to be redeemed
+	 * @param slippageCollat minimum amount of collateral to be unlocked
+	 * @param slippageSPA minimum amount of SPA to be minted
+	 * @param deadline transaction deadline
 	 */
 	function redeem(address collateralAddr, uint USDsAmt, uint slippageCollat, uint slippageSPA, uint deadline)
 		public
@@ -305,6 +355,14 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 		_redeem(collateralAddr, USDsAmt, slippageCollat, slippageSPA, deadline);
 	}
 
+	/**
+	 * @dev the generic, internal redeem function
+	 * @param collateralAddr the address of user's chosen collateral
+	 * @param USDsAmt the amount of USDs to be redeemed
+	 * @param slippageCollat minimum amount of collateral to be unlocked
+	 * @param slippageSPA minimum amount of SPA to be minted
+	 * @param deadline transaction deadline
+	 */
 	function _redeem(
 		address collateralAddr,
 		uint USDsAmt,
@@ -339,6 +397,10 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 		emit USDsRedeemed(msg.sender, USDsBurntAmt, collateralUnlockedAmt, SPAMintAmt, swapFeeAmount);
 	}
 
+	/**
+	 * @dev trigger rebase: harvest interest and reward token earned in strategies. Exchange them into USDs.
+	 * @dev distribute USDs earned in this step to all users by change the totalsupply of USDs
+	 */
 	function rebase() external whenRebaseAllowed nonReentrant {
 		require(hasRole(REBASER_ROLE, msg.sender), "Caller is not a rebaser");
 		uint USDsIncrement = _harvest();
@@ -353,6 +415,9 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 		}
 	}
 
+	/**
+	 * @dev harvest interest and reward token earned in strategies
+	 */
 	function _harvest() internal returns (uint USDsIncrement) {
 		IStrategy strategy;
 		collateralStruct memory collateral;
@@ -367,6 +432,9 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 		}
 	}
 
+	/**
+	 * @dev harvest reward token earned in strategies
+	 */
 	function _harvestReward(IStrategy strategy) internal returns (uint USDsIncrement_viaReward) {
 		address rewardTokenAddress = strategy.rewardTokenAddress();
         if (rewardTokenAddress != address(0)) {
@@ -383,6 +451,9 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 		}
 	}
 
+	/**
+	 * @dev harvest interesed earned in strategies
+	 */
 	function _harvestInterest(IStrategy strategy, address collateralAddr) internal returns (uint USDsIncrement_viaInterest) {
 		collateralStruct memory collateral = collateralsInfo[collateralAddr];
 		uint interestEarned = strategy.checkInterestEarned(collateralAddr);
@@ -393,9 +464,8 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 	}
 
 	/**
-	* @notice Allocate unallocated funds on Vault to strategies.
-	* @dev Allocate unallocated funds on Vault to strategies.
-	**/
+	 * @dev allocate collateral on this contract into strategies.
+	 */
 	function allocate() external whenAllocationAllowed onlyOwner nonReentrant {
 		IStrategy strategy;
 		collateralStruct memory collateral;
@@ -416,6 +486,10 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 		}
 	}
 
+	/**
+	 * @dev the value of collaterals in this contract and strategies divide by USDs total supply
+	 * @dev precision: same as chi_prec
+	 */
 	function collateralRatio() public view override returns (uint ratio) {
 		uint totalValueLocked = totalValueLocked();
 		uint USDsSupply = IERC20Upgradeable(USDsAddr).totalSupply();
@@ -425,10 +499,16 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 		ratio = totalValueLocked.mul(chi_prec).div(USDsValue);
 	}
 
+	/**
+	 * @dev the value of collaterals in this contract and strategies
+	 */
 	function totalValueLocked() public view returns (uint value) {
 		value = totalValueInVault().add(totalValueInStrategies());
 	}
 
+	/**
+	 * @dev the value of collaterals in this contract
+	 */
 	function totalValueInVault() public view returns (uint value) {
 		for (uint y = 0; y < allCollaterals.length; y++) {
 			collateralStruct memory collateral = allCollaterals[y];
@@ -436,6 +516,9 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 		}
 	}
 
+	/**
+	 * @dev the value of collateral of _collateralAddr in this contract
+	 */
 	function _valueInVault(address _collateralAddr) internal view returns (uint value) {
 		collateralStruct memory collateral = collateralsInfo[_collateralAddr];
 		uint priceColla = IOracle(oracleAddr).getCollateralPrice(collateral.collateralAddr);
@@ -446,6 +529,9 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 		value = collateralTotalValueInVault_18;
 	}
 
+	/**
+	 * @dev the value of collaterals in the strategies
+	 */
 	function totalValueInStrategies() public view returns (uint value) {
 		for (uint y = 0; y < allCollaterals.length; y++) {
 			collateralStruct memory collateral = allCollaterals[y];
@@ -453,6 +539,9 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 		}
 	}
 
+	/**
+	 * @dev the value of collateral of _collateralAddr in its strategy
+	 */
 	function _valueInStrategy(address _collateralAddr) internal view returns (uint value) {
 		collateralStruct memory collateral = collateralsInfo[_collateralAddr];
 		IStrategy strategy = IStrategy(collateral.defaultStrategyAddr);

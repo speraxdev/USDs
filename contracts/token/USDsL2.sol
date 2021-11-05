@@ -1,17 +1,6 @@
-/**
-    Questions:
-    1. in changeSupply, why we need to first check if _totalSupply > 0?
- */
-
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.6.12;
 
-/**
- * @title USDs Token Contract
- * @dev ERC20 compatible contract for USDs
- * @dev Implements an elastic supply
- * @author Sperax Inc
- */
 
 import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
@@ -28,6 +17,13 @@ import "arb-bridge-peripherals/contracts/tokenbridge/libraries/aeERC20.sol";
  * rebasing design. Any integrations with USDs should be aware.
  */
 
+ /**
+  * @title USDs Token Contract on Arbitrum (L2)
+  * @dev ERC20 compatible contract for USDs
+  * @dev support rebase feature
+  * @dev inspired by OUSD: https://github.com/OriginProtocol/origin-dollar/blob/master/contracts/contracts/token/OUSD.sol
+  * @author Sperax Foundation
+  */
 contract USDsL2 is aeERC20, OwnableUpgradeable, IArbToken, IUSDs, ReentrancyGuardUpgradeable {
     using SafeMathUpgradeable for uint256;
     using StableMath for uint256;

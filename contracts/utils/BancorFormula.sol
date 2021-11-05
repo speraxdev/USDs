@@ -3,6 +3,11 @@ pragma solidity 0.6.12;
 
 import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
 
+/**
+ * @title Bancor formula to calculate power function
+ * @dev modified based on https://github.com/bancorprotocol/contracts-solidity/blob/master/solidity/contracts/converter/BancorFormula.sol
+ * @dev removed content unrelated to power()
+ */
 contract BancorFormula {
     using SafeMathUpgradeable for uint256;
 

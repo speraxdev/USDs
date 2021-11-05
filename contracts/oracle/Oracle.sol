@@ -1,28 +1,23 @@
 // SPDX-License-Identifier: MIT
-// To-do: remove for testing purpose functions;
-// To-do: check USDsInOutRatio_prec;
 pragma solidity >=0.6.12;
-//pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-//import "../libraries/openzeppelin/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
 
 import "../vault/VaultCore.sol";
 import "../interfaces/AggregatorV3Interface.sol";
 import "../interfaces/IOracle.sol";
 import "../interfaces/IUSDs.sol";
-//import "@uniswap/v3-periphery/contracts/libraries/OracleLibrary.sol";
 import "../libraries/OracleLibrary.sol";
 
 /**
- * @title Oracle - the oracle contract for Spark
- * @author Sperax Dev Team
- * @notice this contract gets data from UniswapV2 pair and feed these data into the main contact of Spark, i.e. Spark.sol
- * @dev this contract draws insights from "ExampleOracleSimple.sol" by UniswapV2 team
+ * @title Oracle contract of USDs protocol
+ * @dev providing collateral prices (from Chainlink)
+ * @dev providing SPA and USDs prices (from Uniswap V3 pools)
+ * @dev providing records of USDs inflow and outflow ratio
+ * @author Sperax Inc
  */
-
 contract Oracle is Initializable, IOracle, OwnableUpgradeable {
     using SafeMathUpgradeable for uint;
     uint public override USDsInOutRatio; // USDsInOutRatio is accurate after 24 hours (one iteration)

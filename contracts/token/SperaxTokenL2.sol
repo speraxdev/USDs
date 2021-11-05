@@ -5,6 +5,10 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20Pausable.sol";
 import "arb-bridge-peripherals/contracts/tokenbridge/arbitrum/IArbToken.sol";
 
+/**
+ * @title SPA Token Contract on Arbitrum L2
+ * @author Sperax Foundation
+ */
 
 contract MintPausable is Context {
     /**
