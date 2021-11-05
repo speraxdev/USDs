@@ -33,16 +33,17 @@ def main():
         print("\nFile not found: ~/.brownie/accounts/admin.json")
         return
 
-    print("\nEnter fee vault account password:")
+    print("\nEnter contract owner account password:")
     try:
         owner = accounts.load(filename="minter.keystore")
     except ValueError:
-        print("\nInvalid fee vault wallet or password\n")
+        print("\nInvalid contract owner wallet or password\n")
         return
     except FileNotFoundError:
         print("\nFile not found: ~/.brownie/accounts/minter.json")
         return
 
+    # TODO: create a separate wallet for fee_vault account
     fee_vault = owner
 
     print("\nPress enter if you do not wish to upgrade a specific contract\n")
@@ -66,37 +67,6 @@ def main():
     proxy_admin = ProxyAdmin[-1]
 
     print(f"\n{network.show_active()}:\n")
-
-    if len(usds_proxy_address) > 0:
-        print("upgrade USDs contract:\n")
-        new_usds = USDsL2V2.deploy(
-            {'from': owner, 'gas_limit': 1000000000}
-        )
-        usds_proxy = Contract.from_abi(
-            "USDsL2",
-            usds_proxy_address,
-            USDsL2.abi
-        )
-        proxy_admin.upgrade(
-            usds_proxy.address,
-            new_usds.address,
-            {'from': admin, 'gas_limit': 1000000000}
-        )
-        new_usds.initialize(
-            SperaxTokenL2[-1],
-            VaultCoreTools[-1],
-            fee_vault,
-            {'from': owner, 'gas_limit': 1000000000}
-        )
-
-        new_usds_proxy = Contract.from_abi(
-            "USDsL2V2",
-            usds_proxy.address,
-            VaultCoreV2.abi
-        )
-        print(f"upgraded USDsL2 proxy address: {new_usds_proxy.address}")
-        print(new_usds_proxy.version())
-        print(usds_proxy.version())
 
     if len(vault_proxy_address) > 0:
         print("upgrade Vault contract:\n")
@@ -125,8 +95,54 @@ def main():
             vault_proxy.address,
             VaultCoreV2.abi
         )
+        print(f"original Vault proxy address: {vault_proxy.address}")
         print(f"upgraded Vault proxy address: {new_vault_proxy.address}")
         print(new_vault_proxy.version())
+
+    if len(usds_proxy_address) > 0:
+        print("upgrade USDs contract:\n")
+        if len(vault_proxy_address) == 0:
+            vault_proxy_address = input("Enter VaultCore proxy address: ").strip()
+            if len(vault_proxy_address) == 0:
+                print("\nMissing Vault proxy address\n")
+                return
+
+        vault_proxy = Contract.from_abi(
+            "VaultCore",
+            vault_proxy_address,
+            VaultCore.abi
+        )
+
+        new_usds = USDsL2V2.deploy(
+            {'from': owner, 'gas_limit': 1000000000}
+        )
+        usds_proxy = Contract.from_abi(
+            "USDsL2",
+            usds_proxy_address,
+            USDsL2.abi
+        )
+        proxy_admin.upgrade(
+            usds_proxy.address,
+            new_usds.address,
+            {'from': admin, 'gas_limit': 1000000000}
+        )
+        new_usds.initialize(
+            usds_proxy.name(),
+            usds_proxy.symbol(),
+            vault_proxy.address,
+            usds_proxy.l2Gateway(),
+            usds_proxy.l1Address(),
+            {'from': owner, 'gas_limit': 1000000000}
+        )
+
+        new_usds_proxy = Contract.from_abi(
+            "USDsL2V2",
+            usds_proxy.address,
+            VaultCoreV2.abi
+        )
+        print(f"original USDsL2 proxy address: {usds_proxy.address}")
+        print(f"upgraded USDsL2 proxy address: {new_usds_proxy.address}")
+        print(new_usds_proxy.version())
 
     if len(oracle_proxy_address) > 0:
         print("upgrade Oracle contract:\n")
@@ -155,8 +171,10 @@ def main():
             oracle_proxy.address,
             OracleV2.abi
         )
+        print(f"original Oracle proxy address: {oracle_proxy.address}")
         print(f"upgraded Oracle proxy address: {new_oracle_proxy.address}")
         print(new_oracle_proxy.version())
+
 
     if len(vault_proxy_address) > 0 and len(oracle_proxy_address) > 0:
         new_vault_proxy.updateOracleAddress(

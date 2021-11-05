@@ -89,19 +89,30 @@ def sperax(
     )
     oracle_proxy = Contract.from_abi("Oracle", proxy.address, Oracle.abi)
 
-    usds2 = USDsL2.deploy(
+    usds = USDsL2.deploy(
+        {'from': owner_l2}
+    )
+    proxy = TransparentUpgradeableProxy.deploy(
+        usds.address,
+        proxy_admin.address,
+        eth_utils.to_bytes(hexstr="0x"),
+        {'from': admin}
+    )
+    usds_proxy = Contract.from_abi("USDsL2", proxy.address, USDsL2.abi)
+    usds_proxy.initialize(
         'USDs Layer 2',
         'USDs2',
-        vault.address, 
+        vault_proxy.address, 
         l2_gateway,
         usds1.address,
         {'from': owner_l2}
     )
+
     spa = SperaxTokenL2.deploy(
         'Sperax',
         'SPA',
         l2_gateway,
-        usds2.address,
+        usds_proxy.address,
         {'from': owner_l2},
     )
 
@@ -112,7 +123,7 @@ def sperax(
         {'from': owner_l2}
     )
     oracle_proxy.updateUSDsAddress(
-        usds2.address,
+        usds_proxy.address,
         {'from': owner_l2}
     )
 
@@ -123,7 +134,7 @@ def sperax(
         {'from': owner_l2}
     )
     vault_proxy.updateUSDsAddress(
-        usds2.address,
+        usds_proxy.address,
         {'from': owner_l2}
     )
     vault_proxy.updateOracleAddress(
@@ -133,7 +144,7 @@ def sperax(
 #    vault_proxy.addCollateral(
 #        {'from': owner_l2}
 #    )
-    return (proxy_admin, spa, usds2, vault_core_tools, vault_proxy, oracle_proxy)
+    return (proxy_admin, spa, usds_proxy, vault_core_tools, vault_proxy, oracle_proxy)
 
 
 @pytest.fixture(autouse=True)

@@ -7,8 +7,9 @@ import brownie
 #
 
 def test_upgrade_oracle(sperax, OracleV2, Contract, admin, owner_l2):
-    (proxy_admin, spa, usds2, vault_core_tools, vault_proxy, oracle_proxy) = sperax
+    (proxy_admin, spa, usds_proxy, vault_core_tools, vault_proxy, oracle_proxy) = sperax
     print("upgrade Oracle contract:\n")
+    # test case requires duplicating the contract, Oracle.sol, renamed as OracleV2.sol
     new_oracle = OracleV2.deploy(
         {'from': owner_l2}
     )
@@ -44,10 +45,13 @@ def test_upgrade_oracle(sperax, OracleV2, Contract, admin, owner_l2):
     )
 
     print(f"Oracle v2 proxy address: {new_oracle_proxy.address}")
-    new_oracle_proxy.version() == "Oracle v.2"
+    # requires duplicating Oracle.sol contract. The duplicate contract should
+    # be called OracleV2.sol. This version 2 contract must expose a new function 
+    # called version() that returns the string "Oracle v.2"
+    assert new_oracle_proxy.version() == "Oracle v.2"
 
     new_oracle_proxy.updateUSDsAddress(
-        usds2.address,
+        usds_proxy.address,
         {'from': owner_l2}
     )
     new_oracle_proxy.updateVaultAddress(
@@ -58,7 +62,7 @@ def test_upgrade_oracle(sperax, OracleV2, Contract, admin, owner_l2):
     # admin cannot call base contract functions
     with brownie.reverts():
         new_oracle_proxy.updateUSDsAddress(
-            usds2.address,
+            usds_proxy.address,
             {'from': admin}
         )
         new_oracle_proxy.updateVaultAddress(
