@@ -436,46 +436,46 @@ contract USDsL2 is aeERC20, OwnableUpgradeable, IArbToken, IUSDs, ReentrancyGuar
      * address's balance will be part of rebases so the account will be exposed
      * to upside and downside.
      */
-    function rebaseOptIn() public onlyOwner nonReentrant {
-        require(_isNonRebasingAccount(msg.sender), "Account has not opted out");
+    function rebaseOptIn(address toOptIn) public onlyOwner nonReentrant {
+        require(_isNonRebasingAccount(toOptIn), "Account has not opted out");
 
         // Convert balance into the same amount at the current exchange rate
-        uint256 newCreditBalance = _creditBalances[msg.sender]
+        uint256 newCreditBalance = _creditBalances[toOptIn]
             .mul(rebasingCreditsPerToken)
-            .div(_creditsPerToken(msg.sender));
+            .div(_creditsPerToken(toOptIn));
 
         // Decreasing non rebasing supply
-        nonRebasingSupply = nonRebasingSupply.sub(balanceOf(msg.sender));
+        nonRebasingSupply = nonRebasingSupply.sub(balanceOf(toOptIn));
 
-        _creditBalances[msg.sender] = newCreditBalance;
+        _creditBalances[toOptIn] = newCreditBalance;
 
         // Increase rebasing credits, totalSupply remains unchanged so no
         // adjustment necessary
-        rebasingCredits = rebasingCredits.add(_creditBalances[msg.sender]);
+        rebasingCredits = rebasingCredits.add(_creditBalances[toOptIn]);
 
-        rebaseState[msg.sender] = RebaseOptions.OptIn;
+        rebaseState[toOptIn] = RebaseOptions.OptIn;
 
         // Delete any fixed credits per token
-        delete nonRebasingCreditsPerToken[msg.sender];
+        delete nonRebasingCreditsPerToken[toOptIn];
     }
 
     /**
      * @dev Remove a contract address to the non rebasing exception list.
      */
-    function rebaseOptOut() public onlyOwner nonReentrant {
-        require(!_isNonRebasingAccount(msg.sender), "Account has not opted in");
+    function rebaseOptOut(address toOptOut) public onlyOwner nonReentrant {
+        require(!_isNonRebasingAccount(toOptOut), "Account has not opted in");
 
         // Increase non rebasing supply
-        nonRebasingSupply = nonRebasingSupply.add(balanceOf(msg.sender));
+        nonRebasingSupply = nonRebasingSupply.add(balanceOf(toOptOut));
         // Set fixed credits per token
-        nonRebasingCreditsPerToken[msg.sender] = rebasingCreditsPerToken;
+        nonRebasingCreditsPerToken[toOptOut] = rebasingCreditsPerToken;
 
         // Decrease rebasing credits, total supply remains unchanged so no
         // adjustment necessary
-        rebasingCredits = rebasingCredits.sub(_creditBalances[msg.sender]);
+        rebasingCredits = rebasingCredits.sub(_creditBalances[toOptOut]);
 
         // Mark explicitly opted out of rebasing
-        rebaseState[msg.sender] = RebaseOptions.OptOut;
+        rebaseState[toOptOut] = RebaseOptions.OptOut;
     }
 
     /**
