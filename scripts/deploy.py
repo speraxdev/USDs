@@ -115,6 +115,19 @@ def main():
     oracle_proxy = Contract.from_abi("Oracle", proxy.address, Oracle.abi)
 
     usds = USDsL2.deploy(
+        {'from': owner, 'gas_limit': 1000000000},
+#        publish_source=True,
+    )
+    proxy = TransparentUpgradeableProxy.deploy(
+        usds.address,
+        proxy_admin.address,
+        eth_utils.to_bytes(hexstr="0x"),
+        {'from': admin, 'gas_limit': 1000000000},
+#        publish_source=True,
+    )
+    usds_proxy = Contract.from_abi("USDsL2", proxy.address, USDsL2.abi)
+
+    usds_proxy.initialize(
         name,
         symbol,
         vault_proxy.address,
@@ -128,7 +141,7 @@ def main():
         'Sperax',
         'SPA',
         l2_gateway,
-        usds.address,
+        usds_proxy.address,
         {'from': owner, 'gas_limit': 1000000000},
 #        publish_source=True,
     )
@@ -154,7 +167,7 @@ def main():
 
     # configure VaultCore contract with USDs contract address
     txn = vault_proxy.updateUSDsAddress(
-        usds,
+        usds_proxy,
         {'from': owner, 'gas_limit': 1000000000}
     )
     # configure VaultCore contract with Oracle contract address
@@ -197,14 +210,15 @@ def main():
         collaterals = ethereum_rinkeby
 
     precision = 10**8
+    zero_address = convert.to_address('0x0000000000000000000000000000000000000000')
     for collateral, chainlink in collaterals.items():
         # authorize a new collateral
         vault_proxy.addCollateral(
             collateral, # address of: USDC, USDT, DAI or WBTC
-            convert.to_address(0), # _defaultStrategyAddr: CURVE, AAVE, etc
+            zero_address, # _defaultStrategyAddr: CURVE, AAVE, etc
             False, # _allocationAllowed
             0, # _allocatePercentage
-            convert.to_address(0), # _buyBackAddr
+            zero_address, # _buyBackAddr
             False, # _rebaseAllowed
             {'from': owner, 'gas_limit': 1000000000}
         )
@@ -229,7 +243,10 @@ def main():
     print(f"\taddress: {oracle.address}")
     print(f"\tproxy address: {oracle_proxy.address}")
 
-    print(f"USDs layer 2 address: {usds.address}")
+    print(f"USDsL2:")
+    print(f"\taddress: {usds.address}")
+    print(f"\tproxy address: {usds_proxy.address}")
+
     print(f"SPA layer 2 address: {spa.address}")
 
     final_balance = owner.balance()

@@ -4,6 +4,8 @@ from brownie import (
     ProxyAdmin,
     VaultCoreTools,
     SperaxTokenL2,
+    USDsL2,
+    USDsL2V2,
     Oracle,
     OracleV2,
     VaultCore,
@@ -44,8 +46,9 @@ def main():
     fee_vault = owner
 
     print("\nPress enter if you do not wish to upgrade a specific contract\n")
-    vault_proxy_address = input("Enter VaultCore Proxy address: ").strip()
-    oracle_proxy_address = input("Enter Oracle Proxy address: ").strip()
+    usds_proxy_address = input("Enter USDs proxy address: ").strip()
+    vault_proxy_address = input("Enter VaultCore proxy address: ").strip()
+    oracle_proxy_address = input("Enter Oracle proxy address: ").strip()
 
     if len(oracle_proxy_address) > 0:
         if network.show_active() == 'arbitrum-rinkeby':
@@ -57,13 +60,43 @@ def main():
             price_feed_eth_arbitrum = '0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612'
             weth_arbitrum = ''
 
-
     initial_balance = admin.balance()
 
     # proxy admin contract
     proxy_admin = ProxyAdmin[-1]
 
     print(f"\n{network.show_active()}:\n")
+
+    if len(usds_proxy_address) > 0:
+        print("upgrade USDs contract:\n")
+        new_usds = USDsL2V2.deploy(
+            {'from': owner, 'gas_limit': 1000000000}
+        )
+        usds_proxy = Contract.from_abi(
+            "USDsL2",
+            usds_proxy_address,
+            USDsL2.abi
+        )
+        proxy_admin.upgrade(
+            usds_proxy.address,
+            new_usds.address,
+            {'from': admin, 'gas_limit': 1000000000}
+        )
+        new_usds.initialize(
+            SperaxTokenL2[-1],
+            VaultCoreTools[-1],
+            fee_vault,
+            {'from': owner, 'gas_limit': 1000000000}
+        )
+
+        new_usds_proxy = Contract.from_abi(
+            "USDsL2V2",
+            usds_proxy.address,
+            VaultCoreV2.abi
+        )
+        print(f"upgraded USDsL2 proxy address: {new_usds_proxy.address}")
+        print(new_usds_proxy.version())
+        print(usds_proxy.version())
 
     if len(vault_proxy_address) > 0:
         print("upgrade Vault contract:\n")
