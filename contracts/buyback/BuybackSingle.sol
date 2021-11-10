@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: UNLICENSED
 // https://docs.uniswap.org/protocol/guides/swaps/single-swaps
 //pragma solidity =0.7.6;
 //pragma abicoder v2;
