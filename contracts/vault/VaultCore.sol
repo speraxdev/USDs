@@ -128,7 +128,7 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 		vaultCoreToolsAddr = _vaultCoreToolsAddr;
 		SPAvault = address(this);
 		startBlockHeight = block.number;
-		chi_alpha = uint32(chi_alpha_prec * 158 / 10**10);
+		chi_alpha = uint32(chi_alpha_prec * 513 / 10**10);
 		chiInit = uint(chi_prec * 95 / 100);
 		chi_beta = chi_beta_prec * 9;
 		chi_gamma = chi_gamma_prec;
