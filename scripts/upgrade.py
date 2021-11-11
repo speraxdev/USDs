@@ -14,7 +14,6 @@ from brownie import (
     network,
     Contract,
 )
-import eth_utils
 
 def signal_handler(signal, frame):
     sys.exit(0)

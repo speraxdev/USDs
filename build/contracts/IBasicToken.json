@@ -34,15 +34,15 @@
     "absolutePath": "contracts/interfaces/IBasicToken.sol",
     "exportedSymbols": {
       "IBasicToken": [
-        395
+        396
       ]
     },
-    "id": 396,
+    "id": 397,
     "license": "MIT",
     "nodeType": "SourceUnit",
     "nodes": [
       {
-        "id": 384,
+        "id": 385,
         "literals": [
           "solidity",
           ">=",
@@ -59,9 +59,9 @@
         "contractKind": "interface",
         "documentation": null,
         "fullyImplemented": false,
-        "id": 395,
+        "id": 396,
         "linearizedBaseContracts": [
-          395
+          396
         ],
         "name": "IBasicToken",
         "nodeType": "ContractDefinition",
@@ -70,7 +70,7 @@
             "body": null,
             "documentation": null,
             "functionSelector": "95d89b41",
-            "id": 389,
+            "id": 390,
             "implemented": false,
             "kind": "function",
             "modifiers": [],
@@ -78,23 +78,23 @@
             "nodeType": "FunctionDefinition",
             "overrides": null,
             "parameters": {
-              "id": 385,
+              "id": 386,
               "nodeType": "ParameterList",
               "parameters": [],
               "src": "102:2:40"
             },
             "returnParameters": {
-              "id": 388,
+              "id": 389,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 387,
+                  "id": 388,
                   "mutability": "mutable",
                   "name": "",
                   "nodeType": "VariableDeclaration",
                   "overrides": null,
-                  "scope": 389,
+                  "scope": 390,
                   "src": "128:13:40",
                   "stateVariable": false,
                   "storageLocation": "memory",
@@ -103,7 +103,7 @@
                     "typeString": "string"
                   },
                   "typeName": {
-                    "id": 386,
+                    "id": 387,
                     "name": "string",
                     "nodeType": "ElementaryTypeName",
                     "src": "128:6:40",
@@ -118,7 +118,7 @@
               ],
               "src": "127:15:40"
             },
-            "scope": 395,
+            "scope": 396,
             "src": "87:56:40",
             "stateMutability": "view",
             "virtual": false,
@@ -128,7 +128,7 @@
             "body": null,
             "documentation": null,
             "functionSelector": "313ce567",
-            "id": 394,
+            "id": 395,
             "implemented": false,
             "kind": "function",
             "modifiers": [],
@@ -136,23 +136,23 @@
             "nodeType": "FunctionDefinition",
             "overrides": null,
             "parameters": {
-              "id": 390,
+              "id": 391,
               "nodeType": "ParameterList",
               "parameters": [],
               "src": "166:2:40"
             },
             "returnParameters": {
-              "id": 393,
+              "id": 394,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 392,
+                  "id": 393,
                   "mutability": "mutable",
                   "name": "",
                   "nodeType": "VariableDeclaration",
                   "overrides": null,
-                  "scope": 394,
+                  "scope": 395,
                   "src": "192:5:40",
                   "stateVariable": false,
                   "storageLocation": "default",
@@ -161,7 +161,7 @@
                     "typeString": "uint8"
                   },
                   "typeName": {
-                    "id": 391,
+                    "id": 392,
                     "name": "uint8",
                     "nodeType": "ElementaryTypeName",
                     "src": "192:5:40",
@@ -176,14 +176,14 @@
               ],
               "src": "191:7:40"
             },
-            "scope": 395,
+            "scope": 396,
             "src": "149:50:40",
             "stateMutability": "view",
             "virtual": false,
             "visibility": "external"
           }
         ],
-        "scope": 396,
+        "scope": 397,
         "src": "59:142:40"
       }
     ],

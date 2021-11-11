@@ -234,7 +234,7 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 
 	/**
 	 * @dev authorize an strategy
-	 * @param _strategyAddr address of the strategy contract
+	 * @param _strategyAddr strategy contract address
 	 */
 	function addStrategy(address _strategyAddr) external onlyOwner {
 		require(!strategiesInfo[_strategyAddr].added, "Strategy added");
