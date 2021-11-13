@@ -5,6 +5,7 @@ from brownie import (
     accounts,
     network,
     Contract,
+    chain,
 )
 
 def signal_handler(signal, frame):
@@ -46,6 +47,8 @@ def main():
             if len(collateral_address) == 0:
                 print("\nCancelling operation")
                 continue
+            deadline = int(input("deadline (minutes): ")) * 60
+            deadline += chain.time() # add current time (epoch)
             print("Mint with:")
             print("\t1. USDs")
             print("\t2. SPA")
@@ -116,11 +119,3 @@ def main():
                         slippage_spa,
                         deadline
                     )
-
-    redeem = ''
-    while len(redeem) == 0:
-        redeem = input("redeem tokens (y/n)?: ")
-        if redeem == 'n':
-            continue
-        if redeem == 'y':
-            vault_proxy.redeem()
