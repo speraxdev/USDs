@@ -141,9 +141,6 @@ def sperax(
         oracle.address,
         {'from': owner_l2}
     )
-#    vault_proxy.addCollateral(
-#        {'from': owner_l2}
-#    )
     return (proxy_admin, spa, usds_proxy, vault_core_tools, vault_proxy, oracle_proxy)
 
 
