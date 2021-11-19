@@ -7,9 +7,13 @@ pragma experimental ABIEncoderV2;
 
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
+import '@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol';
+import '@uniswap/v3-core/contracts/interfaces/IUniswapV3Factory.sol';
 import '../libraries/TransferHelper.sol';
+import '../libraries/OracleLibrary.sol';
 import '../interfaces/ISwapRouter.sol';
 import '../interfaces/IBuyback.sol';
+import '../interfaces/IOracle.sol';
 
 contract BuybackSingle is IBuyback {
     using SafeERC20 for IERC20;
@@ -19,6 +23,8 @@ contract BuybackSingle is IBuyback {
     address public immutable inputToken;
     uint24 public immutable poolFee;
     address public immutable vaultAddr;
+    address public constant UniswapV3Factory= 0x1F98431c8aD98523631AE4a59f267346ea31F984;
+    uint32 public constant movingAvgShortPeriod = 600;
 
     /**
      * @dev Verifies that the caller is the Vault.
@@ -36,6 +42,16 @@ contract BuybackSingle is IBuyback {
         vaultAddr = _vaultAddr;
     }
 
+    function _getAmountOutExpected(uint256 amountIn) internal view returns (uint) {
+        require(amountIn < uint128(-1), "amountIn too large");
+        address poolAddr = IUniswapV3Factory(UniswapV3Factory).getPool(USDs, inputToken, poolFee);
+        uint32 longestSec = OracleLibrary.getOldestObservationSecondsAgo(poolAddr);
+        uint32 period = movingAvgShortPeriod < longestSec ? movingAvgShortPeriod : longestSec;
+        int24 timeWeightedAverageTick = OracleLibrary.consult(poolAddr, period);
+        uint quoteAmount = OracleLibrary.getQuoteAtTick(timeWeightedAverageTick, uint128(amountIn), USDs, inputToken);
+        return quoteAmount;
+    }
+
     /// @notice swapExactInputSingle swaps a fixed amount of USDC for a maximum possible amount of USDs
     /// using the USDC/USDs 0.3% pool by calling `exactInputSingle` in the swap router.
     /// @dev The calling address must approve this contract to spend at least `amountIn` worth of its USDC for this function to succeed.
@@ -49,6 +65,9 @@ contract BuybackSingle is IBuyback {
         TransferHelper.safeApprove(inputToken, address(swapRouter), amountIn);
         // Naively set amountOutMinimum to 0. In production, use an oracle or other data source to choose a safer value for amountOutMinimum.
         // We also set the sqrtPriceLimitx96 to be 0 to ensure we swap our exact input amount.
+
+        uint256 _amountOutMinimum = _getAmountOutExpected(amountIn) * 8 / 10;
+
         ISwapRouter.ExactInputSingleParams memory params =
             ISwapRouter.ExactInputSingleParams({
                 tokenIn: inputToken,
@@ -57,11 +76,10 @@ contract BuybackSingle is IBuyback {
                 recipient: msg.sender,
                 deadline: block.timestamp,
                 amountIn: amountIn,
-                amountOutMinimum: 0,
+                amountOutMinimum: _amountOutMinimum,
                 sqrtPriceLimitX96: 0
             });
         // The call to `exactInputSingle` executes the swap.
         amountOut = swapRouter.exactInputSingle(params);
-        IERC20(USDs).safeTransfer(vaultAddr, amountOut);
     }
 }
