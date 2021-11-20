@@ -36,8 +36,10 @@ interface ICustomToken is ArbitrumEnabledToken {
         uint256 maxSubmissionCostForRouter,
         uint256 maxGas,
         uint256 gasPriceBid,
+        uint256 valueForGateway,
+        uint256 valueForRouter,
         address creditBackAddress
-    ) external;
+    ) external payable;
 
     function transferFrom(
         address sender,
