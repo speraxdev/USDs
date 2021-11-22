@@ -76,7 +76,7 @@ contract BuybackSingle is IBuyback {
                 recipient: msg.sender,
                 deadline: block.timestamp,
                 amountIn: amountIn,
-                amountOutMinimum: _amountOutMinimum,
+                amountOutMinimum: 0,
                 sqrtPriceLimitX96: 0
             });
         // The call to `exactInputSingle` executes the swap.
