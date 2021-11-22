@@ -73,13 +73,15 @@ contract USDsL1 is Initializable, ERC20Upgradeable, OwnableUpgradeable, ICustomT
         uint256 maxSubmissionCostForRouter,
         uint256 maxGas,
         uint256 gasPriceBid,
+        uint256 valueForGateway,
+        uint256 valueForRouter,
         address creditBackAddress
-    ) public override {
+    ) external payable override {
         // we temporarily set `shouldRegisterGateway` to true for the callback in registerTokenToL2 to succeed
         bool prev = shouldRegisterGateway;
         shouldRegisterGateway = true;
 
-        L1CustomGateway(bridge).registerTokenToL2(
+        L1CustomGateway(bridge).registerTokenToL2{value:valueForGateway}(
             l2CustomTokenAddress,
             maxGas,
             gasPriceBid,
@@ -87,7 +89,7 @@ contract USDsL1 is Initializable, ERC20Upgradeable, OwnableUpgradeable, ICustomT
             creditBackAddress
         );
 
-        L1GatewayRouter(router).setGateway(
+        L1GatewayRouter(router).setGateway{value:valueForRouter}(
             bridge,
             maxGas,
             gasPriceBid,

@@ -61,6 +61,9 @@ def main():
         33406636145, # maxSubmissionCostForRouter
         1000000, # maxGas
         25319114, # gasPriceBid
+        33406636145,
+        33406636145,
         credit_back_address, # creditBackAddress
-        {'from': owner, 'gas_limit': 5000381, 'allow_revert' : True}
+        {'from': owner, 'gas_limit': 5000381, 'allow_revert' : True, 'amount': 25385928272290}
+        # amount: at least maxSubmissionCostForRouter + maxSubmissionCostForCustomBridge + 2*(maxGas * gaspricebid)
     )

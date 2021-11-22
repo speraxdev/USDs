@@ -3,87 +3,58 @@
 pragma solidity 0.6.12;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "arb-bridge-peripherals/contracts/tokenbridge/ethereum/gateway/L1CustomGateway.sol";
 import "arb-bridge-peripherals/contracts/tokenbridge/ethereum/gateway/L1GatewayRouter.sol";
 import "arb-bridge-peripherals/contracts/tokenbridge/ethereum/ICustomToken.sol";
-
-interface OrinigalSPA {
-    function mintForUSDs(address account, uint256 amount) external;
-}
+import "../interfaces/ISperaxToken.sol";
 
 contract SperaxTokenL1 is ERC20, Ownable, ICustomToken {
+    using SafeERC20 for IERC20;
     address public spaAddress;
     address public bridge;
     address public router;
     bool private shouldRegisterGateway;
 
+    modifier onlyGateway() {
+        require(_msgSender() == bridge, "ONLY_GATEWAY");
+        _;
+    }
+
     constructor(string memory name_, string memory symbol_, address _spaAddress) ERC20(name_, symbol_) public {
         spaAddress = _spaAddress;
     }
 
+    function transferFrom(address sender, address recipient, uint256 amount) public override(ERC20, ICustomToken) returns (bool) {
+        return ERC20.transferFrom(sender, recipient, amount);
+    }
+
+    function balanceOf(address account) public view override(ERC20, ICustomToken) returns (uint256) {
+        return ERC20.balanceOf(account);
+    }
+
     /**
-     * @dev See {IERC20-totalSupply}.
+     * @dev mint SperaxTokenL1
      */
-    function totalSupply() public view override returns (uint256) {
-        return IERC20(spaAddress).totalSupply();
-    }
-
-    function balanceOf(address account)
-        public
-        view
-        override(ERC20, ICustomToken)
-        returns (uint256)
-    {
-        return IERC20(spaAddress).balanceOf(account);
-    }
-
-    function transfer(address recipient, uint256 amount) public override returns (bool) {
-        (bool success, bytes memory result) = spaAddress.delegatecall(abi.encodeWithSignature("increaseAllowance(address,uint256)", recipient, amount));
-        return abi.decode(result, (bool));
+    function mint(uint256 amount) external {
+        ISperaxToken(spaAddress).burnFrom(_msgSender(), amount);
+        _mint(_msgSender(), amount);
     }
 
     /**
-     * @dev See {IERC20-allowance}.
+     * @dev burn SperaxTokenL1
      */
-    function allowance(address owner, address spender) public view override returns (uint256) {
-        return IERC20(spaAddress).allowance(owner, spender);
-    }
-
-    function approve(address spender, uint256 amount) public override returns (bool) {
-        (bool success, bytes memory result) = spaAddress.delegatecall(abi.encodeWithSignature("approve(address,uint256)", spender, amount));
-        return abi.decode(result, (bool));
-    }
-
-    function transferFrom(
-        address sender,
-        address recipient,
-        uint256 amount
-    ) public override(ERC20, ICustomToken) returns (bool) {
-        (bool success, bytes memory result) = spaAddress.delegatecall(abi.encodeWithSignature("transferFrom(address,address,uint256)", sender, recipient, amount));
-        return abi.decode(result, (bool));
-    }
-
-    function increaseAllowance(address spender, uint256 addedValue) public override returns (bool) {
-        (bool success, bytes memory result) = spaAddress.delegatecall(abi.encodeWithSignature("increaseAllowance(address,uint256)", spender, addedValue));
-        return abi.decode(result, (bool));
-    }
-
-    function decreaseAllowance(address spender, uint256 subtractedValue) public override returns (bool) {
-        (bool success, bytes memory result) = spaAddress.delegatecall(abi.encodeWithSignature("increaseAllowance(address,uint256)", spender, subtractedValue));
-        return abi.decode(result, (bool));
-    }
-
-    modifier onlyGateway() {
-        require(msg.sender == bridge, "ONLY_GATEWAY");
-        _;
+    function burn(uint256 amount) external {
+        ISperaxToken(spaAddress).mintForUSDs(_msgSender(), amount);
+        _burn(_msgSender(), amount);
     }
 
     /**
-     * @dev mint SPA
+     * @dev mint SPA when user withdraw from Arbitrum L2
      */
     function bridgeMint(address account, uint256 amount) onlyGateway external {
-        OrinigalSPA(spaAddress).mintForUSDs(account, amount);
+        ISperaxToken(spaAddress).mintForUSDs(account, amount);
     }
 
     // Arbitrum
@@ -113,13 +84,15 @@ contract SperaxTokenL1 is ERC20, Ownable, ICustomToken {
         uint256 maxSubmissionCostForRouter,
         uint256 maxGas,
         uint256 gasPriceBid,
+        uint256 valueForGateway,
+        uint256 valueForRouter,
         address creditBackAddress
-    ) public override {
+    ) external payable override {
         // we temporarily set `shouldRegisterGateway` to true for the callback in registerTokenToL2 to succeed
         bool prev = shouldRegisterGateway;
         shouldRegisterGateway = true;
 
-        L1CustomGateway(bridge).registerTokenToL2(
+        L1CustomGateway(bridge).registerTokenToL2{value:valueForGateway}(
             l2CustomTokenAddress,
             maxGas,
             gasPriceBid,
@@ -127,7 +100,7 @@ contract SperaxTokenL1 is ERC20, Ownable, ICustomToken {
             creditBackAddress
         );
 
-        L1GatewayRouter(router).setGateway(
+        L1GatewayRouter(router).setGateway{value:valueForRouter}(
             bridge,
             maxGas,
             gasPriceBid,
