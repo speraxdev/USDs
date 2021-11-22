@@ -46,6 +46,7 @@ def main():
     if len(swap_router) == 0:
         print("missing Uniswap Router address")
         return
+    swap_router = accounts.at(swap_router, force=True)
     vault_proxy_address = input("Enter VaultCore proxy address: ").strip()
     if len(vault_proxy_address) == 0:
         print("missing VaultCore proxy address")
