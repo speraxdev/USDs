@@ -7,7 +7,7 @@ import brownie
 #
 
 def test_upgrade_vault(sperax, VaultCoreV2, Contract, admin, owner_l2, accounts):
-    (proxy_admin, spa, usds_proxy, vault_core_tools, vault_proxy, oracle_proxy) = sperax
+    (proxy_admin, spa, usds_proxy, vault_core_tools, vault_proxy, oracle_proxy, buyback) = sperax
 
     print("upgrade Vault contract:\n")
     # test case requires duplicating the contract, VaulCore.sol, renamed as VaultCoreV2.sol

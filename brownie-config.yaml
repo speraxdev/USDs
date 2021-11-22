@@ -19,8 +19,8 @@ compiler:
         optimize: true
         remappings:
           - "@openzeppelin/contracts-upgradeable=OpenZeppelin/openzeppelin-contracts-upgradeable@3.4.0/contracts"
-          - "@openzeppelin/contracts=OpenZeppelin/openzeppelin-contracts@3.4.0/contracts"
-          #- "@openzeppelin/contracts=/Users/maximo/.brownie/packages/OpenZeppelin/openzeppelin-contracts@3.4.0/contracts"
+          #- "@openzeppelin/contracts=OpenZeppelin/openzeppelin-contracts@3.4.0/contracts"
+          - "@openzeppelin/contracts=/Users/maximo/.brownie/packages/OpenZeppelin/openzeppelin-contracts@3.4.0/contracts"
           - "@uniswap/v3-core/contracts=Uniswap/uniswap-v3-core@1.0.0/contracts"
           - "arbos-contracts=packages/arbos-contracts"
           - "arb-bridge-peripherals/contracts=packages/arb-bridge-peripherals/contracts"
