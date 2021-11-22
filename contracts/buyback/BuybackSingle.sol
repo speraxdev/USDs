@@ -62,6 +62,5 @@ contract BuybackSingle is IBuyback {
             });
         // The call to `exactInputSingle` executes the swap.
         amountOut = swapRouter.exactInputSingle(params);
-        IERC20(USDs).safeTransfer(vaultAddr, amountOut);
     }
 }
