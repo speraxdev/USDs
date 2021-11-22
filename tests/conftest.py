@@ -42,6 +42,9 @@ def sperax(
     Oracle,
     VaultCore,
     usds1,
+    CompoundStrategy,
+    BuybackSingle,
+    BuybackMultihop,
     Contract,
     admin,
     owner_l2,
@@ -141,6 +144,31 @@ def sperax(
         oracle.address,
         {'from': owner_l2}
     )
+
+    # deploy strategy and buyback contracts
+    strategy = CompoundStrategy.deploy(
+        {'from': owner_l2}
+    )
+    proxy = TransparentUpgradeableProxy.deploy(
+        strategy.address,
+        proxy_admin.address,
+        eth_utils.to_bytes(hexstr="0x"),
+        {'from': admin}
+    )
+    strategy_proxy = Contract.from_abi(
+        "CompoundStrategy",
+        proxy.address,
+        CompoundStrategy.abi
+    )
+    strategy_proxy.initialize(
+        # platform address
+        vault_proxy.address, # vault address
+        # reward token address
+        # assets
+        # p tokens
+        {'from': owner_l2}
+    )
+
     return (proxy_admin, spa, usds_proxy, vault_core_tools, vault_proxy, oracle_proxy)
 
 

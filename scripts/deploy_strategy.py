@@ -1,6 +1,9 @@
 import sys
 import signal
 from brownie import (
+    ProxyAdmin,
+    TransparentUpgradeableProxy,
+    CompoundStrategy,
     BuybackSingle,
     BuybackMultihop,
     USDsL2,
@@ -18,6 +21,16 @@ def signal_handler(signal, frame):
 def main():
     # handle ctrl-C event
     signal.signal(signal.SIGINT, signal_handler)
+
+    print("\nEnter admin account password:")
+    try:
+        admin = accounts.load(filename="admin.keystore")
+    except ValueError:
+        print("\nInvalid admin wallet or password\n")
+        return
+    except FileNotFoundError:
+        print("\nFile not found: ~/.brownie/accounts/admin.json")
+        return
 
     print("\nEnter contract owner account password:")
     try:
@@ -61,9 +74,30 @@ def main():
         USDsL2.abi
     )
 
+    strategy = CompoundStrategy.deploy(
+        {'from': owner, 'gas_limit': 1000000000},
+#        publish_source=True,
+    )
+    proxy = TransparentUpgradeableProxy.deploy(
+        strategy.address,
+        ProxyAdmin[-1],
+        eth_utils.to_bytes(hexstr="0x"),
+        {'from': admin, 'gas_limit': 1000000000},
+#        publish_source=True,
+    )
+    strategy_proxy = Contract.from_abi("CompoundStrategy", proxy.address, CompoundStrategy.abi)
+    strategy_proxy.initialize(
+        # platform address
+        vault_proxy.address, # vault address
+        # reward token address
+        # assets
+        # p tokens
+        {'from': owner, 'gas_limit': 1000000000},
+    )
+
     # call multihop buyback contract if intermediate token is provided
     if len(token2_address) > 0:
-        buyback = BuybackMultihop(
+        buyback = BuybackMultihop.deploy(
             swap_router,
             usds_proxy.address,
             token1_address,
