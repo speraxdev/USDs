@@ -76,7 +76,7 @@ def sperax(
     if chain.id == 42161:
         # Arbitrum-one mainnet:
         price_feed_eth = '0x5f0423B1a6935dc5596e7A24d98532b67A0AeFd8'
-        l2_gateway = '0x9b014455AcC2Fe90c52803849d0002aeEC184a06'
+        l2_gateway = '0x096760F208390250649E3e8763348E783AEF5562'
         swap_router = interface.ISwapRouter('0x9413AD42910c1eA60c737dB5f58d1C504498a3cD')
 
     # admin contract
