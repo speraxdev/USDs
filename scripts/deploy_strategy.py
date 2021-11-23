@@ -71,7 +71,7 @@ def main():
             vault_proxy.address,
             pool1_fee,
             pool2_fee,
-            {'from': owner, 'gas_limit': 1000000000},
+            {'from': owner},
     #        publish_source=True,
         )
         print(f"Multihop Buyback contract address: {buyback.address}")
@@ -83,7 +83,7 @@ def main():
             token1_address,
             vault_proxy.address,
             pool1_fee,
-            {'from': owner, 'gas_limit': 1000000000},
+            {'from': owner},
     #        publish_source=True,
         )
         print(f"Single Buyback contract address: {buyback.address}")
