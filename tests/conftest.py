@@ -38,12 +38,91 @@ def user_account(accounts):
     return accounts[4]
 
 @pytest.fixture(scope="module", autouse=True)
+def user_account_with_no_balance(accounts):
+    return accounts[5]
+
+@pytest.fixture(scope="module", autouse=True)
 def weth(interface, chain):
     # Arbitrum-one mainnet:
     weth_address = '0x82af49447d8a07e3bd95bd0d56f35241523fbab1'
     # Arbitrum-rinkeby testnet:
     #weth_address = '0xB47e6A5f8b33b3F17603C83a0535A9dcD7E32681'
     return interface.IERC20(weth_address)
+
+@pytest.fixture(scope="module", autouse=True)
+def sol(interface):
+    sol_address = '0x82af49447d8a07e3bd95bd0d56f35241523fbab1'
+    return interface.IERC20(sol_address)
+
+@pytest.fixture(scope="module", autouse=True)
+def uniswap_v3_swap_router(interface):
+    return interface.ISwapRouter('0xE592427A0AEce92De3Edee1F18E0157C05861564')
+
+@pytest.fixture(scope="module", autouse=True)
+def invalid_token(interface):
+    sol_address = '0x82af49447d8a07e3bd95bd0d56f35241523fbab2'
+    return interface.IERC20(sol_address)
+
+@pytest.fixture(scope="module", autouse=True)
+def buyback_single_sol_spa(BuybackSingle, owner_l2, uniswap_v3_swap_router, sol, spa, vault_proxy):
+    return BuybackSingle.deploy(
+        uniswap_v3_swap_router,
+        sol.address, 
+        spa.address, 
+        vault_proxy.address, 
+        3000, {"from":  owner_l2}
+    )
+
+
+@pytest.fixture(scope="module", autouse=True)
+def buyback_single_spa_weth_pf05(BuybackSingle, owner_l2, uniswap_v3_swap_router, sol, weth, vault_proxy):
+    return BuybackSingle.deploy(
+        uniswap_v3_swap_router,
+        sol.address, 
+        weth.address, 
+        vault_proxy.address, 
+        50000, {"from": owner_l2}
+    )
+
+@pytest.fixture(scope="module", autouse=True)
+def buyback_multihop_usdt_sol_weth(BuybackMultihop, owner_l2, uniswap_v3_swap_router, sol, weth, usds, vault_proxy): 
+    return BuybackMultihop.deploy(
+        uniswap_v3_swap_router,
+        weth.address,
+        usds.address, 
+        sol.address, 
+        vault_proxy.address, 
+        3000, 
+        3000,
+        {"from": owner_l2}
+    )
+
+@pytest.fixture(scope="module", autouse=True)
+def buyback_multihop_usdt_spa_weth_pf50(BuybackMultihop, owner_l2, uniswap_v3_swap_router, spa, weth, usds, vault_proxy): 
+    return BuybackMultihop.deploy(
+        uniswap_v3_swap_router,
+        weth.address,
+        usds.address, 
+        spa.address, 
+        vault_proxy.address, 
+        50000, 
+        50000,
+        {"from": owner_l2}
+    )
+
+
+@pytest.fixture(scope="module", autouse=True)
+def buyback_multihop_usdt_invalid_token_weth(BuybackMultihop, owner_l2, uniswap_v3_swap_router, invalid_token, weth, usds, vault_proxy): 
+    return BuybackMultihop.deploy(
+        uniswap_v3_swap_router,
+        weth.address,
+        usds.address, 
+        invalid_token.address, 
+        vault_proxy.address, 
+        3000, 
+        3000,
+        {"from": owner_l2}
+    )
 
 @pytest.fixture(scope="module", autouse=True)
 def sperax(
@@ -140,7 +219,7 @@ def sperax(
     )
 
     # not sure if this is valid
-    pool_fee = 1
+    pool_fee = 3000
 
     buyback = BuybackSingle.deploy(
         uniswap_v3_swap_router, # uniswap v.3 router address
@@ -149,6 +228,18 @@ def sperax(
         vault_proxy.address,
         pool_fee,
         {'from': owner_l2}
+    )
+
+
+    buyback_multihop = BuybackMultihop.deploy(
+        uniswap_v3_swap_router,
+        weth.address,
+        usds_proxy.address, 
+        spa.address, 
+        vault_proxy.address, 
+        pool_fee, 
+        pool_fee,
+        {"from": owner_l2}
     )
 
     oracle_proxy.initialize(
@@ -180,7 +271,7 @@ def sperax(
     # configure stablecoin collaterals in vault and oracle
     #configure_collaterals(vault_proxy, oracle_proxy, owner_l2, convert)
 
-    return (proxy_admin, spa, usds_proxy, vault_core_tools, vault_proxy, oracle_proxy, buyback)
+    return (proxy_admin, spa, usds_proxy, vault_core_tools, vault_proxy, oracle_proxy, buyback, buyback_multihop)
 
 
 def configure_collaterals(
