@@ -1,5 +1,4 @@
 #!/usr/bin/python3
-import os
 import pytest
 import eth_utils
 import brownie 
@@ -38,12 +37,12 @@ def user_account(accounts):
     return accounts[4]
 
 @pytest.fixture(scope="module", autouse=True)
-def weth(interface, chain):
+def weth():
     # Arbitrum-one mainnet:
     weth_address = '0x82af49447d8a07e3bd95bd0d56f35241523fbab1'
     # Arbitrum-rinkeby testnet:
     #weth_address = '0xB47e6A5f8b33b3F17603C83a0535A9dcD7E32681'
-    return interface.IERC20(weth_address)
+    return brownie.interface.IERC20(weth_address)
 
 @pytest.fixture(scope="module", autouse=True)
 def sperax(
@@ -151,6 +150,18 @@ def sperax(
         {'from': owner_l2}
     )
 
+    #create_uniswap_v3_pool(
+    #    '0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8', # token1: USDC
+    #    100046432394, # amount1
+    #    spa.address, # token2: SPA
+    #    999999999997892635134, # amount2
+    #    207240, # tick_lower
+    #    253320, # tick_upper
+    #    3000, # pool_fee
+    #    99682203396, # min_amount1
+    #    996339483778796453262, # min_amount2
+    #)
+
     oracle_proxy.initialize(
         chainlink_eth_price_feed,
         spa.address,
@@ -178,7 +189,7 @@ def sperax(
     )
     
     # configure stablecoin collaterals in vault and oracle
-    #configure_collaterals(vault_proxy, oracle_proxy, owner_l2, convert)
+    #configure_collaterals(vault_proxy, oracle_proxy, buyback, owner_l2)
 
     return (proxy_admin, spa, usds_proxy, vault_core_tools, vault_proxy, oracle_proxy, buyback)
 
@@ -186,6 +197,7 @@ def sperax(
 def configure_collaterals(
     vault_proxy,
     oracle_proxy,
+    buyback,
     owner_l2
 ):
     # Arbitrum mainnet collaterals:
@@ -209,9 +221,9 @@ def configure_collaterals(
             zero_address, # _defaultStrategyAddr: CURVE, AAVE, etc
             False, # _allocationAllowed
             0, # _allocatePercentage
-            zero_address, # _buyBackAddr
+            buyback, # _buyBackAddr
             False, # _rebaseAllowed
-            {'from': owner_l2, 'gas_limit': 1000000000}
+            {'from': owner_l2}
         )
         # wire up price feed for the added collateral
         oracle_proxy.updateCollateralInfo(
@@ -219,12 +231,53 @@ def configure_collaterals(
             True, # supported
             chainlink, # chainlink price feed address
             precision, # chainlink price feed precision
-            {'from': owner_l2, 'gas_limit': 1000000000}
+            {'from': owner_l2}
         )
 
 # create pool for pair tokens (input parameters) on Arbitrum-one
-def configure_uniswap_v3_pool(
+def create_uniswap_v3_pool(
     token1,
-    token2
+    amount1,
+    token2,
+    amount2,
+    tick_lower,
+    tick_upper,
+    fee,
+    min_amount1,
+    min_amount2
 ):
-    pass
+    position_mgr_address = '0xC36442b4a4522E871399CD717aBDD847Ab11FE88'
+    position_mgr = brownie.interface.INonfungiblePositionManager(position_mgr_address)
+
+    # approve uniswap's non fungible position manager to transfer our tokens
+    token1.approve(position_mgr.address, amount1, {'from': owner_l2})
+    token2.approve(position_mgr.address, amount2, {'from': owner_l2})
+
+    # create a transaction pool
+    sqrt_price_x96 = 7922807523698269125109939133199873 # 100 token1 == 1 token2
+    txn = position_mgr.createAndInitializePoolIfNecessary(
+        token1,
+        token2,
+        fee,
+        sqrt_price_x96,
+        {'from': owner_l2}
+    )
+    # newly created pool address
+    pool = txn.return_value
+    
+    # provide initial liquidity
+    txn = position_mgr.mint(
+        token1,
+        token2,
+        fee,
+        tick_lower, # tickLower
+        tick_upper, # tickUpper
+        amount1,
+        amount2,
+        min_amount1, # minimum amount of token1 expected
+        min_amount2, # minimum amount of token2 expected
+        owner_l2,
+        1637632800 + brownie.chain.time(), # deadline: 2 hours
+        {'from': owner_l2}
+    )
+    print(txn.return_value)
