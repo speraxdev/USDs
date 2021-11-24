@@ -4,7 +4,7 @@ import brownie
 from brownie.test import given, strategy
 
 #
-# DON'T USE accounts[0-3]. 0-3 ARE RESERVED BY conftest.py
+# DON'T USE accounts[0-4]. 0-4 ARE RESERVED BY conftest.py
 #
 
 @given(amount=strategy('uint256', min_value=1, max_value=2**256-1))
@@ -12,11 +12,11 @@ def test_valid_mint(sperax, accounts, amount):
     (proxy_admin, spa, usds_proxy, vault_core_tools, vault_proxy) = sperax
 
     print('amount: ', amount)
-    first_owner = accounts[3]
-    approver = accounts[4]
-    second_owner = accounts[5]
-    failed_owner = accounts[6]
-    third_owner = accounts[7]
+    first_owner = accounts[5]
+    approver = accounts[6]
+    second_owner = accounts[7]
+    failed_owner = accounts[8]
+    third_owner = accounts[9]
     # mint stablecoin
     usds_proxy.mint(first_owner, amount, {'from': vault_proxy.address})
     assert usds_proxy.balanceOf(first_owner) == amount

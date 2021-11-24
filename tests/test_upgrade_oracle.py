@@ -3,7 +3,7 @@ import pytest
 import brownie
 
 #
-# DON'T USE accounts[0-3]. 0-3 ARE RESERVED BY conftest.py
+# DON'T USE accounts[0-4]. 0-4 ARE RESERVED BY conftest.py
 #
 
 def test_upgrade_oracle(sperax, OracleV2, Contract, admin, owner_l2):

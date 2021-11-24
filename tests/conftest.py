@@ -2,7 +2,7 @@
 import os
 import pytest
 import eth_utils
-from brownie import network
+import brownie 
 
 @pytest.fixture(scope="module", autouse=True)
 def admin(accounts):
@@ -30,22 +30,19 @@ def owner_l2(accounts):
     return accounts[2]
 
 @pytest.fixture(scope="module", autouse=True)
+def vault_fee(accounts):
+    return accounts[3]
+
+@pytest.fixture(scope="module", autouse=True)
 def user_account(accounts):
-    private_key = os.environ.get('WALLET_PRIVATE_KEY')
-    # default to ganache local development
-    if len(private_key) == 0:
-        return accounts[4]
-    return accounts.add(private_key)
+    return accounts[4]
 
 @pytest.fixture(scope="module", autouse=True)
 def weth(interface, chain):
+    # Arbitrum-one mainnet:
+    weth_address = '0x82af49447d8a07e3bd95bd0d56f35241523fbab1'
     # Arbitrum-rinkeby testnet:
-    weth_address = '0xB47e6A5f8b33b3F17603C83a0535A9dcD7E32681'
-
-    if chain.id == 42161:
-        # Arbitrum-one mainnet:
-        weth_address = '0x82af49447d8a07e3bd95bd0d56f35241523fbab1'
-
+    #weth_address = '0xB47e6A5f8b33b3F17603C83a0535A9dcD7E32681'
     return interface.IERC20(weth_address)
 
 @pytest.fixture(scope="module", autouse=True)
@@ -64,19 +61,19 @@ def sperax(
     weth,
     Contract,
     admin,
+    vault_fee,
     owner_l2,
     interface,
-    convert,
 ):
-    # Arbitrum-one mainnet:
-    price_feed_eth = ''
+    # Arbitrum-one (mainnet):
+    chainlink_eth_price_feed = '0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612'
     l2_gateway = '0x096760F208390250649E3e8763348E783AEF5562'
-    swap_router = interface.ISwapRouter('')
+    uniswap_v3_swap_router = interface.ISwapRouter('0xE592427A0AEce92De3Edee1F18E0157C05861564')
 
     # Arbitrum rinkeby:
-    #price_feed_eth = '0x5f0423B1a6935dc5596e7A24d98532b67A0AeFd8'
+    #chainlink_eth_price_feed = '0x5f0423B1a6935dc5596e7A24d98532b67A0AeFd8'
     #l2_gateway = '0x9b014455AcC2Fe90c52803849d0002aeEC184a06'
-    #swap_router = interface.ISwapRouter('0x9413AD42910c1eA60c737dB5f58d1C504498a3cD')
+    #uniswap_v3_swap_router = interface.ISwapRouter('0x9413AD42910c1eA60c737dB5f58d1C504498a3cD')
 
     # admin contract
     proxy_admin = ProxyAdmin.deploy(
@@ -146,7 +143,7 @@ def sperax(
     pool_fee = 1
 
     buyback = BuybackSingle.deploy(
-        swap_router, # swap router address
+        uniswap_v3_swap_router, # uniswap v.3 router address
         usds_proxy.address,
         weth.address, # input token
         vault_proxy.address,
@@ -155,7 +152,7 @@ def sperax(
     )
 
     oracle_proxy.initialize(
-        price_feed_eth,
+        chainlink_eth_price_feed,
         spa.address,
         weth.address,
         {'from': owner_l2}
@@ -168,7 +165,7 @@ def sperax(
     vault_proxy.initialize(
         spa.address,
         vault_core_tools.address,
-        pool_fee,
+        vault_fee,
         {'from': owner_l2}
     )
     vault_proxy.updateUSDsAddress(
@@ -181,7 +178,7 @@ def sperax(
     )
     
     # configure stablecoin collaterals in vault and oracle
-    configure_collaterals(vault_proxy, oracle_proxy, owner_l2, convert)
+    #configure_collaterals(vault_proxy, oracle_proxy, owner_l2, convert)
 
     return (proxy_admin, spa, usds_proxy, vault_core_tools, vault_proxy, oracle_proxy, buyback)
 
@@ -189,8 +186,7 @@ def sperax(
 def configure_collaterals(
     vault_proxy,
     oracle_proxy,
-    owner_l2,
-    convert
+    owner_l2
 ):
     # Arbitrum mainnet collaterals:
     collaterals = {
@@ -205,7 +201,7 @@ def configure_collaterals(
     }
 
     precision = 10**8
-    zero_address = convert.to_address('0x0000000000000000000000000000000000000000')
+    zero_address = brownie.convert.to_address('0x0000000000000000000000000000000000000000')
     for collateral, chainlink in collaterals.items():
         # authorize a new collateral
         vault_proxy.addCollateral(
@@ -225,3 +221,10 @@ def configure_collaterals(
             precision, # chainlink price feed precision
             {'from': owner_l2, 'gas_limit': 1000000000}
         )
+
+# create pool for pair tokens (input parameters) on Arbitrum-one
+def configure_uniswap_v3_pool(
+    token1,
+    token2
+):
+    pass

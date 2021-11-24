@@ -57,17 +57,18 @@ def main():
     symbol = input("Enter symbol (USDs): ") or "USDs"
     print('\n')
 
-    # arbitrum-mainnet:
-    l2_gateway = ''
-    price_feed_eth_arbitrum_testnet = ''
-    weth_arbitrum_testnet = ''
+    # arbitrum-one (mainnet):
+    l2_gateway = '0x096760F208390250649E3e8763348E783AEF5562'
+    # chainlink price feed for ETH on Arbitrum
+    chainlink_eth_price_feed = '0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612'
+    weth_arbitrum = '0x82af49447d8a07e3bd95bd0d56f35241523fbab1'
     l1_address = '' # USDs address on layer 1 [rinkeby]
 
     if network.show_active() == 'arbitrum-rinkeby':
         # Arbitrum rinkeby:
         l2_gateway = '0x9b014455AcC2Fe90c52803849d0002aeEC184a06'
-        price_feed_eth_arbitrum_testnet = '0x5f0423B1a6935dc5596e7A24d98532b67A0AeFd8'
-        weth_arbitrum_testnet = '0xb47e6a5f8b33b3f17603c83a0535a9dcd7e32681'
+        chainlink_eth_price_feed = '0x5f0423B1a6935dc5596e7A24d98532b67A0AeFd8'
+        weth_arbitrum = '0xb47e6a5f8b33b3f17603c83a0535a9dcd7e32681'
         l1_address = '0x377ff873b648b678608b216467ee94713116c4cd' # USDs address on layer 1 [rinkeby]
 
     # admin contract
@@ -148,9 +149,9 @@ def main():
     )
 
     txn = oracle_proxy.initialize(
-        price_feed_eth_arbitrum_testnet,
+        chainlink_eth_price_feed,
         spa.address,
-        weth_arbitrum_testnet,
+        weth_arbitrum,
         {'from': owner}
     )
 
