@@ -69,7 +69,8 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 	event AllocationPermssionChanged(bool indexed permission);
 	event SwapFeeInOutPermissionChanged(bool indexed swapfeeInAllowed, bool indexed swapfeeOutAllowed);
 	event CollateralAllocated(address indexed collateralAddr, address indexed depositStrategyAddr, uint allocateAmount);
-
+	event USDsAddressUpdated(address oldAddr, address newAddr);
+    event OracleAddressUpdated(address oldAddr, address newAddr);
 	/**
 	 * @dev check if USDs mint & redeem are both allowed
 	 */
@@ -145,6 +146,7 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 	 * @param _USDsAddr updated USDs address
 	 */
 	function updateUSDsAddress(address _USDsAddr) external onlyOwner {
+		emit USDsAddressUpdated(USDsAddr, _USDsAddr);
 		USDsAddr = _USDsAddr;
 	}
 
@@ -153,6 +155,7 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 	 * @param _oracleAddr updated oracle address
 	 */
 	function updateOracleAddress(address _oracleAddr) external onlyOwner {
+		emit USDsAddressUpdated(oracleAddr, _oracleAddr);
 		oracleAddr =  _oracleAddr;
 	}
 
@@ -440,14 +443,12 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
         if (rewardTokenAddress != address(0)) {
             uint liquidationThreshold = strategy.rewardLiquidationThreshold();
 			uint rewardTokenAmount = IERC20Upgradeable(rewardTokenAddress).balanceOf(address(this));
-			if (liquidationThreshold == 0) {
+			if (rewardTokenAmount > liquidationThreshold) {
 				strategy.collectRewardToken();
 				uint rewardAmt = IERC20Upgradeable(rewardTokenAddress).balanceOf(address(this));
-				USDsIncrement_viaReward = IBuyback(strategy.rewardTokenBuybackAddress()).swap(rewardAmt);
-			} else if (rewardTokenAmount >= liquidationThreshold)
-            if (rewardTokenAmount >= liquidationThreshold) {
-
-            }
+				IERC20Upgradeable(rewardTokenAddress).safeTransfer(strategy.rewardTokenBuybackAddress(), rewardAmt);
+				USDsIncrement_viaReward = IBuyback(strategy.rewardTokenBuybackAddress()).swap(rewardTokenAddress, rewardAmt);
+			}
 		}
 	}
 
@@ -456,10 +457,12 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 	 */
 	function _harvestInterest(IStrategy strategy, address collateralAddr) internal returns (uint USDsIncrement_viaInterest) {
 		collateralStruct memory collateral = collateralsInfo[collateralAddr];
+		uint liquidationThreshold = strategy.interestLiquidationThreshold();
 		uint interestEarned = strategy.checkInterestEarned(collateralAddr);
-		if (interestEarned > 0) {
+		if (interestEarned > liquidationThreshold) {
 			strategy.withdraw(address(this), collateral.collateralAddr, interestEarned);
-			USDsIncrement_viaInterest = IBuyback(collateral.buyBackAddr).swap(interestEarned);
+			IERC20Upgradeable(collateralAddr).safeTransfer(collateral.buyBackAddr, interestEarned);
+			USDsIncrement_viaInterest = IBuyback(collateral.buyBackAddr).swap(collateralAddr, interestEarned);
 		}
 	}
 
@@ -542,17 +545,20 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 	/**
 	 * @dev the value of collateral of _collateralAddr in its strategy
 	 */
-	function _valueInStrategy(address _collateralAddr) internal view returns (uint value) {
+	function _valueInStrategy(address _collateralAddr) internal view returns (uint) {
 		collateralStruct memory collateral = collateralsInfo[_collateralAddr];
+		if (collateral.defaultStrategyAddr == address(0)) {
+			return 0;
+		}
 		IStrategy strategy = IStrategy(collateral.defaultStrategyAddr);
+		if (!strategy.supportsCollateral(collateral.collateralAddr)) {
+			return 0;
+		}
 		uint priceColla = IOracle(oracleAddr).getCollateralPrice(collateral.collateralAddr);
 		uint precisionColla = IOracle(oracleAddr).getCollateralPrice_prec(collateral.collateralAddr);
 		uint collateralAddrDecimal = uint(ERC20Upgradeable(collateral.collateralAddr).decimals());
 		uint collateralTotalValueInStrategy = strategy.checkBalance(collateral.collateralAddr).mul(priceColla).div(precisionColla);
 		uint collateralTotalValueInStrategy_18 = collateralTotalValueInStrategy.mul(10**(uint(18).sub(collateralAddrDecimal)));
-		value = collateralTotalValueInStrategy_18;
-		if (!strategy.supportsCollateral(collateral.collateralAddr)) {
-			value = 0;
-		}
+		return collateralTotalValueInStrategy_18;
 	}
 }

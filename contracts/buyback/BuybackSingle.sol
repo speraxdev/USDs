@@ -1,73 +1,80 @@
 // SPDX-License-Identifier: UNLICENSED
-// https://docs.uniswap.org/protocol/guides/swaps/single-swaps
-//pragma solidity =0.7.6;
-//pragma abicoder v2;
 pragma solidity ^0.6.12;
 pragma experimental ABIEncoderV2;
 
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import '@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol';
-import '@uniswap/v3-core/contracts/interfaces/IUniswapV3Factory.sol';
+import "@openzeppelin/contracts/access/Ownable.sol";
 import '../libraries/TransferHelper.sol';
 import '../libraries/OracleLibrary.sol';
 import '../interfaces/ISwapRouter.sol';
 import '../interfaces/IBuyback.sol';
 import '../interfaces/IOracle.sol';
 
-contract BuybackSingle is IBuyback {
+
+/**
+ * @title buyback contract of USDs protocol
+ * @notice swap an ERC20 with USDs using one pool on Uniswap V3
+ * @dev reference: https://docs.uniswap.org/protocol/guides/swaps/single-swaps
+ * @author Sperax Foundation
+ */
+contract BuybackSingle is IBuyback, Ownable {
     using SafeERC20 for IERC20;
 
-    ISwapRouter public immutable swapRouter;
+    ISwapRouter public constant swapRouter = ISwapRouter(0xE592427A0AEce92De3Edee1F18E0157C05861564);
     address public immutable USDs;
-    address public immutable inputToken;
-    uint24 public immutable poolFee;
     address public immutable vaultAddr;
-    address public constant UniswapV3Factory= 0x1F98431c8aD98523631AE4a59f267346ea31F984;
-    uint32 public constant movingAvgShortPeriod = 600;
+
+    event Swap(address indexed inputToken, uint256 amountIn, uint256 amountOut);
+    event InputTokenUpdated(address _inputTokenAddr, bool _supported, uint24 _poolFee);
 
     /**
      * @dev Verifies that the caller is the Vault.
      */
     modifier onlyVault() {
-        require(msg.sender == vaultAddr, "Caller is not the Vault");
+        require(msg.sender == vaultAddr, "caller is not the vault");
         _;
     }
 
-    constructor(ISwapRouter _swapRouter, address _USDs, address _inputToken, address _vaultAddr, uint24 _poolFee) public {
-        swapRouter = _swapRouter;
+    struct inputTokenStruct {
+		address inputTokenAddr;
+		bool supported;
+		uint24 poolFee;
+	}
+
+    mapping(address => inputTokenStruct) public inputTokensInfo;
+
+    constructor(address _USDs, address _vaultAddr) public {
         USDs = _USDs;
-        inputToken = _inputToken;
-        poolFee = _poolFee;
         vaultAddr = _vaultAddr;
     }
 
-    function _getAmountOutExpected(uint256 amountIn) internal view returns (uint) {
-        require(amountIn < uint128(-1), "amountIn too large");
-        address poolAddr = IUniswapV3Factory(UniswapV3Factory).getPool(USDs, inputToken, poolFee);
-        uint32 longestSec = OracleLibrary.getOldestObservationSecondsAgo(poolAddr);
-        uint32 period = movingAvgShortPeriod < longestSec ? movingAvgShortPeriod : longestSec;
-        int24 timeWeightedAverageTick = OracleLibrary.consult(poolAddr, period);
-        uint quoteAmount = OracleLibrary.getQuoteAtTick(timeWeightedAverageTick, uint128(amountIn), USDs, inputToken);
-        return quoteAmount;
+    /**
+     * @notice set up an ERC20 token (_inputTokenAddr) to swap back USDs
+     * @dev call this function with _supported set to true when adding an inputToken for the first time
+     * @param _inputTokenAddr inputToken used to swap back USDs
+     * @param _supported if this contract supports using inputToken used to swap back USDs
+     * @param _poolFee poolFee of intermediateToken-USDs
+     */
+    function updateInputTokenInfo(address _inputTokenAddr, bool _supported, uint24 _poolFee) external onlyOwner {
+        inputTokenStruct storage addinginputToken = inputTokensInfo[_inputTokenAddr];
+        addinginputToken.inputTokenAddr = _inputTokenAddr;
+        addinginputToken.supported = _supported;
+        addinginputToken.poolFee = _poolFee;
+        emit InputTokenUpdated(_inputTokenAddr, _supported, _poolFee);
     }
 
-    /// @notice swapExactInputSingle swaps a fixed amount of USDC for a maximum possible amount of USDs
-    /// using the USDC/USDs 0.3% pool by calling `exactInputSingle` in the swap router.
-    /// @dev The calling address must approve this contract to spend at least `amountIn` worth of its USDC for this function to succeed.
-    /// @param amountIn The exact amount of USDC that will be swapped for USDs.
-    /// @return amountOut The amount of USDs received.
-    function swap(uint256 amountIn) external onlyVault override returns (uint256 amountOut) {
-        // msg.sender must approve this contract
-        // Transfer the specified amount of USDC to this contract.
-        TransferHelper.safeTransferFrom(inputToken, msg.sender, address(this), amountIn);
-        // Approve the router to spend USDC.
+    /**
+	 * @notice swaps a fixed amount of inputToken for a maximum possible amount of USDs on Uniswap V3
+     * @param inputToken the ERC20 token used to swap back USDs
+     * @param amountIn the exact amount of inputToken that will be swapped for USDs
+     * @return amountOut The amount of USDs received
+     */
+    function swap(address inputToken, uint256 amountIn) external onlyVault override returns (uint256 amountOut) {
+        require(inputTokensInfo[inputToken].supported, "inputToken not supported");
+        uint24 poolFee = inputTokensInfo[inputToken].poolFee;
         TransferHelper.safeApprove(inputToken, address(swapRouter), amountIn);
-        // Naively set amountOutMinimum to 0. In production, use an oracle or other data source to choose a safer value for amountOutMinimum.
-        // We also set the sqrtPriceLimitx96 to be 0 to ensure we swap our exact input amount.
-
-        uint256 _amountOutMinimum = _getAmountOutExpected(amountIn) * 8 / 10;
-
         ISwapRouter.ExactInputSingleParams memory params =
             ISwapRouter.ExactInputSingleParams({
                 tokenIn: inputToken,
@@ -76,10 +83,20 @@ contract BuybackSingle is IBuyback {
                 recipient: msg.sender,
                 deadline: block.timestamp,
                 amountIn: amountIn,
-                amountOutMinimum: _amountOutMinimum,
+                amountOutMinimum: 0,
                 sqrtPriceLimitX96: 0
             });
-        // The call to `exactInputSingle` executes the swap.
+        // Executes the swap.
         amountOut = swapRouter.exactInputSingle(params);
+        emit Swap(inputToken, amountIn, amountOut);
+    }
+
+    /**
+     * @notice withdraw inputToken back to vault in case some inputToken were not spent
+     * @param inputToken the ERC20 token used to swap back USDs
+     * @param amount the exact amount of inputToken to withdraw back to vault
+     */
+    function withdrawToVault(address inputToken, uint256 amount) external onlyOwner {
+        IERC20(inputToken).safeTransfer(vaultAddr, amount);
     }
 }
