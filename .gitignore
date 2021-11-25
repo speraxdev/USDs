@@ -3,7 +3,6 @@ libraries/.DS_Store
 .DS_Store
 /node_modules
 packages/*/node_modules
-.env
 truffle-config.js
 LICENSE
 flat.sh
@@ -15,4 +14,3 @@ __pycache__
 build/
 reports/
 .env
-build/**

@@ -90,3 +90,15 @@ Add Arbitrum testnet configuration to Brownie:
 ```
 brownie networks add Arbitrum arbitrum-rinkeby host=https://rinkeby.arbitrum.io/rpc name='Arbitrum Testnet' chainid=421611 explorer=https://rinkeby-explorer.arbitrum.io/#/
 ```
+
+## External Imports
+The following files are imported in order to create a uniswap v3 pool for testing purposes. This uniswap pool is created in conftest.py. See function called: create_uniswap_v3_pool().
+
+These files are not integral to building and deploying USDs.
+
+- contracts/interface/IERC721Permit.sol
+- contracts/interface/INonfungiblePositionManager.sol
+- contracts/interface/IPeripheryImmutableState.sol
+- contracts/interface/IPeripheryPayments.sol
+- contracts/interface/IPoolInitializer.sol
+- contracts/libraries/PoolAddress.sol

@@ -67,12 +67,10 @@ def sperax(
     # Arbitrum-one (mainnet):
     chainlink_eth_price_feed = '0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612'
     l2_gateway = '0x096760F208390250649E3e8763348E783AEF5562'
-    uniswap_v3_swap_router = interface.ISwapRouter('0xE592427A0AEce92De3Edee1F18E0157C05861564')
 
     # Arbitrum rinkeby:
     #chainlink_eth_price_feed = '0x5f0423B1a6935dc5596e7A24d98532b67A0AeFd8'
     #l2_gateway = '0x9b014455AcC2Fe90c52803849d0002aeEC184a06'
-    #uniswap_v3_swap_router = interface.ISwapRouter('0x9413AD42910c1eA60c737dB5f58d1C504498a3cD')
 
     # admin contract
     proxy_admin = ProxyAdmin.deploy(
@@ -138,29 +136,31 @@ def sperax(
         {'from': owner_l2},
     )
 
-    # not sure if this is valid
-    pool_fee = 1
-
     buyback = BuybackSingle.deploy(
-        uniswap_v3_swap_router, # uniswap v.3 router address
-        usds_proxy.address,
-        weth.address, # input token
+        usds_proxy.address, # token1
         vault_proxy.address,
+        {'from': owner_l2}
+    )
+    pool_fee = 1
+    buyback.updateInputTokenInfo(
+        spa.address, # token2
+        True, # supported
         pool_fee,
         {'from': owner_l2}
     )
 
-    #create_uniswap_v3_pool(
-    #    '0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8', # token1: USDC
-    #    100046432394, # amount1
-    #    spa.address, # token2: SPA
-    #    999999999997892635134, # amount2
-    #    207240, # tick_lower
-    #    253320, # tick_upper
-    #    3000, # pool_fee
-    #    99682203396, # min_amount1
-    #    996339483778796453262, # min_amount2
-    #)
+    create_uniswap_v3_pool(
+        usds_proxy, # token1: USDS
+        100046432394, # amount1
+        spa, # token2: SPA
+        999999999997892635134, # amount2
+        207240, # tick_lower
+        253320, # tick_upper
+        3000, # pool_fee
+        99682203396, # min_amount1
+        996339483778796453262, # min_amount2
+        owner_l2
+    )
 
     oracle_proxy.initialize(
         chainlink_eth_price_feed,
@@ -235,6 +235,15 @@ def configure_collaterals(
         )
 
 # create pool for pair tokens (input parameters) on Arbitrum-one
+# To obtain the interface to INonfungiblePositionManager required
+# copying the following files from @uniswap-v3-periphery@1.3.0:
+#
+# - contracts/interface/IERC721Permit.sol
+# - contracts/interface/INonfungiblePositionManager.sol
+# - contracts/interface/IPeripheryImmutableState.sol
+# - contracts/interface/IPeripheryPayments.sol
+# - contracts/interface/IPoolInitializer.sol
+# - contracts/libraries/PoolAddress.sol
 def create_uniswap_v3_pool(
     token1,
     amount1,
@@ -244,7 +253,8 @@ def create_uniswap_v3_pool(
     tick_upper,
     fee,
     min_amount1,
-    min_amount2
+    min_amount2,
+    owner_l2
 ):
     position_mgr_address = '0xC36442b4a4522E871399CD717aBDD847Ab11FE88'
     position_mgr = brownie.interface.INonfungiblePositionManager(position_mgr_address)
@@ -264,9 +274,11 @@ def create_uniswap_v3_pool(
     )
     # newly created pool address
     pool = txn.return_value
+    print(f"pool: {pool.address}")
     
     # provide initial liquidity
-    txn = position_mgr.mint(
+    deadline = 1637632800 + brownie.chain.time() # deadline: 2 hours
+    params = [
         token1,
         token2,
         fee,
@@ -277,7 +289,10 @@ def create_uniswap_v3_pool(
         min_amount1, # minimum amount of token1 expected
         min_amount2, # minimum amount of token2 expected
         owner_l2,
-        1637632800 + brownie.chain.time(), # deadline: 2 hours
+        deadline
+    ]
+    txn = position_mgr.mint(
+        params,
         {'from': owner_l2}
     )
     print(txn.return_value)

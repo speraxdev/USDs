@@ -57,31 +57,35 @@ def main():
         USDsL2.abi
     )
 
-    uniswap_v3_swap_router = '0xE592427A0AEce92De3Edee1F18E0157C05861564'
-
     # call multihop buyback contract if intermediate token is provided
     if len(token2_address) > 0:
         buyback = BuybackMultihop(
-            uniswap_v3_swap_router, # uniswap v.3 router address
             usds_proxy.address,
-            token1_address,
-            token2_address,
             vault_proxy.address,
-            pool1_fee,
-            pool2_fee,
             {'from': owner},
     #        publish_source=True,
+        )
+        buyback.updateInputTokenInfo(
+            token1_address,
+            True, # supported
+            token2_address, # intermediate token
+            pool1_fee,
+            pool2_fee,
+            {'from': owner}
         )
         print(f"Multihop Buyback contract address: {buyback.address}")
     else:
         # deploy smart contracts
         buyback = BuybackSingle.deploy(
-            uniswap_v3_swap_router,
             usds_proxy.address,
-            token1_address,
             vault_proxy.address,
-            pool1_fee,
             {'from': owner},
     #        publish_source=True,
+        )
+        buyback.updateInputTokenInfo(
+            token1_address,
+            True, # supported
+            pool1_fee,
+            {'from': owner}
         )
         print(f"Single Buyback contract address: {buyback.address}")
