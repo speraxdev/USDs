@@ -97,6 +97,7 @@ contract SperaxTokenL2 is ERC20Pausable, MintPausable, Ownable, IArbToken {
      * @dev Emitted when an account is set unmintable
      */
     event Unmintable(address account);
+    event ArbitrumGatewayL1TokenChanged(address gateway, address l1token);
 
 
     modifier onlyMintableGroup() {
@@ -294,7 +295,7 @@ contract SperaxTokenL2 is ERC20Pausable, MintPausable, Ownable, IArbToken {
             require(block.timestamp >= timelock.releaseTime, "SperaxToken: current time is before from account release time");
 
             // Update the locked `amount` if the current time reaches the release time
-            timelock.amount = balanceOf(from).sub(amount);
+            timelock.amount = 0;
             if(timelock.amount == 0) {
                 timelock.releaseTime = 0;
             }
@@ -306,14 +307,17 @@ contract SperaxTokenL2 is ERC20Pausable, MintPausable, Ownable, IArbToken {
     // Arbitrum Bridge
 
     /**
-     * @dev change the arbitrum bridge address
+     * @notice change the arbitrum bridge address and corresponding L1 token address
+     * @dev normally this function should not be called
      * @param newL2Gateway the new bridge address
      * @param newL1Address the new router address
      */
     function changeArbToken(address newL2Gateway, address newL1Address) external onlyOwner {
         l2Gateway = newL2Gateway;
         l1Address = newL1Address;
+        emit ArbitrumGatewayL1TokenChanged(l2Gateway, l1Address);
     }
+
     modifier onlyGateway() {
         require(msg.sender == l2Gateway, "ONLY_l2GATEWAY");
         _;

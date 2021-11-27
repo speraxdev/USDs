@@ -26,12 +26,18 @@ contract USDsL1 is Initializable, ERC20Upgradeable, OwnableUpgradeable, ICustomT
     address public router;
     bool private shouldRegisterGateway;
 
+    event ArbitrumGatewayRouterChanged(address newBridge, address newRouter);
+
     function initialize(
         string calldata _nameArg,
-        string calldata _symbolArg
+        string calldata _symbolArg,
+        address _bridge,
+        address _router
     ) external initializer {
         ERC20Upgradeable.__ERC20_init(_nameArg, _symbolArg);
         OwnableUpgradeable.__Ownable_init();
+        _bridge = bridge;
+        _router = router;
     }
 
     function balanceOf(address account)
@@ -58,13 +64,15 @@ contract USDsL1 is Initializable, ERC20Upgradeable, OwnableUpgradeable, ICustomT
     }
 
     /**
-     * @dev change the arbitrum bridge address
+     * @notice change the arbitrum bridge and router address
+     * @dev normally this function should not be called
      * @param newBridge the new bridge address
      * @param newRouter the new router address
      */
     function changeArbToken(address newBridge, address newRouter) external onlyOwner {
         bridge = newBridge;
         router = newRouter;
+        emit ArbitrumGatewayRouterChanged(newBridge, newRouter);
     }
 
     function registerTokenOnL2(
@@ -76,7 +84,7 @@ contract USDsL1 is Initializable, ERC20Upgradeable, OwnableUpgradeable, ICustomT
         uint256 valueForGateway,
         uint256 valueForRouter,
         address creditBackAddress
-    ) external payable override {
+    ) external payable onlyOwner override {
         // we temporarily set `shouldRegisterGateway` to true for the callback in registerTokenToL2 to succeed
         bool prev = shouldRegisterGateway;
         shouldRegisterGateway = true;

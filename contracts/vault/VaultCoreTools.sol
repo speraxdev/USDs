@@ -50,6 +50,9 @@ contract VaultCoreTools is Initializable {
 			(, afterB) = _vaultContract.chiInit().trySub(chiAdjustmentB);
 		}
 		(, chiTarget_) = afterB.trySub(chiAdjustmentA);
+		if (chiTarget_ > _vaultContract.chi_prec()) {
+			chiTarget_ = _vaultContract.chi_prec();
+		}
 	}
 
 	function multiplier(uint original, uint price, uint precision) public pure returns (uint) {
@@ -141,12 +144,8 @@ contract VaultCoreTools is Initializable {
 
 		// Unlock collaeral
 		collaUnlockAmt = multiplier(USDsAmt, chiRedeem(_VaultCoreContract), uint(_vaultContract.chi_prec()));
-		if (_collaAddr == address(0)) {
-			collaUnlockAmt = multiplier(collaUnlockAmt, IOracle(_oracleAddr).getCollateralPrice_prec(_collaAddr), IOracle(_oracleAddr).getCollateralPrice(_collaAddr));
-			collaUnlockAmt = collaUnlockAmt.div(10**(uint(18).sub(uint(ERC20Upgradeable(_collaAddr).decimals()))));
-		} else {
-			collaUnlockAmt = multiplier(collaUnlockAmt, IOracle(_oracleAddr).getETHprice_prec(), IOracle(_oracleAddr).getETHprice());
-		}
+		collaUnlockAmt = multiplier(collaUnlockAmt, IOracle(_oracleAddr).getCollateralPrice_prec(_collaAddr), IOracle(_oracleAddr).getCollateralPrice(_collaAddr));
+		collaUnlockAmt = collaUnlockAmt.div(10**(uint(18).sub(uint(ERC20Upgradeable(_collaAddr).decimals()))));
 
 		if (swapFee > 0) {
 			collaUnlockAmt = collaUnlockAmt.sub(multiplier(collaUnlockAmt, swapFee, uint(_vaultContract.swapFee_prec())));
@@ -194,7 +193,6 @@ contract VaultCoreTools is Initializable {
 	 *		valueType = 0: mintWithUSDs
 	 *		valueType = 1: mintWithSPA
 	 *		valueType = 2: mintWithColla
-	 *		valueType = 3: mintWithETH
 	 * @param collaAddr the address of user's chosen collateral
 	 * @param valueAmt the amount of user input whose specific meaning depends on valueType
 	 * @param valueType the type of user input whose interpretation is listed above in @dev
@@ -237,12 +235,11 @@ contract VaultCoreTools is Initializable {
 			// calculate swapFeeAmount
 			swapFeeAmount = USDsAmt.mul(swapFee).div(uint(_vaultContract.swapFee_prec()));
 
-		} else if (valueType == 2 || valueType == 3) { // when mintWithColla or mintWithETH
+		} else if (valueType == 2) { // when mintWithColla
 			// calculate collaDeptAmt
 			collaDeptAmt = valueAmt;
 			// calculate USDsAmt
 			USDsAmt = USDsAmountCalculator(valueType, valueAmt, _VaultCoreContract, collaAddr, swapFee);
-
 			// calculate SPABurnAmt
 			SPABurnAmt = SPAAmountCalculator(valueType, USDsAmt, _VaultCoreContract, swapFee);
 			// calculate swapFeeAmount
@@ -271,19 +268,13 @@ contract VaultCoreTools is Initializable {
 	function SPAAmountCalculator(
 		uint valueType, uint USDsAmt, address _VaultCoreContract, uint swapFee
 	) public view returns (uint256 SPABurnAmt) {
+		require(valueType == 0 || valueType == 2, 'invalid valueType');
 		IVaultCore _vaultContract = IVaultCore(_VaultCoreContract);
 		uint priceSPA = IOracle(_vaultContract.oracleAddr()).getSPAprice();
 		uint precisionSPA = IOracle(_vaultContract.oracleAddr()).getSPAprice_prec();
-		if (valueType == 2 || valueType == 3) {
-			SPABurnAmt = USDsAmt.mul(uint(_vaultContract.chi_prec()) - chiMint(_VaultCoreContract)).mul(precisionSPA).div(priceSPA.mul(uint(_vaultContract.chi_prec())));
-			if (swapFee > 0) {
-				SPABurnAmt = SPABurnAmt.add(SPABurnAmt.mul(swapFee).div(uint(_vaultContract.swapFee_prec())));
-			}
-		} else if (valueType == 0) {
-			SPABurnAmt = USDsAmt.mul(uint(_vaultContract.chi_prec()) - chiMint(_VaultCoreContract)).mul(precisionSPA).div(priceSPA.mul(uint(_vaultContract.chi_prec())));
-			if (swapFee > 0) {
-				SPABurnAmt = SPABurnAmt.add(SPABurnAmt.mul(swapFee).div(uint(_vaultContract.swapFee_prec())));
-			}
+		SPABurnAmt = USDsAmt.mul(uint(_vaultContract.chi_prec()) - chiMint(_VaultCoreContract)).mul(precisionSPA).div(priceSPA.mul(uint(_vaultContract.chi_prec())));
+		if (swapFee > 0) {
+			SPABurnAmt = SPABurnAmt.add(SPABurnAmt.mul(swapFee).div(uint(_vaultContract.swapFee_prec())));
 		}
 	}
 
@@ -293,16 +284,12 @@ contract VaultCoreTools is Initializable {
 		IVaultCore _vaultContract = IVaultCore(_VaultCoreContract);
 		uint priceSPA = IOracle(_vaultContract.oracleAddr()).getSPAprice();
 		uint precisionSPA = IOracle(_vaultContract.oracleAddr()).getSPAprice_prec();
-		if (valueType == 2 || valueType == 3) {
+		if (valueType == 2) {
 			USDsAmt = valueAmt;
 			if (swapFee > 0) {
 				USDsAmt = USDsAmt.mul(uint(_vaultContract.swapFee_prec())).div(uint(_vaultContract.swapFee_prec()).add(swapFee));
 			}
-			if (valueType == 3) {
-				USDsAmt = USDsAmt.mul(uint(_vaultContract.chi_prec()).mul(IOracle(_vaultContract.oracleAddr()).getETHprice())).div(IOracle(_vaultContract.oracleAddr()).getETHprice_prec()).div(chiMint(_VaultCoreContract));
-			} else {
-				USDsAmt = USDsAmt.mul(10**(uint(18).sub(uint(ERC20Upgradeable(collaAddr).decimals())))).mul(uint(_vaultContract.chi_prec()).mul(IOracle(_vaultContract.oracleAddr()).getCollateralPrice(collaAddr))).div(IOracle(_vaultContract.oracleAddr()).getCollateralPrice_prec(collaAddr)).div(chiMint(_VaultCoreContract));
-			}
+			USDsAmt = USDsAmt.mul(10**(uint(18).sub(uint(ERC20Upgradeable(collaAddr).decimals())))).mul(uint(_vaultContract.chi_prec()).mul(IOracle(_vaultContract.oracleAddr()).getCollateralPrice(collaAddr))).div(IOracle(_vaultContract.oracleAddr()).getCollateralPrice_prec(collaAddr)).div(chiMint(_VaultCoreContract));
 		} else if (valueType == 1) {
 			USDsAmt = valueAmt;
 			if (swapFee > 0) {

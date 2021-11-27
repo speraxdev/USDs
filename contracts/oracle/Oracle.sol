@@ -43,7 +43,7 @@ contract Oracle is Initializable, IOracle, OwnableUpgradeable {
 
     event USDsInOutRatioUpdated(
         uint USDsInOutRatio,
-        uint USDsOnflow_average,
+        uint USDsOutflow_average,
         uint USDsInflow_average,
         uint32 timeStamp,
         uint index
@@ -59,9 +59,17 @@ contract Oracle is Initializable, IOracle, OwnableUpgradeable {
         AggregatorV3Interface _priceFeed,
         uint _price_prec
     );
+    event USDsAddressUpdated(address oldAddr, address newAddr);
+    event VaultAddressUpdated(address oldAddr, address newAddr);
+    event poolAddressesUpdated(
+        address SPAoracleBaseTokenAddr,
+        address USDsOracleBaseTokenAddr,
+        address USDsOraclePool,
+        address SPAoraclePool
+    );
 
     uint[FREQUENCY+1] public USDsInflow;
-    uint[FREQUENCY+1] public USDsOnflow;
+    uint[FREQUENCY+1] public USDsOutflow;
     mapping (address => collateralStruct) collateralsInfo;
     struct collateralStruct {
         address collateralAddr;
@@ -84,12 +92,13 @@ contract Oracle is Initializable, IOracle, OwnableUpgradeable {
         movingAvgLongPeriod = 3600;
     }
 
-    //for testing purpose
     function updateUSDsAddress(address _USDsAddr) external onlyOwner {
+        emit USDsAddressUpdated(USDsAddr, _USDsAddr);
         USDsAddr = _USDsAddr;
     }
 
     function updateVaultAddress(address _VaultAddr) external onlyOwner {
+        emit VaultAddressUpdated(VaultAddr, _VaultAddr);
         VaultAddr = _VaultAddr;
     }
 
@@ -98,6 +107,7 @@ contract Oracle is Initializable, IOracle, OwnableUpgradeable {
         USDsOracleBaseTokenAddr = _USDsOracleBaseTokenAddr;
         USDsOraclePool = _USDsOraclePool;
         SPAoraclePool = _SPAoraclePool;
+        emit poolAddressesUpdated(SPAoracleBaseTokenAddr, USDsOracleBaseTokenAddr, USDsOraclePool, SPAoraclePool);
     }
 
     /**
@@ -135,18 +145,18 @@ contract Oracle is Initializable, IOracle, OwnableUpgradeable {
         require(timeElapsed >= updatePeriod, "updateInOutRatio: the time elapsed is too short.");
         uint32 indexNew = updateNextIndex;
         uint32 indexOld = (indexNew + 1) % (FREQUENCY + 1);
-        USDsInflow[indexNew] = IUSDs(USDsAddr).totalMinted();
-        USDsOnflow[indexNew] = IUSDs(USDsAddr).totalBurnt();
+        USDsInflow[indexNew] = IUSDs(USDsAddr).mintedViaUsers();
+        USDsOutflow[indexNew] = IUSDs(USDsAddr).burntViaUsers();
         uint USDsInflow_average = USDsInflow[indexNew].sub(USDsInflow[indexOld]);
-        uint USDsOnflow_average = USDsOnflow[indexNew].sub(USDsOnflow[indexOld]);
+        uint USDsOutflow_average = USDsOutflow[indexNew].sub(USDsOutflow[indexOld]);
         if (USDsInOutRatio == 0) {
             USDsInOutRatio = USDsInOutRatio_prec;
         } else {
-            USDsInOutRatio = USDsOnflow_average.mul(USDsInOutRatio_prec).div(USDsInflow_average);
+            USDsInOutRatio = USDsOutflow_average.mul(USDsInOutRatio_prec).div(USDsInflow_average);
         }
         lastUpdateTime = currTime;
         updateNextIndex = indexOld;
-        emit USDsInOutRatioUpdated(USDsInOutRatio, USDsOnflow_average, USDsInflow_average, lastUpdateTime, indexNew);
+        emit USDsInOutRatioUpdated(USDsInOutRatio, USDsOutflow_average, USDsInflow_average, lastUpdateTime, indexNew);
     }
 
     function getCollateralPrice(address collateralAddr) external view override returns (uint) {

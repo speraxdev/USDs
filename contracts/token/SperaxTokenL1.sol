@@ -16,14 +16,18 @@ contract SperaxTokenL1 is ERC20, Ownable, ICustomToken {
     address public bridge;
     address public router;
     bool private shouldRegisterGateway;
+    event ArbitrumGatewayRouterChanged(address newBridge, address newRouter);
+    event SPAaddressUpdated(address oldSPA, address newSPA);
 
     modifier onlyGateway() {
         require(_msgSender() == bridge, "ONLY_GATEWAY");
         _;
     }
 
-    constructor(string memory name_, string memory symbol_, address _spaAddress) ERC20(name_, symbol_) public {
+    constructor(string memory name_, string memory symbol_, address _spaAddress, address _bridge, address _router) ERC20(name_, symbol_) public {
         spaAddress = _spaAddress;
+        bridge = _bridge;
+        router = _router;
     }
 
     function transferFrom(address sender, address recipient, uint256 amount) public override(ERC20, ICustomToken) returns (bool) {
@@ -65,16 +69,19 @@ contract SperaxTokenL1 is ERC20, Ownable, ICustomToken {
     }
 
     /**
-     * @dev change the arbitrum bridge address
+     * @notice change the arbitrum bridge and router address
+     * @dev normally this function should not be called
      * @param newBridge the new bridge address
      * @param newRouter the new router address
      */
     function changeArbToken(address newBridge, address newRouter) external onlyOwner {
         bridge = newBridge;
         router = newRouter;
+        emit ArbitrumGatewayRouterChanged(bridge, router);
     }
 
     function changeSpaAddress(address newSPA) external onlyOwner {
+        emit SPAaddressUpdated(spaAddress, newSPA);
         spaAddress = newSPA;
     }
 
@@ -87,7 +94,7 @@ contract SperaxTokenL1 is ERC20, Ownable, ICustomToken {
         uint256 valueForGateway,
         uint256 valueForRouter,
         address creditBackAddress
-    ) external payable override {
+    ) external payable onlyOwner override {
         // we temporarily set `shouldRegisterGateway` to true for the callback in registerTokenToL2 to succeed
         bool prev = shouldRegisterGateway;
         shouldRegisterGateway = true;

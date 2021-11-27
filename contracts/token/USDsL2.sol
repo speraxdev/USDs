@@ -33,13 +33,16 @@ contract USDsL2 is aeERC20, OwnableUpgradeable, IArbToken, IUSDs, ReentrancyGuar
         uint256 rebasingCredits,
         uint256 rebasingCreditsPerToken
     );
+    event ArbitrumGatewayL1TokenChanged(address gateway, address l1token);
 
     enum RebaseOptions { NotSet, OptOut, OptIn }
 
     uint256 private constant MAX_SUPPLY = ~uint128(0); // (2^128) - 1
     uint256 internal _totalSupply;    // the total supply of USDs
-    uint256 public override totalMinted;    // the total num of USDs minted so far
-    uint256 public override totalBurnt;     // the total num of USDs burnt so far
+    uint256 public totalMinted;    // the total num of USDs minted so far
+    uint256 public totalBurnt;     // the total num of USDs burnt so far
+    uint256 public mintedViaGateway;    // the total num of USDs minted so far
+    uint256 public burntViaGateway;     // the total num of USDs burnt so far
     mapping(address => mapping(address => uint256)) private _allowances;
     address public vaultAddress;    // the address where (i) all collaterals of USDs protocol reside, e.g. USDT, USDC, ETH, etc and (ii) major actions like USDs minting are initiated
     // an user's balance of USDs is based on her balance of "credits."
@@ -520,15 +523,25 @@ contract USDsL2 is aeERC20, OwnableUpgradeable, IArbToken, IUSDs, ReentrancyGuar
         );
     }
 
+    function mintedViaUsers() external view override returns (uint256) {
+        return totalMinted.sub(mintedViaGateway);
+    }
+
+    function burntViaUsers() external view override returns (uint256) {
+        return totalBurnt.sub(burntViaGateway);
+    }
+
     // Arbitrum Bridge
     /**
-     * @dev change the arbitrum bridge address
+     * @notice change the arbitrum bridge address and corresponding L1 token address
+     * @dev normally this function should not be called
      * @param newL2Gateway the new bridge address
      * @param newL1Address the new router address
      */
     function changeArbToken(address newL2Gateway, address newL1Address) external onlyOwner {
         l2Gateway = newL2Gateway;
         l1Address = newL1Address;
+        emit ArbitrumGatewayL1TokenChanged(l2Gateway, l1Address);
     }
 
     modifier onlyGateway() {
@@ -538,9 +551,11 @@ contract USDsL2 is aeERC20, OwnableUpgradeable, IArbToken, IUSDs, ReentrancyGuar
 
     function bridgeMint(address account, uint256 amount) external override onlyGateway {
         _mint(account, amount);
+        mintedViaGateway = mintedViaGateway.add(mintedViaGateway);
     }
 
     function bridgeBurn(address account, uint256 amount) external override onlyGateway {
         _burn(account, amount);
+        burntViaGateway = burntViaGateway.add(burntViaGateway);
     }
 }
