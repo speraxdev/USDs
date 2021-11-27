@@ -2,6 +2,7 @@
 import pytest
 import eth_utils
 import brownie 
+import math
 
 @pytest.fixture(scope="module", autouse=True)
 def admin(accounts):
@@ -23,6 +24,11 @@ def usds1(USDsL1, owner_l1):
     )
     return usds1
 
+@pytest.fixture(scope="module", autouse=True)
+def mock_usdc(MockUSDC, owner_l2):
+    return MockUSDC.deploy(
+        {'from': owner_l2}
+    )
 
 @pytest.fixture(scope="module", autouse=True)
 def owner_l2(accounts):
@@ -149,16 +155,15 @@ def sperax(
         {'from': owner_l2}
     )
 
+    # mint USDs to owner_l2 for the uniswap pool
+    amount = int(10000 * 10 ** 18)
+    mint_usds(amount, spa, vault_proxy, owner_l2)
+
     create_uniswap_v3_pool(
         usds_proxy, # token1: USDS
-        100046432394, # amount1
-        spa, # token2: SPA
-        999999999997892635134, # amount2
-        207240, # tick_lower
-        253320, # tick_upper
-        3000, # pool_fee
-        99682203396, # min_amount1
-        996339483778796453262, # min_amount2
+        amount, # amount1
+        mock_usdc, # token2
+        mock_usdc.balanceOf(owner_l2), # amount2
         owner_l2
     )
 
@@ -234,6 +239,42 @@ def configure_collaterals(
             {'from': owner_l2}
         )
 
+def mint_usds(amount, spa, vault_proxy, owner_l2):
+    # put owner_l2 into the mintableGroup of SPA
+    txn = spa.setMintable(
+        owner_l2,
+        True,
+        {'from': owner_l2}
+    )
+    assert txn.events['Mintable']['account'] == owner_l2
+
+    txn = spa.mintForUSDs(
+        owner_l2,
+        amount,
+        {'from': owner_l2}
+    )
+    print(f"mint SPA: {txn.events}")
+
+    # set mintRedeemAllowed = True so mint function succeeds
+    txn = vault_proxy.updateMintBurnPermission(
+        True,
+        {'from': owner_l2}
+    )
+    assert txn.events['MintRedeemPermssionChanged']['permission'] == True
+
+    deadline = 1637632800 + brownie.chain.time() # deadline: 2 hours
+    # mint USDs by specifying amount of SPA to burn
+    txn = vault_proxy.mintWithSPA(
+        spa.address,
+        amount,
+        0, # USDs slippage
+        1, # collateral slippage
+        deadline,
+        {'from': owner_l2}
+    )
+    assert txn.events['USDsMinted']['wallet'] == owner_l2
+    assert txn.events['USDsMinted']['USDsAmt'] == amount
+
 # create pool for pair tokens (input parameters) on Arbitrum-one
 # To obtain the interface to INonfungiblePositionManager required
 # copying the following files from @uniswap-v3-periphery@1.3.0:
@@ -249,11 +290,6 @@ def create_uniswap_v3_pool(
     amount1,
     token2,
     amount2,
-    tick_lower,
-    tick_upper,
-    fee,
-    min_amount1,
-    min_amount2,
     owner_l2
 ):
     position_mgr_address = '0xC36442b4a4522E871399CD717aBDD847Ab11FE88'
@@ -264,12 +300,12 @@ def create_uniswap_v3_pool(
     token2.approve(position_mgr.address, amount2, {'from': owner_l2})
 
     # create a transaction pool
-    sqrt_price_x96 = 7922807523698269125109939133199873 # 100 token1 == 1 token2
+    fee = 3000
     txn = position_mgr.createAndInitializePoolIfNecessary(
         token1,
         token2,
         fee,
-        sqrt_price_x96,
+        encode_price(amount1, amount2),
         {'from': owner_l2}
     )
     # newly created pool address
@@ -277,17 +313,18 @@ def create_uniswap_v3_pool(
     print(f"pool: {pool.address}")
     
     # provide initial liquidity
+    fee = 300
     deadline = 1637632800 + brownie.chain.time() # deadline: 2 hours
     params = [
         token1,
         token2,
         fee,
-        tick_lower, # tickLower
-        tick_upper, # tickUpper
+        get_lower_tick(), # tickLower
+        get_upper_tick(), # tickUpper
         amount1,
         amount2,
-        min_amount1, # minimum amount of token1 expected
-        min_amount2, # minimum amount of token2 expected
+        0, # minimum amount of token1 expected
+        0, # minimum amount of token2 expected
         owner_l2,
         deadline
     ]
@@ -296,3 +333,12 @@ def create_uniswap_v3_pool(
         {'from': owner_l2}
     )
     print(txn.return_value)
+
+def get_lower_tick():
+    return math.ceil(-887272 / 60) * 60
+
+def get_upper_tick():
+    return math.floor(887272 / 60) * 60
+
+def encode_price(n1, n2):
+    return math.trunc(math.sqrt(int(n1)/int(n2)) * 2**96)
