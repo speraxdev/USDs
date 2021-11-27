@@ -26,6 +26,10 @@ abstract contract InitializableAbstractStrategy is Initializable, OwnableUpgrade
         uint256 _oldThreshold,
         uint256 _newThreshold
     );
+    event InterestLiquidationThresholdUpdated(
+        uint256 _oldThreshold,
+        uint256 _newThreshold
+    );
 
     // Core address for the given platform
     address public platformAddress;
@@ -43,6 +47,7 @@ abstract contract InitializableAbstractStrategy is Initializable, OwnableUpgrade
     // Reward token address
     address public rewardTokenAddress;
     uint256 public rewardLiquidationThreshold;
+    uint256 public interestLiquidationThreshold;
 
     // Reserved for future expansion
     int256[100] private _reserved;
@@ -144,6 +149,17 @@ abstract contract InitializableAbstractStrategy is Initializable, OwnableUpgrade
             _threshold
         );
         rewardLiquidationThreshold = _threshold;
+    }
+
+    function setInterestLiquidationThreshold(uint256 _threshold)
+        external
+        onlyOwner
+    {
+        emit InterestLiquidationThresholdUpdated(
+            interestLiquidationThreshold,
+            _threshold
+        );
+        interestLiquidationThreshold = _threshold;
     }
 
     /**
