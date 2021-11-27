@@ -1,9 +1,8 @@
 contracts/.DS_Store
 libraries/.DS_Store
 .DS_Store
-/node_modules
+node_modules/
 packages/
-.env
 truffle-config.js
 LICENSE
 flat.sh

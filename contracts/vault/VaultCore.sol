@@ -443,7 +443,8 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 			if (liquidationThreshold == 0) {
 				strategy.collectRewardToken();
 				uint rewardAmt = IERC20Upgradeable(rewardTokenAddress).balanceOf(address(this));
-				USDsIncrement_viaReward = IBuyback(strategy.rewardTokenBuybackAddress()).swap(rewardAmt);
+				IERC20Upgradeable(rewardTokenAddress).safeTransfer(strategy.rewardTokenBuybackAddress(), rewardAmt);
+				USDsIncrement_viaReward = IBuyback(strategy.rewardTokenBuybackAddress()).swap(rewardTokenAddress, rewardAmt);
 			} else if (rewardTokenAmount >= liquidationThreshold)
             if (rewardTokenAmount >= liquidationThreshold) {
 
@@ -459,7 +460,8 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 		uint interestEarned = strategy.checkInterestEarned(collateralAddr);
 		if (interestEarned > 0) {
 			strategy.withdraw(address(this), collateral.collateralAddr, interestEarned);
-			USDsIncrement_viaInterest = IBuyback(collateral.buyBackAddr).swap(interestEarned);
+			IERC20Upgradeable(collateralAddr).safeTransfer(collateral.buyBackAddr, interestEarned);
+			USDsIncrement_viaInterest = IBuyback(collateral.buyBackAddr).swap(collateralAddr, interestEarned);
 		}
 	}
 

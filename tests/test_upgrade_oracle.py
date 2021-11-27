@@ -3,11 +3,11 @@ import pytest
 import brownie
 
 #
-# DON'T USE accounts[0-3]. 0-3 ARE RESERVED BY conftest.py
+# DON'T USE accounts[0-4]. 0-4 ARE RESERVED BY conftest.py
 #
 
 def test_upgrade_oracle(sperax, OracleV2, Contract, admin, owner_l2):
-    (proxy_admin, spa, usds_proxy, vault_core_tools, vault_proxy, oracle_proxy) = sperax
+    (proxy_admin, spa, usds_proxy, vault_core_tools, vault_proxy, oracle_proxy, buyback) = sperax
     print("upgrade Oracle contract:\n")
     # test case requires duplicating the contract, Oracle.sol, renamed as OracleV2.sol
     new_oracle = OracleV2.deploy(

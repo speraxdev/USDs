@@ -9,7 +9,6 @@ dependencies:
   - Uniswap/uniswap-v3-core@1.0.0
 pytest:
     # these settings replace the defaults when running pytest
-    gas_limit: 6721975
     default_contract_owner: true
     reverting_tx_gas_limit: 6721975
     revert_traceback: true
@@ -19,7 +18,7 @@ compiler:
         optimize: true
         remappings:
           - "@openzeppelin/contracts-upgradeable=OpenZeppelin/openzeppelin-contracts-upgradeable@3.4.0/contracts"
-#          - "@openzeppelin/contracts=OpenZeppelin/openzeppelin-contracts@3.4.0/contracts"
+          #- "@openzeppelin/contracts=OpenZeppelin/openzeppelin-contracts@3.4.0/contracts"
           - "@openzeppelin/contracts=/Users/maximo/.brownie/packages/OpenZeppelin/openzeppelin-contracts@3.4.0/contracts"
           - "@uniswap/v3-core/contracts=Uniswap/uniswap-v3-core@1.0.0/contracts"
           - "arbos-contracts=packages/arbos-contracts"

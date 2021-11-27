@@ -42,11 +42,14 @@ def main():
         print("\nFile not found: ~/.brownie/accounts/minter.json")
         return
 
+<<<<<<< HEAD
     swap_router = input("Enter Uniswap Router address: ").strip()
     if len(swap_router) == 0:
         print("missing Uniswap Router address")
         return
     swap_router = accounts.at(swap_router, force=True)
+=======
+>>>>>>> usdt_test
     vault_proxy_address = input("Enter VaultCore proxy address: ").strip()
     if len(vault_proxy_address) == 0:
         print("missing VaultCore proxy address")
@@ -98,27 +101,38 @@ def main():
 
     # call multihop buyback contract if intermediate token is provided
     if len(token2_address) > 0:
+<<<<<<< HEAD
         buyback = BuybackMultihop.deploy(
             swap_router,
+=======
+        buyback = BuybackMultihop(
+>>>>>>> usdt_test
             usds_proxy.address,
-            token1_address,
-            token2_address,
             vault_proxy.address,
+            {'from': owner},
+    #        publish_source=True,
+        )
+        buyback.updateInputTokenInfo(
+            token1_address,
+            True, # supported
+            token2_address, # intermediate token
             pool1_fee,
             pool2_fee,
-            {'from': owner, 'gas_limit': 1000000000},
-    #        publish_source=True,
+            {'from': owner}
         )
         print(f"Multihop Buyback contract address: {buyback.address}")
     else:
         # deploy smart contracts
         buyback = BuybackSingle.deploy(
-            swap_router,
             usds_proxy.address,
-            token1_address,
             vault_proxy.address,
-            pool1_fee,
-            {'from': owner, 'gas_limit': 1000000000},
+            {'from': owner},
     #        publish_source=True,
+        )
+        buyback.updateInputTokenInfo(
+            token1_address,
+            True, # supported
+            pool1_fee,
+            {'from': owner}
         )
         print(f"Single Buyback contract address: {buyback.address}")
