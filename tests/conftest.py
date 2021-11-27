@@ -61,15 +61,9 @@ def sperax(
     Oracle,
     VaultCore,
     usds1,
-<<<<<<< HEAD
-    CompoundStrategy,
-    BuybackSingle,
-    BuybackMultihop,
-=======
     BuybackSingle,
     BuybackMultihop,
     weth,
->>>>>>> usdt_test
     Contract,
     admin,
     vault_fee,
@@ -198,34 +192,6 @@ def sperax(
         oracle.address,
         {'from': owner_l2}
     )
-<<<<<<< HEAD
-
-    # deploy strategy and buyback contracts
-    strategy = CompoundStrategy.deploy(
-        {'from': owner_l2}
-    )
-    proxy = TransparentUpgradeableProxy.deploy(
-        strategy.address,
-        proxy_admin.address,
-        eth_utils.to_bytes(hexstr="0x"),
-        {'from': admin}
-    )
-    strategy_proxy = Contract.from_abi(
-        "CompoundStrategy",
-        proxy.address,
-        CompoundStrategy.abi
-    )
-    strategy_proxy.initialize(
-        # platform address
-        vault_proxy.address, # vault address
-        # reward token address
-        # assets
-        # p tokens
-        {'from': owner_l2}
-    )
-
-    return (proxy_admin, spa, usds_proxy, vault_core_tools, vault_proxy, oracle_proxy)
-=======
     
     # configure stablecoin collaterals in vault and oracle
     #configure_collaterals(vault_proxy, oracle_proxy, buyback, owner_l2)
@@ -370,7 +336,6 @@ def create_uniswap_v3_pool(
 
 def get_lower_tick():
     return math.ceil(-887272 / 60) * 60
->>>>>>> usdt_test
 
 def get_upper_tick():
     return math.floor(887272 / 60) * 60
