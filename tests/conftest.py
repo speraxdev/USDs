@@ -313,7 +313,7 @@ def create_uniswap_v3_pool(
     print(f"pool: {pool.address}")
     
     # provide initial liquidity
-    fee = 300
+    fee = 3000
     deadline = 1637632800 + brownie.chain.time() # deadline: 2 hours
     params = [
         token1,
