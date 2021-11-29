@@ -155,6 +155,27 @@ def sperax(
         {'from': owner_l2}
     )
 
+
+    #buyback multihop
+    buyback_multihop = BuybackMultihop.deploy(
+        usds_proxy.address, # token1
+        vault_proxy.address,
+        {'from': owner_l2}
+    )
+
+    pool_fee1 =  3000
+    pool_fee2 = 3000
+    _supported = True
+
+    buyback_multihop.updateInputTokenInfo(
+        spa.address, 
+        _supported, 
+        weth.address, 
+        pool_fee1, 
+        pool_fee2
+    )
+
+
     # mint USDs to owner_l2 for the uniswap pool
     amount = int(10000 * 10 ** 18)
     mint_usds(amount, spa, vault_proxy, owner_l2)
@@ -196,7 +217,7 @@ def sperax(
     # configure stablecoin collaterals in vault and oracle
     #configure_collaterals(vault_proxy, oracle_proxy, buyback, owner_l2)
 
-    return (proxy_admin, spa, usds_proxy, vault_core_tools, vault_proxy, oracle_proxy, buyback)
+    return (proxy_admin, spa, usds_proxy, vault_core_tools, vault_proxy, oracle_proxy, buyback, buyback_multihop)
 
 
 def configure_collaterals(
