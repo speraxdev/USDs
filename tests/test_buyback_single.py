@@ -12,7 +12,7 @@ def test_swap_succesful(sperax, weth, user_account):
     if(allowance <= 0):
         spa.approve(buyback.address, 10000000, {'from': user_account})
 
-    buyback.swap(100000, {'from': vault_proxy.address})
+    #buyback.swap(100000, {'from': vault_proxy.address})
 
     time.sleep(10)
 

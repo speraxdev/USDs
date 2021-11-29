@@ -3,6 +3,7 @@ import pytest
 import eth_utils
 import brownie 
 import math
+import os
 
 @pytest.fixture(scope="module", autouse=True)
 def admin(accounts):
@@ -20,13 +21,21 @@ def usds1(USDsL1, owner_l1):
     usds1.initialize(
         'USDs Layer 1',
         'USDs1',
+        '0xcEe284F754E854890e311e3280b767F80797180d', # L1 bridge
+        '0x72Ce9c846789fdB6fC1f34aC4AD25Dd9ef7031ef', # L1 router
         {'from': owner_l1}
     )
     return usds1
 
 @pytest.fixture(scope="module", autouse=True)
-def mock_usdc(MockUSDC, owner_l2):
-    return MockUSDC.deploy(
+def mock_token1(MockToken, owner_l2):
+    return MockToken.deploy(
+        {'from': owner_l2}
+    )
+
+@pytest.fixture(scope="module", autouse=True)
+def mock_token2(MockToken, owner_l2):
+    return MockToken.deploy(
         {'from': owner_l2}
     )
 
@@ -64,6 +73,8 @@ def sperax(
     BuybackSingle,
     BuybackMultihop,
     weth,
+    mock_token1,
+    mock_token2,
     Contract,
     admin,
     vault_fee,
@@ -134,11 +145,13 @@ def sperax(
         {'from': owner_l2}
     )
 
+    #wrapper_spa1_address = os.environ.get('WRAPPER_SPA1_ADDRESS')
+    wrapper_spa1_address = '0xB4A3B0Faf0Ab53df58001804DdA5Bfc6a3D59008'
     spa = SperaxTokenL2.deploy(
-        'Sperax',
-        'SPA',
+        'Sperax L2',
+        'SPAL2',
         l2_gateway,
-        usds_proxy.address,
+        wrapper_spa1_address, # wrapper SPA L1
         {'from': owner_l2},
     )
 
@@ -153,18 +166,6 @@ def sperax(
         True, # supported
         pool_fee,
         {'from': owner_l2}
-    )
-
-    # mint USDs to owner_l2 for the uniswap pool
-    amount = int(10000 * 10 ** 18)
-    mint_usds(amount, spa, vault_proxy, owner_l2)
-
-    create_uniswap_v3_pool(
-        usds_proxy, # token1: USDS
-        amount, # amount1
-        mock_usdc, # token2
-        mock_usdc.balanceOf(owner_l2), # amount2
-        owner_l2
     )
 
     oracle_proxy.initialize(
@@ -194,7 +195,20 @@ def sperax(
     )
     
     # configure stablecoin collaterals in vault and oracle
-    #configure_collaterals(vault_proxy, oracle_proxy, buyback, owner_l2)
+    configure_collaterals(
+        vault_proxy,
+        oracle_proxy,
+        buyback,
+        owner_l2
+    )
+
+    create_uniswap_v3_pool(
+        mock_token1, # token1
+        mock_token1.balanceOf(owner_l2), # amount1
+        mock_token2, # token2
+        mock_token2.balanceOf(owner_l2), # amount2
+        owner_l2
+    )
 
     return (proxy_admin, spa, usds_proxy, vault_core_tools, vault_proxy, oracle_proxy, buyback)
 
@@ -205,7 +219,7 @@ def configure_collaterals(
     buyback,
     owner_l2
 ):
-    # Arbitrum mainnet collaterals:
+    # Arbitrum mainnet collaterals: token address, chainlink
     collaterals = {
         # USDC
         '0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8': '0x50834F3163758fcC1Df9973b6e91f0F0F0434aD3',
@@ -238,42 +252,6 @@ def configure_collaterals(
             precision, # chainlink price feed precision
             {'from': owner_l2}
         )
-
-def mint_usds(amount, spa, vault_proxy, owner_l2):
-    # put owner_l2 into the mintableGroup of SPA
-    txn = spa.setMintable(
-        owner_l2,
-        True,
-        {'from': owner_l2}
-    )
-    assert txn.events['Mintable']['account'] == owner_l2
-
-    txn = spa.mintForUSDs(
-        owner_l2,
-        amount,
-        {'from': owner_l2}
-    )
-    print(f"mint SPA: {txn.events}")
-
-    # set mintRedeemAllowed = True so mint function succeeds
-    txn = vault_proxy.updateMintBurnPermission(
-        True,
-        {'from': owner_l2}
-    )
-    assert txn.events['MintRedeemPermssionChanged']['permission'] == True
-
-    deadline = 1637632800 + brownie.chain.time() # deadline: 2 hours
-    # mint USDs by specifying amount of SPA to burn
-    txn = vault_proxy.mintWithSPA(
-        spa.address,
-        amount,
-        0, # USDs slippage
-        1, # collateral slippage
-        deadline,
-        {'from': owner_l2}
-    )
-    assert txn.events['USDsMinted']['wallet'] == owner_l2
-    assert txn.events['USDsMinted']['USDsAmt'] == amount
 
 # create pool for pair tokens (input parameters) on Arbitrum-one
 # To obtain the interface to INonfungiblePositionManager required
@@ -310,10 +288,9 @@ def create_uniswap_v3_pool(
     )
     # newly created pool address
     pool = txn.return_value
-    print(f"pool: {pool.address}")
+    print(f"uniswap v3 pool address (token1-token2 pair): {pool}")
     
     # provide initial liquidity
-    fee = 3000
     deadline = 1637632800 + brownie.chain.time() # deadline: 2 hours
     params = [
         token1,
