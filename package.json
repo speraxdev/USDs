@@ -13,7 +13,7 @@
   },
   "dependencies": {
     "@boringcrypto/boring-solidity": "github:boringcrypto/BoringSolidity",
-    "@chainlink/contracts": "^0.2.1",
+    "@chainlink/contracts": "^0.2.2",
     "@openzeppelin/contracts": "^3.4.0",
     "@openzeppelin/contracts-upgradeable": "^3.4.0",
     "@openzeppelin/hardhat-upgrades": "^1.10.0",
