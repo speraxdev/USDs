@@ -1,25 +1,139 @@
 import pytest
 import json
 from brownie import  Wei, Contract, reverts
+from brownie.test import given, strategy
 import time
 
-def test_swap_succesful(sperax, weth, user_account):
+@pytest.fixture(scope="module", autouse=True)
+def buyback_single_no_pool(sperax, BuybackSingle, owner_l2):
     (proxy_admin, spa, usds_proxy, vault_core_tools, vault_proxy, oracle_proxy, buyback) = sperax
+    return BuybackSingle.deploy(
+        spa.address, # token1
+        vault_proxy.address,
+        {'from': owner_l2}
+    )
 
-    balance1 = weth.balanceOf(user_account.address)
 
-    allowance = spa.allowance(user_account.address, buyback.address)
-    if(allowance <= 0):
-        spa.approve(buyback.address, 10000000, {'from': user_account})
+def test_swap_succesful(sperax, mock_token2, mock_token1, owner_l2):
+    (proxy_admin, spa, usds_proxy, vault_core_tools, vault_proxy, oracle_proxy, buyback) = sperax
+    amount = 10000
+    balance1 = mock_token1.balanceOf(vault_proxy.address)
 
-    #buyback.swap(100000, {'from': vault_proxy.address})
+    print("valut mock1 balance", mock_token2.balanceOf(vault_proxy.address))
+
+    mock_token2.transfer(
+        buyback.address, 
+        amount, {'from': vault_proxy}
+        )
+
+    buyback.swap(
+        mock_token2.address, 
+        amount, 
+        {'from': vault_proxy}
+        )
 
     time.sleep(10)
 
-    balance2 = weth.balanceOf(user_account.address)
-
+    balance2 = mock_token1.balanceOf(vault_proxy.address)
     transferedBalance  = balance2 - balance1
-    assert transferedBalance > 0
+    assert transferedBalance  > 0
 
-def test_swap_unsuccesful(sperax, weth, user_account):
+
+def test_swap_unsuccesful_call_not_vault(sperax, mock_token2, mock_token1, owner_l2):
     (proxy_admin, spa, usds_proxy, vault_core_tools, vault_proxy, oracle_proxy, buyback) = sperax
+    amount = 10000
+    balance1 = mock_token1.balanceOf(owner_l2.address)
+    
+    mock_token2.transfer(
+        buyback.address, 
+        amount, 
+        {'from': vault_proxy}
+        )
+
+    with reverts("caller is not the vault"):
+        buyback.swap(
+            mock_token2.address, 
+            amount, 
+            {'from': owner_l2}
+            )
+
+
+def test_swap_unsuccesful_call_token_not_supported(sperax, mock_token2, mock_token1, owner_l2):
+    (proxy_admin, spa, usds_proxy, vault_core_tools, vault_proxy, oracle_proxy, buyback) = sperax
+    amount = 10000
+    balance1 = mock_token1.balanceOf(owner_l2.address)
+    
+    mock_token2.transfer(
+        buyback.address, 
+        amount, 
+        {'from': vault_proxy}
+        )
+
+    with reverts("inputToken not supported"):
+        buyback.swap(
+            spa.address, 
+            amount, 
+            {'from': vault_proxy}
+            )
+
+
+def test_unsuccesful_swap_with_invalid_pool_fee(sperax,  mock_token2, mock_token1, owner_l2):
+    (proxy_admin, spa, usds_proxy, vault_core_tools, vault_proxy, oracle_proxy, buyback) = sperax
+    failed = False
+    amount = 10000
+    pool_fee = 50000
+
+    buyback.updateInputTokenInfo(
+        mock_token2.address, 
+        False, pool_fee, 
+        {'from': owner_l2}
+        )
+
+    mock_token2.transfer(
+        buyback.address, amount, 
+        {'from': vault_proxy}
+        )
+    try:
+        buyback.swap(
+            mock_token2.address, 
+            amount, 
+            {"from": vault_proxy}
+            )
+        failed = True
+    except Exception:
+       failed = False
+    assert failed == False
+
+
+def test_unsuccesful_test_swap_with_no_pool(buyback_single_no_pool,  sperax, mock_token2, owner_l2):
+    (proxy_admin, spa, usds_proxy, vault_core_tools, vault_proxy, oracle_proxy, buyback) = sperax
+    failed = False
+    amount = 10000
+    pool_fee = 3000
+    buyback_single_no_pool.updateInputTokenInfo(
+        mock_token2.address, 
+        True, # supported
+        pool_fee,
+        {'from': owner_l2}
+    )
+
+    mock_token2.transfer(buyback.address, amount, {'from': vault_proxy})
+    try:
+        buyback_single_no_pool.swap(
+            mock_token2.address, 
+            amount, 
+            {"from": vault_proxy}
+            )
+        failed = True
+    except Exception:
+       failed = False
+    assert failed == False
+
+
+
+
+
+
+
+    
+

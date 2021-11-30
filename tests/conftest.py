@@ -156,13 +156,13 @@ def sperax(
     )
 
     buyback = BuybackSingle.deploy(
-        usds_proxy.address, # token1
+        mock_token1.address, # token1
         vault_proxy.address,
         {'from': owner_l2}
     )
-    pool_fee = 1
+    pool_fee = 3000
     buyback.updateInputTokenInfo(
-        spa.address, # token2
+        mock_token2.address, # token2
         True, # supported
         pool_fee,
         {'from': owner_l2}
@@ -200,6 +200,12 @@ def sperax(
         oracle_proxy,
         buyback,
         owner_l2
+    )
+
+    tranfer_mock_token_to_vault(
+        owner_l2,
+        vault_proxy,
+        mock_token2
     )
 
     create_uniswap_v3_pool(
@@ -307,10 +313,16 @@ def create_uniswap_v3_pool(
     ]
     txn = position_mgr.mint(
         params,
-        {'from': owner_l2}
+        {'from': owner_l2, 'allow_revert' : True}
     )
     print(txn.return_value)
 
+def tranfer_mock_token_to_vault(owner_l2, vault_proxy, token1):
+    amount = 1000000000
+    token1.approve(vault_proxy.address, amount, {'from': owner_l2})
+    token1.transfer(vault_proxy.address, amount, {'from': owner_l2})
+    print("vault_proxy balance", token1.balanceOf(vault_proxy.address))
+    
 def get_lower_tick():
     return math.ceil(-887272 / 60) * 60
 
