@@ -7,6 +7,7 @@ dependencies:
   - OpenZeppelin/openzeppelin-contracts-upgradeable@3.4.0
   - OpenZeppelin/openzeppelin-contracts@3.4.0
   - Uniswap/uniswap-v3-core@1.0.0
+  - smartcontractkit/chainlink-brownie-contracts@0.2.2
 pytest:
     # these settings replace the defaults when running pytest
     default_contract_owner: true
@@ -19,8 +20,10 @@ compiler:
         remappings:
           - "@openzeppelin/contracts-upgradeable=OpenZeppelin/openzeppelin-contracts-upgradeable@3.4.0/contracts"
           #- "@openzeppelin/contracts=OpenZeppelin/openzeppelin-contracts@3.4.0/contracts"
-          - "@openzeppelin/contracts=/Users/maximo/.brownie/packages/OpenZeppelin/openzeppelin-contracts@3.4.0/contracts"
+          - "@openzeppelin/contracts=OpenZeppelin/openzeppelin-contracts@3.4.0/contracts"
+#          - "@openzeppelin/contracts=/Users/maximo/.brownie/packages/OpenZeppelin/openzeppelin-contracts@3.4.0/contracts"
           - "@uniswap/v3-core/contracts=Uniswap/uniswap-v3-core@1.0.0/contracts"
+          - "@chainlink=smartcontractkit/chainlink-brownie-contracts@0.2.2"
           - "arbos-contracts=packages/arbos-contracts"
           - "arb-bridge-peripherals/contracts=packages/arb-bridge-peripherals/contracts"
           - "arb-bridge-eth/contracts=packages/arb-bridge-eth/contracts"

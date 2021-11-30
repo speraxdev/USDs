@@ -4,9 +4,10 @@ pragma solidity >=0.6.12;
 import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
+import "@chainlink/contracts/src/v0.6/interfaces/AggregatorV3Interface.sol";
+import "@chainlink/contracts/src/v0.6/interfaces/FlagsInterface.sol";
 
 import "../vault/VaultCore.sol";
-import "../interfaces/AggregatorV3Interface.sol";
 import "../interfaces/IOracle.sol";
 import "../interfaces/IUSDs.sol";
 import "../libraries/OracleLibrary.sol";
@@ -40,6 +41,9 @@ contract Oracle is Initializable, IOracle, OwnableUpgradeable {
     address public SPAoraclePool;
     address public SPAoracleBaseTokenAddr;
     address public USDsOracleBaseTokenAddr;
+    address constant private FLAG_ARBITRUM_SEQ_OFFLINE = address(bytes20(bytes32(uint256(keccak256("chainlink.flags.arbitrum-seq-offline")) - 1)));
+    FlagsInterface internal chainlinkFlags;
+
 
     event USDsInOutRatioUpdated(
         uint USDsInOutRatio,
@@ -81,7 +85,7 @@ contract Oracle is Initializable, IOracle, OwnableUpgradeable {
     //
     // Initializer
     //
-    function initialize(address _priceFeedETH, address _SPAaddr, address _WETH) public initializer {
+    function initialize(address _priceFeedETH, address _SPAaddr, address _WETH, address _chainlinkFlags) public initializer {
         OwnableUpgradeable.__Ownable_init();
         updatePeriod = 12 hours;
         lastUpdateTime = uint32(now % 2**32);
@@ -90,6 +94,7 @@ contract Oracle is Initializable, IOracle, OwnableUpgradeable {
         WETH = _WETH;
         movingAvgShortPeriod = 600;
         movingAvgLongPeriod = 3600;
+        chainlinkFlags = FlagsInterface(_chainlinkFlags);
     }
 
     function updateUSDsAddress(address _USDsAddr) external onlyOwner {
@@ -220,6 +225,11 @@ contract Oracle is Initializable, IOracle, OwnableUpgradeable {
     }
 
     function _getCollateralPrice(address collateralAddr) internal view returns (uint) {
+        bool isRaised = chainlinkFlags.getFlag(FLAG_ARBITRUM_SEQ_OFFLINE);
+        if (isRaised) {
+                // If flag is raised we shouldn't perform any critical operations
+            revert("Chainlink feeds are not being updated");
+        }
         collateralStruct memory  collateralInfo = collateralsInfo[collateralAddr];
         require(collateralInfo.supported, "_getCollateralPrice: Collateral not supported.");
         (
@@ -233,6 +243,11 @@ contract Oracle is Initializable, IOracle, OwnableUpgradeable {
 
 
 	function _getETHprice() internal view returns (uint) {
+        bool isRaised = chainlinkFlags.getFlag(FLAG_ARBITRUM_SEQ_OFFLINE);
+        if (isRaised) {
+                // If flag is raised we shouldn't perform any critical operations
+            revert("Chainlink feeds are not being updated");
+        }
 		(
             ,
             int price,
