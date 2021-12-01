@@ -40,6 +40,12 @@ def mock_token2(MockToken, owner_l2):
     )
 
 @pytest.fixture(scope="module", autouse=True)
+def mock_token3(MockToken, owner_l2):
+    return MockToken.deploy(
+        {'from': owner_l2}
+    )
+
+@pytest.fixture(scope="module", autouse=True)
 def owner_l2(accounts):
     return accounts[2]
 
@@ -75,6 +81,7 @@ def sperax(
     weth,
     mock_token1,
     mock_token2,
+    mock_token3,
     Contract,
     admin,
     vault_fee,
@@ -169,6 +176,22 @@ def sperax(
         {'from': owner_l2}
     )
 
+    buyback_multihop  =  BuybackMultihop.deploy(
+        mock_token1.address, # token1
+        vault_proxy.address,
+        {'from': owner_l2}
+    )
+    pool_fee1 = 3000
+    pool_fee2 = 3000
+    #(address _inputTokenAddr, bool _supported, address _intermediateToken, uint24 _poolFee1, uint24 _poolFee2)
+    buyback_multihop.updateInputTokenInfo(
+        mock_token2.address,
+        True, #supported
+        mock_token3.address, #_intermediateToken
+        pool_fee1,
+        pool_fee2
+    )
+        
     oracle_proxy.initialize(
         chainlink_eth_price_feed,
         spa.address,
@@ -210,15 +233,32 @@ def sperax(
         mock_token2
     )
 
+    amount = 100000
     create_uniswap_v3_pool(
         mock_token1, # token1
-        mock_token1.balanceOf(owner_l2), # amount1
+        amount, # amount1
         mock_token2, # token2
-        mock_token2.balanceOf(owner_l2), # amount2
+        amount, # amount2
         owner_l2
     )
 
-    return (proxy_admin, spa, usds_proxy, vault_core_tools, vault_proxy, oracle_proxy, buyback)
+    create_uniswap_v3_pool(
+        mock_token1, # token1
+        amount, # amount1
+        mock_token3, # token3
+        amount, # amount2
+        owner_l2
+    )
+
+    create_uniswap_v3_pool(
+        mock_token2, # token1
+        amount, # amount1
+        mock_token3, # token3
+        amount, # amount2
+        owner_l2
+    )
+
+    return (proxy_admin, spa, usds_proxy, vault_core_tools, vault_proxy, oracle_proxy, buyback, buyback_multihop)
 
 
 def configure_collaterals(
