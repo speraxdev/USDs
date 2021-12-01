@@ -105,7 +105,7 @@ def test_unsuccesful_swap_with_invalid_pool_fee(sperax,  mock_token2, mock_token
 
 
 def test_unsuccesful_test_swap_with_no_pool(buyback_single_no_pool,  sperax, mock_token2, owner_l2):
-    (proxy_admin, spa, usds_proxy, vault_core_tools, vault_proxy, oracle_proxy, buyback) = sperax
+    (proxy_admin, spa, usds_proxy, vault_core_tools, vault_proxy, oracle_proxy, buyback, buyback_multihop) = sperax
     failed = False
     amount = 10000
     pool_fee = 3000
