@@ -84,6 +84,7 @@ def sperax(
     # Arbitrum-one (mainnet):
     chainlink_eth_price_feed = '0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612'
     l2_gateway = '0x096760F208390250649E3e8763348E783AEF5562'
+    chainlink_flags = '0x3C14e07Edd0dC67442FA96f1Ec6999c57E810a83'
 
     # Arbitrum rinkeby:
     #chainlink_eth_price_feed = '0x5f0423B1a6935dc5596e7A24d98532b67A0AeFd8'
@@ -172,6 +173,7 @@ def sperax(
         chainlink_eth_price_feed,
         spa.address,
         weth.address,
+        chainlink_flags,
         {'from': owner_l2}
     )
     oracle_proxy.updateUSDsAddress(
