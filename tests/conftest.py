@@ -296,8 +296,8 @@ def create_uniswap_v3_pool(
         token1,
         token2,
         fee,
-        get_lower_tick(), # tickLower
-        get_upper_tick(), # tickUpper
+        lower_tick(), # tickLower
+        upper_tick(), # tickUpper
         amount1,
         amount2,
         0, # minimum amount of token1 expected
@@ -311,10 +311,10 @@ def create_uniswap_v3_pool(
     )
     print(txn.return_value)
 
-def get_lower_tick():
+def lower_tick():
     return math.ceil(-887272 / 60) * 60
 
-def get_upper_tick():
+def upper_tick():
     return math.floor(887272 / 60) * 60
 
 def encode_price(n1, n2):
