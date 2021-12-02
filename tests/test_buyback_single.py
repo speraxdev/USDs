@@ -76,7 +76,7 @@ def test_swap_unsuccesful_call_token_not_supported(sperax, mock_token2, mock_tok
             )
 
 
-def test_unsuccesful_swap_with_invalid_pool_fee(sperax,  mock_token2, mock_token1, owner_l2):
+def test_unsuccesful_swap_with_invalid_pool_fee(sperax,  mock_token2, owner_l2):
     (proxy_admin, spa, usds_proxy, vault_core_tools, vault_proxy, oracle_proxy, buyback, buyback_multihop) = sperax
     failed = False
     amount = 10000
@@ -104,7 +104,7 @@ def test_unsuccesful_swap_with_invalid_pool_fee(sperax,  mock_token2, mock_token
     assert failed == False
 
 
-def test_unsuccesful_test_swap_with_no_pool(buyback_single_no_pool,  sperax, mock_token2, owner_l2):
+def test_unsuccesful_test_swap_with_no_pool(buyback_single_no_pool, sperax, mock_token2, owner_l2):
     (proxy_admin, spa, usds_proxy, vault_core_tools, vault_proxy, oracle_proxy, buyback, buyback_multihop) = sperax
     failed = False
     amount = 10000
@@ -127,12 +127,3 @@ def test_unsuccesful_test_swap_with_no_pool(buyback_single_no_pool,  sperax, moc
     except Exception:
        failed = False
     assert failed == False
-
-
-
-
-
-
-
-    
-

@@ -360,7 +360,7 @@ def create_uniswap_v3_pool(
     print(txn.return_value)
 
 def tranfer_mock_token_to_vault(owner_l2, vault_proxy, token1):
-    amount = 1000000000
+    amount = 1000000000000000000000000000
     token1.approve(vault_proxy.address, amount, {'from': owner_l2})
     token1.transfer(vault_proxy.address, amount, {'from': owner_l2})
     print("vault_proxy balance", token1.balanceOf(vault_proxy.address))

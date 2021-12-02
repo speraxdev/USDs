@@ -11,8 +11,7 @@ def buyback_multihop_no_pool(sperax, BuybackMultihop, owner_l2):
         vault_proxy.address,
         {'from': owner_l2}
     )
-
-
+    
 def test_swap_succesful(sperax, mock_token2, mock_token1):
     (proxy_admin, spa, usds_proxy, vault_core_tools, vault_proxy, oracle_proxy, buyback, buyback_multihop) = sperax
     amount = 10000
