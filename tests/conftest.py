@@ -251,7 +251,7 @@ def sperax(
     )
 
     create_uniswap_v3_pool(
-        mock_token2, # token1
+        mock_token2, # token2
         amount, # amount1
         mock_token3, # token3
         amount, # amount2
@@ -373,3 +373,10 @@ def get_upper_tick():
 
 def encode_price(n1, n2):
     return math.trunc(math.sqrt(int(n1)/int(n2)) * 2**96)
+
+
+@pytest.fixture(autouse=True)
+def isolate(fn_isolation):
+    # perform a chain rewind after completing each test, to ensure proper isolation
+    # https://eth-brownie.readthedocs.io/en/v1.10.3/tests-pytest-intro.html#isolation-fixtures
+    pass

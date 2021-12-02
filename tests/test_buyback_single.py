@@ -13,7 +13,7 @@ def buyback_single_no_pool(sperax, BuybackSingle, owner_l2):
     )
 
 
-def test_swap_succesful(sperax, mock_token2, mock_token1, owner_l2):
+def test_swap(sperax, mock_token2, mock_token1, owner_l2):
     (proxy_admin, spa, usds_proxy, vault_core_tools, vault_proxy, oracle_proxy, buyback, buyback_multihop) = sperax
     amount = 10000
     balance1 = mock_token1.balanceOf(vault_proxy.address)
