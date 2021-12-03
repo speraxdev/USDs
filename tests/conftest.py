@@ -212,6 +212,49 @@ def sperax(
 
     return (proxy_admin, spa, usds_proxy, vault_core_tools, vault_proxy, oracle_proxy, buyback)
 
+@pytest.fixture(scope="module", autouse=True)
+def strategy(
+    ThreePoolStrategy,
+):
+    (proxy_admin, spa, usds_proxy, vault_core_tools, vault_proxy, oracle_proxy, buyback) = sperax
+
+    # Arbitrum-one (mainnet):
+    platform_address = '0xF97c707024ef0DD3E77a0824555a46B622bfB500'
+    reward_token_address = '0x11cdb42b0eb46d95f990bedd4695a6e3fa034978'
+    crv_gauge_address = '0x97E2768e8E73511cA874545DC5Ff8067eB19B787'
+    crv_minter_address = '0xd061D61a4d941c39E5453435B6345Dc261C2fcE0'
+
+    assets = [
+        # USDT
+        '0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9',
+        # WBTC 
+        '0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f',
+        # WETH
+        '0x82aF49447D8a07e3bd95BD0d56f35241523fBab1',
+    ]
+
+    p_tokens = [
+        '0x8e0B8c8BB9db49a46697F3a5Bb8A308e744821D2',
+        '0x8e0B8c8BB9db49a46697F3a5Bb8A308e744821D2',
+        '0x8e0B8c8BB9db49a46697F3a5Bb8A308e744821D2',
+        ]
+
+    # THREE POOL strategy
+    strategy = ThreePoolStrategy.deploy(
+        {'from': owner_l2}
+    )
+
+    strategy.initialize(
+        platform_address,
+        vault_proxy.address,
+        reward_token_address,
+        assets,
+        p_tokens,
+        crv_gauge_address,
+        crv_minter_address,
+        {'from': owner_l2}
+    )
+
 
 def configure_collaterals(
     vault_proxy,
