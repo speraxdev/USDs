@@ -87,6 +87,7 @@ def sperax(
     vault_fee,
     owner_l2,
     interface,
+    ThreePoolStrategy
 ):
     # Arbitrum-one (mainnet):
     chainlink_eth_price_feed = '0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612'
@@ -256,6 +257,41 @@ def sperax(
         mock_token3, # token3
         amount, # amount2
         owner_l2
+    )
+
+
+    #### THREE POOL DEPLOYMNET
+
+
+    CRV = "0xd533a949740bb3306d119cc777fa900ba034cd52"
+    CRVMinter = "0xd061D61a4d941c39E5453435B6345Dc261C2fcE0"
+    ThreePool = "0xbEbc44782C7dB0a1A60Cb6fe97d0b483032FF1C7"
+    ThreePoolGauge = "0xbFcF63294aD7105dEa65aA58F8AE5BE2D9d0952A"
+    DAI = "0x6b175474e89094c44da98b954eedeac495271d0f"
+    USDC = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
+    USDT = "0xdAC17F958D2ee523a2206206994597C13D831ec7"
+
+    _assets = [DAI, USDC, USDT]
+
+    _pTokens = [
+        "0x6c3f90f043a72fa612cbac8115ee7e52bde6e490", 
+        "0x6c3f90f043a72fa612cbac8115ee7e52bde6e490", 
+        "0x6c3f90f043a72fa612cbac8115ee7e52bde6e490"
+        ]
+
+    three_pool = ThreePoolStrategy.deploy({
+        'from': owner_l2
+    })
+
+    three_pool.initialize(
+        ThreePool,
+        vault_proxy.address,
+        CRV,
+        _assets,
+        _pTokens,
+        ThreePoolGauge,
+        CRVMinter,
+        {'from': owner_l2}
     )
 
     return (proxy_admin, spa, usds_proxy, vault_core_tools, vault_proxy, oracle_proxy, buyback, buyback_multihop)
