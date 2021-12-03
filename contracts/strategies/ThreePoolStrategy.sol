@@ -52,7 +52,7 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
         // abstractSetPToken calls will fail
         crvGaugeAddress = _crvGaugeAddress;
         crvMinterAddress = _crvMinterAddress;
-        InitializableAbstractStrategy._initialize(
+        _initialize(
             _platformAddress,
             _vaultAddress,
             _rewardTokenAddress,

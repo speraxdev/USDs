@@ -259,43 +259,44 @@ def sperax(
         owner_l2
     )
 
+    # THREE POOL STRATEGY
+    # Arbitrum-one (mainnet):
+    platform_address = '0xF97c707024ef0DD3E77a0824555a46B622bfB500'
+    reward_token_address = '0x11cdb42b0eb46d95f990bedd4695a6e3fa034978'
+    crv_gauge_address = '0x97E2768e8E73511cA874545DC5Ff8067eB19B787'
+    crv_minter_address = '0xd061D61a4d941c39E5453435B6345Dc261C2fcE0'
 
-    #### THREE POOL DEPLOYMNET
+    assets = [
+        # USDT
+        '0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9',
+        # WBTC 
+        '0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f',
+        # WETH
+        '0x82aF49447D8a07e3bd95BD0d56f35241523fBab1',
+    ]
 
-
-    CRV = "0xd533a949740bb3306d119cc777fa900ba034cd52"
-    CRVMinter = "0xd061D61a4d941c39E5453435B6345Dc261C2fcE0"
-    ThreePool = "0xbEbc44782C7dB0a1A60Cb6fe97d0b483032FF1C7"
-    ThreePoolGauge = "0xbFcF63294aD7105dEa65aA58F8AE5BE2D9d0952A"
-    DAI = "0x6b175474e89094c44da98b954eedeac495271d0f"
-    USDC = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
-    USDT = "0xdAC17F958D2ee523a2206206994597C13D831ec7"
-
-    _assets = [DAI, USDC, USDT]
-
-    _pTokens = [
-        "0x6c3f90f043a72fa612cbac8115ee7e52bde6e490", 
-        "0x6c3f90f043a72fa612cbac8115ee7e52bde6e490", 
-        "0x6c3f90f043a72fa612cbac8115ee7e52bde6e490"
+    p_tokens = [
+        '0x8e0B8c8BB9db49a46697F3a5Bb8A308e744821D2',
+        '0x8e0B8c8BB9db49a46697F3a5Bb8A308e744821D2',
+        '0x8e0B8c8BB9db49a46697F3a5Bb8A308e744821D2',
         ]
 
-    three_pool = ThreePoolStrategy.deploy({
-        'from': owner_l2
-    })
+    strategy = ThreePoolStrategy.deploy(
+        {'from': owner_l2}
+    )
 
-    three_pool.initialize(
-        ThreePool,
+    strategy.initialize(
+        platform_address,
         vault_proxy.address,
-        CRV,
-        _assets,
-        _pTokens,
-        ThreePoolGauge,
-        CRVMinter,
+        reward_token_address,
+        assets,
+        p_tokens,
+        crv_gauge_address,
+        crv_minter_address,
         {'from': owner_l2}
     )
 
     return (proxy_admin, spa, usds_proxy, vault_core_tools, vault_proxy, oracle_proxy, buyback, buyback_multihop)
-
 
 def configure_collaterals(
     vault_proxy,
