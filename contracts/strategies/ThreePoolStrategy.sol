@@ -10,7 +10,6 @@ import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import { ICurvePool } from "./ICurvePool.sol";
 import { ICurveGauge } from "./ICurveGauge.sol";
-import { ICRVMinter } from "./ICRVMinter.sol";
 import { InitializableAbstractStrategy } from "./InitializableAbstractStrategy.sol";
 import { StableMath } from "../libraries/StableMath.sol";
 
@@ -44,8 +43,7 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
         address _rewardTokenAddress, // CRV
         address[] calldata _assets,
         address[] calldata _pTokens,
-        address _crvGaugeAddress,
-        address _crvMinterAddress
+        address _crvGaugeAddress
     ) external initializer {
         require(_assets.length == 3, "Must have exactly three assets");
         // Should be set prior to abstract initialize call otherwise
@@ -65,13 +63,10 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
      * @dev Collect accumulated CRV and send to Vault.
      */
     function collectRewardToken() external override onlyVault nonReentrant {
-        // Collect
-        ICRVMinter(crvMinterAddress).mint(crvGaugeAddress);
-        // Send
-        IERC20 crvToken = IERC20(rewardTokenAddress);
-        uint256 balance = crvToken.balanceOf(address(this));
-        emit RewardTokenCollected(vaultAddress, balance);
-        crvToken.safeTransfer(vaultAddress, balance);
+        uint256 balance_before = crvToken.balanceOf(vaultAddress);
+        ICurveGauge(crvGaugeAddress).claim_rewards(address(this), vaultAddress);
+        uint256 balance_after = crvToken.balanceOf(vaultAddress);
+        emit RewardTokenCollected(vaultAddress, balance_after.sub(balance_before));
     }
 
     /**
