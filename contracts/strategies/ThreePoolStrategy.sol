@@ -35,7 +35,6 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
      *                DAI, USDC, USDT
      * @param _pTokens Platform Token corresponding addresses
      * @param _crvGaugeAddress Address of the Curve DAO gauge for this pool
-     * @param _crvMinterAddress Address of the CRV minter for rewards
      */
     function initialize(
         address _platformAddress, // 3Pool address
@@ -49,7 +48,6 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
         // Should be set prior to abstract initialize call otherwise
         // abstractSetPToken calls will fail
         crvGaugeAddress = _crvGaugeAddress;
-        crvMinterAddress = _crvMinterAddress;
         InitializableAbstractStrategy._initialize(
             _platformAddress,
             _vaultAddress,
@@ -63,6 +61,7 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
      * @dev Collect accumulated CRV and send to Vault.
      */
     function collectRewardToken() external override onlyVault nonReentrant {
+        IERC20 crvToken = IERC20(rewardTokenAddress);
         uint256 balance_before = crvToken.balanceOf(vaultAddress);
         ICurveGauge(crvGaugeAddress).claim_rewards(address(this), vaultAddress);
         uint256 balance_after = crvToken.balanceOf(vaultAddress);
