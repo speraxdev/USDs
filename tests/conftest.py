@@ -1,9 +1,9 @@
 #!/usr/bin/python3
 import pytest
 import eth_utils
-import brownie 
 import math
 import os
+import brownie
 
 @pytest.fixture(scope="module", autouse=True)
 def admin(accounts):
@@ -52,6 +52,13 @@ def user_account(accounts):
     return accounts[4]
 
 @pytest.fixture(scope="module", autouse=True)
+def chainlink_flags():
+    # Arbitrum-rinkeby testnet:
+    #return '0x491B1dDA0A8fa069bbC1125133A975BF4e85a91b'
+    # Arbitrum-one mainnet:
+    return '0x3C14e07Edd0dC67442FA96f1Ec6999c57E810a83'
+
+@pytest.fixture(scope="module", autouse=True)
 def weth():
     # Arbitrum-one mainnet:
     weth_address = '0x82af49447d8a07e3bd95bd0d56f35241523fbab1'
@@ -60,8 +67,30 @@ def weth():
     return brownie.interface.IERC20(weth_address)
 
 @pytest.fixture(scope="module", autouse=True)
-def sperax(
+def usdt():
+    # Arbitrum-one mainnet:
+    usdt_address = '0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9'
+    return brownie.interface.IERC20(usdt_address)
+
+@pytest.fixture(scope="module", autouse=True)
+def wbtc():
+    # Arbitrum-one mainnet:
+    wbtc_address = '0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f'
+    return brownie.interface.IERC20(wbtc_address)
+
+@pytest.fixture(scope="module", autouse=True)
+def proxy_admin(
     ProxyAdmin,
+    admin
+):
+    # admin contract
+    return ProxyAdmin.deploy(
+        {'from': admin}
+    )
+
+@pytest.fixture(scope="module", autouse=True)
+def sperax(
+    proxy_admin,
     TransparentUpgradeableProxy,
     BancorFormula,
     VaultCoreTools,
@@ -70,16 +99,19 @@ def sperax(
     Oracle,
     VaultCore,
     usds1,
+    ThreePoolStrategy,
     BuybackSingle,
     BuybackMultihop,
+    chainlink_flags,
+    usdt,
+    wbtc,
     weth,
     mock_token1,
     mock_token2,
     Contract,
     admin,
     vault_fee,
-    owner_l2,
-    interface,
+    owner_l2
 ):
     # Arbitrum-one (mainnet):
     chainlink_eth_price_feed = '0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612'
@@ -88,11 +120,6 @@ def sperax(
     # Arbitrum rinkeby:
     #chainlink_eth_price_feed = '0x5f0423B1a6935dc5596e7A24d98532b67A0AeFd8'
     #l2_gateway = '0x9b014455AcC2Fe90c52803849d0002aeEC184a06'
-
-    # admin contract
-    proxy_admin = ProxyAdmin.deploy(
-        {'from': admin}
-    )
 
     bancor = BancorFormula.deploy(
         {'from': owner_l2}
@@ -155,6 +182,19 @@ def sperax(
         {'from': owner_l2},
     )
 
+    strategy_proxy = create_strategy(
+        TransparentUpgradeableProxy,
+        ThreePoolStrategy,
+        vault_proxy,
+        proxy_admin,
+        usdt,
+        wbtc,
+        weth,
+        Contract,
+        admin,
+        owner_l2
+    )
+    
     buyback = BuybackSingle.deploy(
         usds_proxy.address, # token1
         vault_proxy.address,
@@ -172,6 +212,7 @@ def sperax(
         chainlink_eth_price_feed,
         spa.address,
         weth.address,
+        chainlink_flags,
         {'from': owner_l2}
     )
     oracle_proxy.updateUSDsAddress(
@@ -193,12 +234,14 @@ def sperax(
         oracle.address,
         {'from': owner_l2}
     )
-    
+
     # configure stablecoin collaterals in vault and oracle
     configure_collaterals(
         vault_proxy,
         oracle_proxy,
         buyback,
+        usdt,
+        wbtc,
         owner_l2
     )
 
@@ -210,53 +253,79 @@ def sperax(
         owner_l2
     )
 
-    return (proxy_admin, spa, usds_proxy, vault_core_tools, vault_proxy, oracle_proxy, buyback)
+    return (
+        spa,
+        usds_proxy,
+        vault_core_tools,
+        vault_proxy,
+        oracle_proxy,
+        strategy_proxy,
+        buyback
+    )
 
 
-@pytest.fixture(scope="module", autouse=True)
-def strategy(ThreePoolStrategy):
-    (proxy_admin, spa, usds_proxy, vault_core_tools, vault_proxy, oracle_proxy, buyback) = sperax
-
+def create_strategy(
+    TransparentUpgradeableProxy,
+    ThreePoolStrategy,
+    vault_proxy,
+    proxy_admin,
+    usdt,
+    wbtc,
+    weth,
+    Contract,
+    admin,
+    owner_l2,
+):
     # Arbitrum-one (mainnet):
     platform_address = '0xF97c707024ef0DD3E77a0824555a46B622bfB500'
     reward_token_address = '0x11cdb42b0eb46d95f990bedd4695a6e3fa034978'
     crv_gauge_address = '0x97E2768e8E73511cA874545DC5Ff8067eB19B787'
 
     assets = [
-        # USDT
-        '0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9',
-        # WBTC 
-        '0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f',
-        # WETH
-        '0x82aF49447D8a07e3bd95BD0d56f35241523fBab1',
+        usdt,
+        wbtc,
+        weth,
     ]
 
     p_tokens = [
         '0x8e0B8c8BB9db49a46697F3a5Bb8A308e744821D2',
         '0x8e0B8c8BB9db49a46697F3a5Bb8A308e744821D2',
         '0x8e0B8c8BB9db49a46697F3a5Bb8A308e744821D2',
-        ]
+    ]
 
     # THREE POOL strategy
     strategy = ThreePoolStrategy.deploy(
         {'from': owner_l2}
     )
-
-    strategy.initialize(
+    proxy = TransparentUpgradeableProxy.deploy(
+        strategy.address,
+        proxy_admin.address,
+        eth_utils.to_bytes(hexstr="0x"),
+        {'from': admin}
+    )
+    strategy_proxy = Contract.from_abi(
+        "ThreePoolStrategy",
+        proxy.address,
+        ThreePoolStrategy.abi
+    )
+    strategy_proxy.initialize(
         platform_address,
-        vault_proxy.address,
+        vault_proxy,
         reward_token_address,
         assets,
         p_tokens,
         crv_gauge_address,
         {'from': owner_l2}
     )
+    return strategy_proxy
 
 
 def configure_collaterals(
     vault_proxy,
     oracle_proxy,
     buyback,
+    usdt,
+    wbtc,
     owner_l2
 ):
     # Arbitrum mainnet collaterals: token address, chainlink
@@ -264,11 +333,11 @@ def configure_collaterals(
         # USDC
         '0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8': '0x50834F3163758fcC1Df9973b6e91f0F0F0434aD3',
         # USDT
-        '0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9': '0x3f3f5dF88dC9F13eac63DF89EC16ef6e7E25DdE7',
+        usdt: '0x3f3f5dF88dC9F13eac63DF89EC16ef6e7E25DdE7',
         # DAI
         '0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1': '0xc5C8E77B397E531B8EC06BFb0048328B30E9eCfB', 
         # WBTC
-        '0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f': '0x6ce185860a4963106506C203335A2910413708e9',
+        wbtc: '0x6ce185860a4963106506C203335A2910413708e9',
     }
 
     precision = 10**8

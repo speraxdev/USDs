@@ -4,7 +4,7 @@ from brownie import  Wei, Contract, reverts
 import time
 
 def test_swap_succesful(sperax, weth, user_account):
-    (proxy_admin, spa, usds_proxy, vault_core_tools, vault_proxy, oracle_proxy, buyback) = sperax
+    (proxy_admin, spa, usds_proxy, vault_core_tools, vault_proxy, oracle_proxy, strategy, buyback) = sperax
 
     balance1 = weth.balanceOf(user_account.address)
 
@@ -22,4 +22,4 @@ def test_swap_succesful(sperax, weth, user_account):
     assert transferedBalance > 0
 
 def test_swap_unsuccesful(sperax, weth, user_account):
-    (proxy_admin, spa, usds_proxy, vault_core_tools, vault_proxy, oracle_proxy, buyback) = sperax
+    (proxy_admin, spa, usds_proxy, vault_core_tools, vault_proxy, oracle_proxy, strategy, buyback) = sperax
