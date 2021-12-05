@@ -38,5 +38,5 @@ def test_deposit(sperax, weth, accounts):
         amount,
         {'from': vault_proxy.address}
     )
-    txn.events['Deposit']['_asset'] == weth.address
-    txn.events['Deposit']['_amount'] == amount
+    assert txn.events['Deposit']['_asset'] == weth.address
+    assert txn.events['Deposit']['_amount'] == amount
