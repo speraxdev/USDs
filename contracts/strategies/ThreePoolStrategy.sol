@@ -87,7 +87,7 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
         nonReentrant
     {
         require(_amount > 0, "Must deposit something");
-        emit Deposit(_asset, address(platformAddress), _amount);
+
         // 3Pool requires passing deposit amounts for all 3 assets, set to 0 for
         // all
         uint256[3] memory _amounts;
@@ -103,6 +103,7 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
         //     uint256(1e18).sub(maxSlippage)
         // );
         uint256 minMintAmount = 0;
+        // When the asset is WETH, convert it to ETH and deposit
         if (_asset == wethAdddress) {
             IWETH9(wethAdddress).withdraw(_amount);
         }
@@ -115,6 +116,7 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
             pToken.balanceOf(address(this)),
             address(this)
         );
+        emit Deposit(_asset, address(assetToPToken[_asset]), _amount);
     }
 
     function depositAll() external override onlyVaultOrOwner nonReentrant {}
@@ -132,8 +134,6 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
     ) external override onlyVault nonReentrant {
         require(_recipient != address(0), "Invalid recipient");
         require(_amount > 0, "Invalid amount");
-
-        emit Withdrawal(_asset, address(assetToPToken[_asset]), _amount);
 
         (uint256 contractPTokens, , uint256 totalPTokens) = _getTotalPTokens();
 
@@ -169,6 +169,7 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
         }
 
         IERC20(_asset).safeTransfer(_recipient, _amount);
+        emit Withdrawal(_asset, address(assetToPToken[_asset]), _amount);
     }
 
     /**
@@ -201,8 +202,6 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
         uint256 _amount
     ) external override onlyOwner nonReentrant {
         require(_amount > 0, "Invalid amount");
-
-        emit Withdrawal(_asset, address(assetToPToken[_asset]), _amount);
 
         (uint256 contractPTokens, , uint256 totalPTokens) = _getTotalPTokens();
 
@@ -238,6 +237,8 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
         }
 
         IERC20(_asset).safeTransfer(vaultAddress, _amount);
+
+        emit Withdrawal(_asset, address(assetToPToken[_asset]), _amount);
     }
 
     function withdrawAll() external override onlyVaultOrOwner nonReentrant {}

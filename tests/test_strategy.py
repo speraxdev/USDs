@@ -21,7 +21,7 @@ def test_deposit(sperax, weth, accounts):
 
     # deposit ETH into WETH contract to get WETH
     # short-circuit the real scenario by putting ETH
-    # into vault_proxy contract instead of:
+    # into strategy_proxy contract instead of:
     # user -> vault_proxy -> strategy_proxy
     txn = weth.deposit(
         {'from': accounts[9].address, 'amount': amount}
@@ -32,7 +32,7 @@ def test_deposit(sperax, weth, accounts):
     txn = weth_erc20.transfer(strategy_proxy.address, amount, {'from': accounts[9]})
     assert txn.return_value == True
     # strategy_proxy contract must have weth before it can deposit
-    # it into the strategy contract
+    # it into the Curve 3Pool
     txn = strategy_proxy.deposit(
         weth.address,
         amount,
