@@ -64,7 +64,7 @@ def weth():
     weth_address = '0x82af49447d8a07e3bd95bd0d56f35241523fbab1'
     # Arbitrum-rinkeby testnet:
     #weth_address = '0xB47e6A5f8b33b3F17603C83a0535A9dcD7E32681'
-    return brownie.interface.IERC20(weth_address)
+    return brownie.interface.IWETH9(weth_address)
 
 @pytest.fixture(scope="module", autouse=True)
 def usdt():
