@@ -121,55 +121,41 @@ def sperax(
     #chainlink_eth_price_feed = '0x5f0423B1a6935dc5596e7A24d98532b67A0AeFd8'
     #l2_gateway = '0x9b014455AcC2Fe90c52803849d0002aeEC184a06'
 
-    bancor = BancorFormula.deploy(
-        {'from': owner_l2}
+    bancor = deploy_bancor(
+        BancorFormula,
+        owner_l2
     )
-    bancor.init()
 
-    vault_core_tools = VaultCoreTools.deploy(
-        {'from': owner_l2}
+    (vault_proxy, vault_core_tools) = deploy_vault(
+        VaultCoreTools,
+        VaultCore,
+        TransparentUpgradeableProxy,
+        bancor,
+        Contract,
+        proxy_admin,
+        admin,
+        owner_l2
     )
-    vault_core_tools.initialize(bancor.address)
 
-    vault = VaultCore.deploy(
-        {'from': owner_l2}
+    oracle_proxy = deploy_oracle(
+        Oracle,
+        TransparentUpgradeableProxy,
+        Contract,
+        proxy_admin,
+        admin,
+        owner_l2
     )
-    proxy = TransparentUpgradeableProxy.deploy(
-        vault.address,
-        proxy_admin.address,
-        eth_utils.to_bytes(hexstr="0x"),
-        {'from': admin}
-    )
-    vault_proxy = Contract.from_abi("VaultCore", proxy.address, VaultCore.abi)
 
-    oracle = Oracle.deploy(
-        {'from': owner_l2}
-    )
-    proxy = TransparentUpgradeableProxy.deploy(
-        oracle.address,
-        proxy_admin.address,
-        eth_utils.to_bytes(hexstr="0x"),
-        {'from': admin}
-    )
-    oracle_proxy = Contract.from_abi("Oracle", proxy.address, Oracle.abi)
-
-    usds = USDsL2.deploy(
-        {'from': owner_l2}
-    )
-    proxy = TransparentUpgradeableProxy.deploy(
-        usds.address,
-        proxy_admin.address,
-        eth_utils.to_bytes(hexstr="0x"),
-        {'from': admin}
-    )
-    usds_proxy = Contract.from_abi("USDsL2", proxy.address, USDsL2.abi)
-    usds_proxy.initialize(
-        'USDs Layer 2',
-        'USDs2',
-        vault_proxy.address, 
+    usds_proxy = deploy_usds(
+        USDsL2,
+        TransparentUpgradeableProxy,
+        Contract,
+        vault_proxy,
         l2_gateway,
-        usds1.address,
-        {'from': owner_l2}
+        usds1,
+        proxy_admin,
+        admin,
+        owner_l2
     )
 
     #wrapper_spa1_address = os.environ.get('WRAPPER_SPA1_ADDRESS')
@@ -182,30 +168,26 @@ def sperax(
         {'from': owner_l2},
     )
 
-    strategy_proxy = create_strategy(
+    strategy_proxy = deploy_strategy(
         TransparentUpgradeableProxy,
         ThreePoolStrategy,
         vault_proxy,
-        proxy_admin,
         usdt,
         wbtc,
         weth,
         Contract,
+        proxy_admin,
         admin,
         owner_l2
     )
     
-    buyback = BuybackSingle.deploy(
-        usds_proxy.address, # token1
-        vault_proxy.address,
-        {'from': owner_l2}
-    )
-    pool_fee = 1
-    buyback.updateInputTokenInfo(
-        spa.address, # token2
-        True, # supported
-        pool_fee,
-        {'from': owner_l2}
+    buyback = deploy_buyback(
+        BuybackSingle,
+        vault_proxy,
+        spa,
+        usds_proxy,
+        1, # pool_fee
+        owner_l2
     )
 
     oracle_proxy.initialize(
@@ -231,7 +213,7 @@ def sperax(
         {'from': owner_l2}
     )
     vault_proxy.updateOracleAddress(
-        oracle.address,
+        oracle_proxy.address,
         {'from': owner_l2}
     )
 
@@ -264,15 +246,107 @@ def sperax(
     )
 
 
-def create_strategy(
+def deploy_bancor(
+    BancorFormula,
+    owner_l2
+):
+    bancor = BancorFormula.deploy(
+        {'from': owner_l2}
+    )
+    bancor.init()
+    return bancor
+
+
+def deploy_vault(
+    VaultCoreTools,
+    VaultCore,
+    TransparentUpgradeableProxy,
+    bancor,
+    Contract,
+    proxy_admin,
+    admin,
+    owner_l2
+):
+    vault_core_tools = VaultCoreTools.deploy(
+        {'from': owner_l2}
+    )
+    vault_core_tools.initialize(bancor.address)
+
+    vault = VaultCore.deploy(
+        {'from': owner_l2}
+    )
+    proxy = TransparentUpgradeableProxy.deploy(
+        vault.address,
+        proxy_admin.address,
+        eth_utils.to_bytes(hexstr="0x"),
+        {'from': admin}
+    )
+    vault_proxy = Contract.from_abi("VaultCore", proxy.address, VaultCore.abi)
+    return (vault_proxy, vault_core_tools)
+
+
+def deploy_oracle(
+    Oracle,
+    TransparentUpgradeableProxy,
+    Contract,
+    proxy_admin,
+    admin,
+    owner_l2
+):
+    oracle = Oracle.deploy(
+        {'from': owner_l2}
+    )
+    proxy = TransparentUpgradeableProxy.deploy(
+        oracle.address,
+        proxy_admin.address,
+        eth_utils.to_bytes(hexstr="0x"),
+        {'from': admin}
+    )
+    oracle_proxy = Contract.from_abi("Oracle", proxy.address, Oracle.abi)
+    return oracle_proxy
+
+
+def deploy_usds(
+    USDsL2,
+    TransparentUpgradeableProxy,
+    Contract,
+    vault_proxy,
+    l2_gateway,
+    usds1,
+    proxy_admin,
+    admin,
+    owner_l2
+):
+    usds = USDsL2.deploy(
+        {'from': owner_l2}
+    )
+    proxy = TransparentUpgradeableProxy.deploy(
+        usds.address,
+        proxy_admin.address,
+        eth_utils.to_bytes(hexstr="0x"),
+        {'from': admin}
+    )
+    usds_proxy = Contract.from_abi("USDsL2", proxy.address, USDsL2.abi)
+    usds_proxy.initialize(
+        'USDs Layer 2',
+        'USDs2',
+        vault_proxy.address, 
+        l2_gateway,
+        usds1.address,
+        {'from': owner_l2}
+    )
+    return usds_proxy
+
+
+def deploy_strategy(
     TransparentUpgradeableProxy,
     ThreePoolStrategy,
     vault_proxy,
-    proxy_admin,
     usdt,
     wbtc,
     weth,
     Contract,
+    proxy_admin,
     admin,
     owner_l2,
 ):
@@ -318,6 +392,28 @@ def create_strategy(
         {'from': owner_l2}
     )
     return strategy_proxy
+
+
+def deploy_buyback(
+    BuybackSingle,
+    vault_proxy,
+    spa,
+    usds_proxy,
+    pool_fee,
+    owner_l2
+):
+    buyback = BuybackSingle.deploy(
+        usds_proxy.address, # token1
+        vault_proxy.address,
+        {'from': owner_l2}
+    )
+    buyback.updateInputTokenInfo(
+        spa.address, # token2
+        True, # supported
+        pool_fee,
+        {'from': owner_l2}
+    )
+    return buyback
 
 
 def configure_collaterals(
