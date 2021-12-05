@@ -6,6 +6,7 @@
  */
  pragma solidity ^0.6.12;
 
+import "../interfaces/IWETH9.sol";
 import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import { ICurvePool } from "./ICurvePool.sol";
@@ -21,7 +22,11 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
 
     address internal crvGaugeAddress;
     address internal crvMinterAddress;
+    address internal wethAdddress;
     uint256 internal constant maxSlippage = 1e16; // 1%, same as the Curve UI
+
+    receive() external payable {}
+    fallback() external payable {}
 
     /**
      * Initializer for setting up strategy internal state. This overrides the
@@ -42,12 +47,14 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
         address _rewardTokenAddress, // CRV
         address[] calldata _assets,
         address[] calldata _pTokens,
-        address _crvGaugeAddress
+        address _crvGaugeAddress,
+        address _wethAdddress
     ) external initializer {
         require(_assets.length == 3, "Must have exactly three assets");
         // Should be set prior to abstract initialize call otherwise
         // abstractSetPToken calls will fail
         crvGaugeAddress = _crvGaugeAddress;
+        wethAdddress = _wethAdddress;
         InitializableAbstractStrategy._initialize(
             _platformAddress,
             _vaultAddress,
@@ -88,15 +95,19 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
         // Set the amount on the asset we want to deposit
         _amounts[poolCoinIndex] = _amount;
         ICurvePool curvePool = ICurvePool(platformAddress);
-        uint256 assetDecimals = ERC20(_asset).decimals();
-        uint256 depositValue = _amount
-            .scaleBy(int8(18 - assetDecimals))
-            .divPrecisely(curvePool.get_virtual_price());
-        uint256 minMintAmount = depositValue.mulTruncate(
-            uint256(1e18).sub(maxSlippage)
-        );
+        // uint256 assetDecimals = ERC20(_asset).decimals();
+        // uint256 depositValue = _amount
+        //     .scaleBy(int8(18 - assetDecimals))
+        //     .divPrecisely(curvePool.get_virtual_price());
+        // uint256 minMintAmount = depositValue.mulTruncate(
+        //     uint256(1e18).sub(maxSlippage)
+        // );
+        uint256 minMintAmount = 0;
+        if (_asset == wethAdddress) {
+            IWETH9(wethAdddress).withdraw(_amount);
+        }
         // Do the deposit to 3pool
-        curvePool.add_liquidity(_amounts, minMintAmount);
+        curvePool.add_liquidity{value:_amount}(_amounts, minMintAmount);
         allocatedAmt[_asset] = allocatedAmt[_asset].add(_amount);
         // Deposit into Gauge
         IERC20 pToken = IERC20(assetToPToken[_asset]);

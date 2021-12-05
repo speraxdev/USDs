@@ -180,7 +180,7 @@ def sperax(
         admin,
         owner_l2
     )
-    
+
     buyback = deploy_buyback(
         BuybackSingle,
         vault_proxy,
@@ -330,7 +330,7 @@ def deploy_usds(
     usds_proxy.initialize(
         'USDs Layer 2',
         'USDs2',
-        vault_proxy.address, 
+        vault_proxy.address,
         l2_gateway,
         usds1.address,
         {'from': owner_l2}
@@ -389,6 +389,7 @@ def deploy_strategy(
         assets,
         p_tokens,
         crv_gauge_address,
+        weth.address,
         {'from': owner_l2}
     )
     return strategy_proxy
@@ -431,7 +432,7 @@ def configure_collaterals(
         # USDT
         usdt: '0x3f3f5dF88dC9F13eac63DF89EC16ef6e7E25DdE7',
         # DAI
-        '0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1': '0xc5C8E77B397E531B8EC06BFb0048328B30E9eCfB', 
+        '0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1': '0xc5C8E77B397E531B8EC06BFb0048328B30E9eCfB',
         # WBTC
         wbtc: '0x6ce185860a4963106506C203335A2910413708e9',
     }
@@ -494,7 +495,7 @@ def create_uniswap_v3_pool(
     # newly created pool address
     pool = txn.return_value
     print(f"uniswap v3 pool address (token1-token2 pair): {pool}")
-    
+
     # provide initial liquidity
     deadline = 1637632800 + brownie.chain.time() # deadline: 2 hours
     params = [
