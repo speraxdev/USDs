@@ -58,7 +58,11 @@ def main():
         print("\nMissing L1 USDs address\n")
         return
 
-    fee_vault = owner
+    fee_vault = input("Enter fee vault address: ").strip()
+    if len(fee_vault) == 0:
+        print("\nMissing fee vault address\n")
+        return
+
 
     initial_balance = owner.balance()
 
