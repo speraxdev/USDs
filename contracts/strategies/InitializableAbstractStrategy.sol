@@ -68,14 +68,13 @@ abstract contract InitializableAbstractStrategy is Initializable, OwnableUpgrade
         address[] calldata _pTokens
     ) external initializer {
         OwnableUpgradeable.__Ownable_init();
-        platformAddress = _platformAddress;
-        vaultAddress = _vaultAddress;
-        rewardTokenAddress = _rewardTokenAddress;
-        uint256 assetCount = _assets.length;
-        require(assetCount == _pTokens.length, "Invalid input arrays");
-        for (uint256 i = 0; i < assetCount; i++) {
-            _setPTokenAddress(_assets[i], _pTokens[i]);
-        }
+        InitializableAbstractStrategy._initialize(
+            _platformAddress,
+            _vaultAddress,
+            _rewardTokenAddress,
+            _assets,
+            _pTokens
+        );
     }
 
     function _initialize(
