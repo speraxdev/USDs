@@ -35,7 +35,7 @@ def main():
     # contract owner account
     owner = accounts.load(
         click.prompt(
-            "admin account",
+            "owner account",
             type=click.Choice(accounts.load())
         )
     )
