@@ -86,6 +86,10 @@ contract USDsL2V2 is aeERC20, OwnableUpgradeable, IArbToken, IUSDs, ReentrancyGu
         vaultAddress = newVault;
     }
 
+    function version() public pure returns (uint) {
+		return 2;
+	}
+    
     /**
      * @dev Verifies that the caller is the Savings Manager contract
      */

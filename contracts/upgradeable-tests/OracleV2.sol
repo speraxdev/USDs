@@ -85,6 +85,7 @@ contract OracleV2 is Initializable, IOracle, OwnableUpgradeable {
     //
     // Initializer
     //
+    
     function initialize(address _priceFeedETH, address _SPAaddr, address _WETH, address _chainlinkFlags) public initializer {
         OwnableUpgradeable.__Ownable_init();
         updatePeriod = 12 hours;
@@ -96,6 +97,10 @@ contract OracleV2 is Initializable, IOracle, OwnableUpgradeable {
         movingAvgLongPeriod = 3600;
         chainlinkFlags = FlagsInterface(_chainlinkFlags);
     }
+
+    function version() public pure returns (uint) {
+		return 2;
+	}
 
     function updateUSDsAddress(address _USDsAddr) external onlyOwner {
         emit USDsAddressUpdated(USDsAddr, _USDsAddr);
