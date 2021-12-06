@@ -40,3 +40,109 @@ def test_deposit(sperax, weth, accounts):
     )
     assert txn.events['Deposit']['_asset'] == weth.address
     assert txn.events['Deposit']['_amount'] == amount
+
+
+
+def test_deposit_invalid_amount(sperax, weth, accounts):
+    (
+        spa,
+        usds_proxy,
+        vault_core_tools,
+        vault_proxy,
+        oracle_proxy,
+        strategy_proxy,
+        buyback
+    ) = sperax
+
+    amount = int(0)
+
+    with brownie.reverts("Must deposit something"):
+        txn = strategy_proxy.deposit(
+            weth.address,
+            amount,
+            {'from': vault_proxy.address}
+        )
+
+
+def test_deposit_invalid_assets(sperax, weth, accounts, mock_token2):
+    (
+        spa,
+        usds_proxy,
+        vault_core_tools,
+        vault_proxy,
+        oracle_proxy,
+        strategy_proxy,
+        buyback
+    ) = sperax
+
+    amount = int(9999)
+
+    with brownie.reverts("Invalid 3pool asset"):
+        txn = strategy_proxy.deposit(
+            mock_token2.address,
+            amount,
+            {'from': vault_proxy.address}
+        )
+
+def test_withdraw(sperax, weth, accounts):
+
+    (
+        spa,
+        usds_proxy,
+        vault_core_tools,
+        vault_proxy,
+        oracle_proxy,
+        strategy_proxy,
+        buyback
+    ) = sperax
+
+    amount = int(999)
+
+    strategy_proxy.withdraw(
+        accounts[9],
+        weth.address,
+        amount,
+        {'from': vault_proxy.address}
+    )
+
+def test_withdraw_invalid_recipient(sperax, weth, accounts):
+    (
+        spa,
+        usds_proxy,
+        vault_core_tools,
+        vault_proxy,
+        oracle_proxy,
+        strategy_proxy,
+        buyback
+    ) = sperax
+    amount  = int(999)
+    invalid_address = ""
+
+    with brownie.reverts('Invalid recipient'):
+        strategy_proxy.withdraw(
+        invalid_address,
+        weth.address,
+        amount,
+        {'from': vault_proxy.address}
+    )
+
+
+def test_withdraw_invalid_amount(sperax, weth, accounts):
+    (
+        spa,
+        usds_proxy,
+        vault_core_tools,
+        vault_proxy,
+        oracle_proxy,
+        strategy_proxy,
+        buyback
+    ) = sperax
+    amount  = int(999)
+
+    with brownie.reverts('Invalid amount'):
+        strategy_proxy.withdraw(
+        accounts[9],
+        weth.address,
+        amount,
+        {'from': vault_proxy.address}
+    )
