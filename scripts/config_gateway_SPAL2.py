@@ -1,5 +1,6 @@
 import sys
 import signal
+import click
 from brownie import (
     SperaxTokenL1,
     network,
@@ -14,15 +15,14 @@ def main():
     # handle ctrl-C event
     signal.signal(signal.SIGINT, signal_handler)
 
-    print("\nEnter contract owner account password:")
-    try:
-        owner = accounts.load(filename="minter.keystore")
-    except ValueError:
-        print("\nInvalid owner wallet or password\n")
-        return
-    except FileNotFoundError:
-        print("\nFile not found: ~/.brownie/accounts/minter.json")
-        return
+    # contract owner account
+    owner = accounts.load(
+        click.prompt(
+            "admin account",
+            type=click.Choice(accounts.load())
+        )
+    )
+    print(f"contract owner account: {owner.address}\n")
 
     print(f"\nConfigure Arbitrum gateway on {network.show_active()}:\n")
     spa_l1_address = input("Enter L1 SPA address: ").strip()

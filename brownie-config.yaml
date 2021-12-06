@@ -1,7 +1,5 @@
 # Brownie configuration file
 # https://eth-brownie.readthedocs.io/en/stable/config.html
-# automatically fetch contract sources from Etherscan
-autofetch_sources: true
 # required external contracts
 dependencies:
   - OpenZeppelin/openzeppelin-contracts-upgradeable@3.4.0

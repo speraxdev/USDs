@@ -1,5 +1,6 @@
 import sys
 import signal
+import click
 from brownie import (
     VaultCore,
     accounts,
@@ -15,15 +16,14 @@ def main():
     # handle ctrl-C event
     signal.signal(signal.SIGINT, signal_handler)
 
-    print("\nEnter contract owner account password:")
-    try:
-        owner = accounts.load(filename="minter.keystore")
-    except ValueError:
-        print("\nInvalid contract owner wallet or password\n")
-        return
-    except FileNotFoundError:
-        print("\nFile not found: ~/.brownie/accounts/minter.json")
-        return
+    # contract owner account
+    owner = accounts.load(
+        click.prompt(
+            "admin account",
+            type=click.Choice(accounts.load())
+        )
+    )
+    print(f"contract owner account: {owner.address}\n")
 
     vault_proxy_address = input("Enter VaultCore proxy address: ").strip()
     if len(vault_proxy_address) == 0:

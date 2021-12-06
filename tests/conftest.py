@@ -1,9 +1,9 @@
 #!/usr/bin/python3
 import pytest
 import eth_utils
-import brownie 
 import math
 import os
+import brownie
 
 @pytest.fixture(scope="module", autouse=True)
 def admin(accounts):
@@ -58,16 +58,45 @@ def user_account(accounts):
     return accounts[4]
 
 @pytest.fixture(scope="module", autouse=True)
+def chainlink_flags():
+    # Arbitrum-rinkeby testnet:
+    #return '0x491B1dDA0A8fa069bbC1125133A975BF4e85a91b'
+    # Arbitrum-one mainnet:
+    return '0x3C14e07Edd0dC67442FA96f1Ec6999c57E810a83'
+
+@pytest.fixture(scope="module", autouse=True)
 def weth():
     # Arbitrum-one mainnet:
     weth_address = '0x82af49447d8a07e3bd95bd0d56f35241523fbab1'
     # Arbitrum-rinkeby testnet:
     #weth_address = '0xB47e6A5f8b33b3F17603C83a0535A9dcD7E32681'
-    return brownie.interface.IERC20(weth_address)
+    return brownie.interface.IWETH9(weth_address)
+
+@pytest.fixture(scope="module", autouse=True)
+def usdt():
+    # Arbitrum-one mainnet:
+    usdt_address = '0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9'
+    return brownie.interface.IERC20(usdt_address)
+
+@pytest.fixture(scope="module", autouse=True)
+def wbtc():
+    # Arbitrum-one mainnet:
+    wbtc_address = '0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f'
+    return brownie.interface.IERC20(wbtc_address)
+
+@pytest.fixture(scope="module", autouse=True)
+def proxy_admin(
+    ProxyAdmin,
+    admin
+):
+    # admin contract
+    return ProxyAdmin.deploy(
+        {'from': admin}
+    )
 
 @pytest.fixture(scope="module", autouse=True)
 def sperax(
-    ProxyAdmin,
+    proxy_admin,
     TransparentUpgradeableProxy,
     BancorFormula,
     VaultCoreTools,
@@ -76,8 +105,12 @@ def sperax(
     Oracle,
     VaultCore,
     usds1,
+    ThreePoolStrategy,
     BuybackSingle,
     BuybackMultihop,
+    chainlink_flags,
+    usdt,
+    wbtc,
     weth,
     mock_token1,
     mock_token2,
@@ -87,7 +120,6 @@ def sperax(
     vault_fee,
     owner_l2,
     interface,
-    ThreePoolStrategy
 ):
     # Arbitrum-one (mainnet):
     chainlink_eth_price_feed = '0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612'
@@ -98,16 +130,152 @@ def sperax(
     #chainlink_eth_price_feed = '0x5f0423B1a6935dc5596e7A24d98532b67A0AeFd8'
     #l2_gateway = '0x9b014455AcC2Fe90c52803849d0002aeEC184a06'
 
-    # admin contract
-    proxy_admin = ProxyAdmin.deploy(
-        {'from': admin}
+    bancor = deploy_bancor(
+        BancorFormula,
+        owner_l2
     )
 
+    (vault_proxy, vault_core_tools) = deploy_vault(
+        VaultCoreTools,
+        VaultCore,
+        TransparentUpgradeableProxy,
+        bancor,
+        Contract,
+        proxy_admin,
+        admin,
+        owner_l2
+    )
+
+    oracle_proxy = deploy_oracle(
+        Oracle,
+        TransparentUpgradeableProxy,
+        Contract,
+        proxy_admin,
+        admin,
+        owner_l2
+    )
+
+    usds_proxy = deploy_usds(
+        USDsL2,
+        TransparentUpgradeableProxy,
+        Contract,
+        vault_proxy,
+        l2_gateway,
+        usds1,
+        proxy_admin,
+        admin,
+        owner_l2
+    )
+
+    #wrapper_spa1_address = os.environ.get('WRAPPER_SPA1_ADDRESS')
+    wrapper_spa1_address = '0xB4A3B0Faf0Ab53df58001804DdA5Bfc6a3D59008'
+    spa = SperaxTokenL2.deploy(
+        'Sperax L2',
+        'SPAL2',
+        l2_gateway,
+        wrapper_spa1_address, # wrapper SPA L1
+        {'from': owner_l2},
+    )
+
+    strategy_proxy = deploy_strategy(
+        TransparentUpgradeableProxy,
+        ThreePoolStrategy,
+        vault_proxy,
+        usdt,
+        wbtc,
+        weth,
+        Contract,
+        proxy_admin,
+        admin,
+        owner_l2
+    )
+
+    buyback = deploy_buyback(
+        BuybackSingle,
+        vault_proxy,
+        spa,
+        usds_proxy,
+        1, # pool_fee
+        owner_l2
+    )
+
+    oracle_proxy.initialize(
+        chainlink_eth_price_feed,
+        spa.address,
+        weth.address,
+        chainlink_flags,
+        {'from': owner_l2}
+    )
+    oracle_proxy.updateUSDsAddress(
+        usds_proxy.address,
+        {'from': owner_l2}
+    )
+
+    vault_proxy.initialize(
+        spa.address,
+        vault_core_tools.address,
+        vault_fee,
+        {'from': owner_l2}
+    )
+    vault_proxy.updateUSDsAddress(
+        usds_proxy.address,
+        {'from': owner_l2}
+    )
+    vault_proxy.updateOracleAddress(
+        oracle_proxy.address,
+        {'from': owner_l2}
+    )
+
+    # configure stablecoin collaterals in vault and oracle
+    configure_collaterals(
+        vault_proxy,
+        oracle_proxy,
+        buyback,
+        usdt,
+        wbtc,
+        owner_l2
+    )
+
+    create_uniswap_v3_pool(
+        mock_token1, # token1
+        mock_token1.balanceOf(owner_l2), # amount1
+        mock_token2, # token2
+        mock_token2.balanceOf(owner_l2), # amount2
+        owner_l2
+    )
+
+    return (
+        spa,
+        usds_proxy,
+        vault_core_tools,
+        vault_proxy,
+        oracle_proxy,
+        strategy_proxy,
+        buyback
+    )
+
+
+def deploy_bancor(
+    BancorFormula,
+    owner_l2
+):
     bancor = BancorFormula.deploy(
         {'from': owner_l2}
     )
     bancor.init()
+    return bancor
 
+
+def deploy_vault(
+    VaultCoreTools,
+    VaultCore,
+    TransparentUpgradeableProxy,
+    bancor,
+    Contract,
+    proxy_admin,
+    admin,
+    owner_l2
+):
     vault_core_tools = VaultCoreTools.deploy(
         {'from': owner_l2}
     )
@@ -123,7 +291,17 @@ def sperax(
         {'from': admin}
     )
     vault_proxy = Contract.from_abi("VaultCore", proxy.address, VaultCore.abi)
+    return (vault_proxy, vault_core_tools)
 
+
+def deploy_oracle(
+    Oracle,
+    TransparentUpgradeableProxy,
+    Contract,
+    proxy_admin,
+    admin,
+    owner_l2
+):
     oracle = Oracle.deploy(
         {'from': owner_l2}
     )
@@ -134,7 +312,20 @@ def sperax(
         {'from': admin}
     )
     oracle_proxy = Contract.from_abi("Oracle", proxy.address, Oracle.abi)
+    return oracle_proxy
 
+
+def deploy_usds(
+    USDsL2,
+    TransparentUpgradeableProxy,
+    Contract,
+    vault_proxy,
+    l2_gateway,
+    usds1,
+    proxy_admin,
+    admin,
+    owner_l2
+):
     usds = USDsL2.deploy(
         {'from': owner_l2}
     )
@@ -148,22 +339,79 @@ def sperax(
     usds_proxy.initialize(
         'USDs Layer 2',
         'USDs2',
-        vault_proxy.address, 
+        vault_proxy.address,
         l2_gateway,
         usds1.address,
         {'from': owner_l2}
     )
+    return usds_proxy
 
-    #wrapper_spa1_address = os.environ.get('WRAPPER_SPA1_ADDRESS')
-    wrapper_spa1_address = '0xB4A3B0Faf0Ab53df58001804DdA5Bfc6a3D59008'
-    spa = SperaxTokenL2.deploy(
-        'Sperax L2',
-        'SPAL2',
-        l2_gateway,
-        wrapper_spa1_address, # wrapper SPA L1
-        {'from': owner_l2},
+
+def deploy_strategy(
+    TransparentUpgradeableProxy,
+    ThreePoolStrategy,
+    vault_proxy,
+    usdt,
+    wbtc,
+    weth,
+    Contract,
+    proxy_admin,
+    admin,
+    owner_l2,
+):
+    # Arbitrum-one (mainnet):
+    platform_address = '0xF97c707024ef0DD3E77a0824555a46B622bfB500'
+    reward_token_address = '0x11cdb42b0eb46d95f990bedd4695a6e3fa034978'
+    crv_gauge_address = '0x97E2768e8E73511cA874545DC5Ff8067eB19B787'
+
+    assets = [
+        usdt,
+        wbtc,
+        weth,
+    ]
+
+    p_tokens = [
+        '0x8e0B8c8BB9db49a46697F3a5Bb8A308e744821D2',
+        '0x8e0B8c8BB9db49a46697F3a5Bb8A308e744821D2',
+        '0x8e0B8c8BB9db49a46697F3a5Bb8A308e744821D2',
+    ]
+
+    # THREE POOL strategy
+    strategy = ThreePoolStrategy.deploy(
+        {'from': owner_l2}
     )
+    proxy = TransparentUpgradeableProxy.deploy(
+        strategy.address,
+        proxy_admin.address,
+        eth_utils.to_bytes(hexstr="0x"),
+        {'from': admin}
+    )
+    strategy_proxy = Contract.from_abi(
+        "ThreePoolStrategy",
+        proxy.address,
+        ThreePoolStrategy.abi
+    )
+    strategy_proxy.initialize(
+        platform_address,
+        vault_proxy,
+        reward_token_address,
+        assets,
+        p_tokens,
+        crv_gauge_address,
+        weth.address,
+        {'from': owner_l2}
+    )
+    return strategy_proxy
 
+
+def deploy_buyback(
+    BuybackSingle,
+    vault_proxy,
+    spa,
+    usds_proxy,
+    pool_fee,
+    owner_l2
+):
     buyback = BuybackSingle.deploy(
         mock_token1.address, # token1
         vault_proxy.address,
@@ -302,6 +550,8 @@ def configure_collaterals(
     vault_proxy,
     oracle_proxy,
     buyback,
+    usdt,
+    wbtc,
     owner_l2
 ):
     # Arbitrum mainnet collaterals: token address, chainlink
@@ -309,11 +559,11 @@ def configure_collaterals(
         # USDC
         '0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8': '0x50834F3163758fcC1Df9973b6e91f0F0F0434aD3',
         # USDT
-        '0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9': '0x3f3f5dF88dC9F13eac63DF89EC16ef6e7E25DdE7',
+        usdt: '0x3f3f5dF88dC9F13eac63DF89EC16ef6e7E25DdE7',
         # DAI
-        '0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1': '0xc5C8E77B397E531B8EC06BFb0048328B30E9eCfB', 
+        '0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1': '0xc5C8E77B397E531B8EC06BFb0048328B30E9eCfB',
         # WBTC
-        '0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f': '0x6ce185860a4963106506C203335A2910413708e9',
+        wbtc: '0x6ce185860a4963106506C203335A2910413708e9',
     }
 
     precision = 10**8
@@ -374,15 +624,15 @@ def create_uniswap_v3_pool(
     # newly created pool address
     pool = txn.return_value
     print(f"uniswap v3 pool address (token1-token2 pair): {pool}")
-    
+
     # provide initial liquidity
     deadline = 1637632800 + brownie.chain.time() # deadline: 2 hours
     params = [
         token1,
         token2,
         fee,
-        get_lower_tick(), # tickLower
-        get_upper_tick(), # tickUpper
+        lower_tick(), # tickLower
+        upper_tick(), # tickUpper
         amount1,
         amount2,
         0, # minimum amount of token1 expected
@@ -402,10 +652,10 @@ def tranfer_mock_token_to_vault(owner_l2, vault_proxy, token1):
     token1.transfer(vault_proxy.address, amount, {'from': owner_l2})
     print("vault_proxy balance", token1.balanceOf(vault_proxy.address))
     
-def get_lower_tick():
+def lower_tick():
     return math.ceil(-887272 / 60) * 60
 
-def get_upper_tick():
+def upper_tick():
     return math.floor(887272 / 60) * 60
 
 def encode_price(n1, n2):

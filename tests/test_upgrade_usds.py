@@ -7,7 +7,7 @@ import brownie
 #
 
 def test_upgrade_usds(sperax, USDsL2V2, Contract, admin, owner_l2, accounts):
-    (proxy_admin, spa, usds_proxy, vault_core_tools, vault_proxy, oracle_proxy, buyback) = sperax
+    (proxy_admin, spa, usds_proxy, vault_core_tools, vault_proxy, oracle_proxy, strategy, buyback) = sperax
 
     print("upgrade USDsL2 contract:\n")
     # test case requires duplicating the contract, USDsL2.sol, renamed as USDsL2V2.sol
