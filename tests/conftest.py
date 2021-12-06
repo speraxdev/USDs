@@ -28,12 +28,6 @@ def usds1(USDsL1, owner_l1):
     return usds1
 
 @pytest.fixture(scope="module", autouse=True)
-def mock_token1(MockToken, owner_l2):
-    return MockToken.deploy(
-        {'from': owner_l2}
-    )
-
-@pytest.fixture(scope="module", autouse=True)
 def mock_token2(MockToken, owner_l2):
     return MockToken.deploy(
         {'from': owner_l2}
@@ -106,7 +100,6 @@ def sperax(
     usdt,
     wbtc,
     weth,
-    mock_token1,
     mock_token2,
     Contract,
     admin,
@@ -228,8 +221,8 @@ def sperax(
     )
 
     create_uniswap_v3_pool(
-        mock_token1, # token1
-        mock_token1.balanceOf(owner_l2), # amount1
+        spa, # token1
+        mock_token2.balanceOf(owner_l2), # amount1
         mock_token2, # token2
         mock_token2.balanceOf(owner_l2), # amount2
         owner_l2
@@ -470,23 +463,25 @@ def configure_collaterals(
 # - contracts/interface/IPoolInitializer.sol
 # - contracts/libraries/PoolAddress.sol
 def create_uniswap_v3_pool(
-    token1,
+    spa,
     amount1,
     token2,
     amount2,
     owner_l2
 ):
+    mintSPA(spa, amount1, owner_l2)
+    
     position_mgr_address = '0xC36442b4a4522E871399CD717aBDD847Ab11FE88'
     position_mgr = brownie.interface.INonfungiblePositionManager(position_mgr_address)
 
     # approve uniswap's non fungible position manager to transfer our tokens
-    token1.approve(position_mgr.address, amount1, {'from': owner_l2})
+    spa.approve(position_mgr.address, amount1, {'from': owner_l2})
     token2.approve(position_mgr.address, amount2, {'from': owner_l2})
 
     # create a transaction pool
     fee = 3000
     txn = position_mgr.createAndInitializePoolIfNecessary(
-        token1,
+        spa,
         token2,
         fee,
         encode_price(amount1, amount2),
@@ -494,19 +489,19 @@ def create_uniswap_v3_pool(
     )
     # newly created pool address
     pool = txn.return_value
-    print(f"uniswap v3 pool address (token1-token2 pair): {pool}")
+    print(f"uniswap v3 pool address (spa-token2 pair): {pool}")
 
     # provide initial liquidity
     deadline = 1637632800 + brownie.chain.time() # deadline: 2 hours
     params = [
-        token1,
+        spa,
         token2,
         fee,
         lower_tick(), # tickLower
         upper_tick(), # tickUpper
         amount1,
         amount2,
-        0, # minimum amount of token1 expected
+        0, # minimum amount of spa expected
         0, # minimum amount of token2 expected
         owner_l2,
         deadline
@@ -516,6 +511,28 @@ def create_uniswap_v3_pool(
         {'from': owner_l2}
     )
     print(txn.return_value)
+
+def mintSPA(
+    spa,
+    amount,
+    owner_l2
+):
+    # make owner allowed to mint SPA tokens
+    txn = spa.setMintable(
+        owner_l2.address,
+        True,
+        {'from': owner_l2}
+    )
+    assert txn.events['Mintable']['account'] == owner_l2.address
+
+    txn = spa.mintForUSDs(
+        owner_l2,
+        amount,
+        {'from': owner_l2}
+    )
+    assert txn.events['Transfer']['to'] == owner_l2
+    assert txn.events['Transfer']['value'] == amount
+
 
 def lower_tick():
     return math.ceil(-887272 / 60) * 60
