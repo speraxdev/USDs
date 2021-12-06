@@ -50,14 +50,17 @@ def main():
     oracle_proxy_address = input("Enter Oracle proxy address: ").strip()
 
     if len(oracle_proxy_address) > 0:
+        # Arbitrum-one (mainnet):
+        chainlink_eth_price_feed = '0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612'
+        weth_arbitrum = '0x82af49447d8a07e3bd95bd0d56f35241523fbab1'
+        chainlink_flags = '0x3C14e07Edd0dC67442FA96f1Ec6999c57E810a83'
+
+        # Arbitrum rinkeby:
         if network.show_active() == 'arbitrum-rinkeby':
-            # Arbitrum rinkeby:
-            price_feed_eth_arbitrum = '0x5f0423B1a6935dc5596e7A24d98532b67A0AeFd8'
-            weth_arbitrum = '0xB47e6A5f8b33b3F17603C83a0535A9dcD7E32681'
-        else:
-            # Arbitrum mainnet:
-            price_feed_eth_arbitrum = '0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612'
-            weth_arbitrum = ''
+            l2_gateway = '0x9b014455AcC2Fe90c52803849d0002aeEC184a06'
+            chainlink_eth_price_feed = '0x5f0423B1a6935dc5596e7A24d98532b67A0AeFd8'
+            weth_arbitrum = '0xb47e6a5f8b33b3f17603c83a0535a9dcd7e32681'
+            chainlink_flags = '0x491B1dDA0A8fa069bbC1125133A975BF4e85a91b'
 
     initial_balance = admin.balance()
 
@@ -158,9 +161,10 @@ def main():
             {'from': admin, 'gas_limit': 1000000000}
         )
         new_oracle.initialize(
-            price_feed_eth_arbitrum,
+            chainlink_eth_price_feed,
             SperaxTokenL2[-1],
             weth_arbitrum,
+            chainlink_flags,
             {'from': owner, 'gas_limit': 1000000000}
         )
 
