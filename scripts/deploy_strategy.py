@@ -4,12 +4,13 @@ import click
 from brownie import (
     ProxyAdmin,
     TransparentUpgradeableProxy,
-    CompoundStrategy,
+    ThreePoolStrategy,
     BuybackSingle,
     BuybackMultihop,
     USDsL2,
     VaultCore,
     accounts,
+    interface,
     network,
     Contract,
     convert
@@ -69,25 +70,31 @@ def main():
         USDsL2.abi
     )
 
-    strategy = CompoundStrategy.deploy(
-        {'from': owner, 'gas_limit': 1000000000},
+    strategy = ThreePoolStrategy.deploy(
+        {'from': owner},
 #        publish_source=True,
     )
     proxy = TransparentUpgradeableProxy.deploy(
         strategy.address,
         ProxyAdmin[-1],
         eth_utils.to_bytes(hexstr="0x"),
-        {'from': admin, 'gas_limit': 1000000000},
+        {'from': admin},
 #        publish_source=True,
     )
-    strategy_proxy = Contract.from_abi("CompoundStrategy", proxy.address, CompoundStrategy.abi)
+    strategy_proxy = Contract.from_abi(
+        "ThreePoolStrategy",
+        proxy.address,
+        ThreePoolStrategy.abi
+    )
     strategy_proxy.initialize(
-        # platform address
+        '0xF97c707024ef0DD3E77a0824555a46B622bfB500', # platform address
         vault_proxy.address, # vault address
-        # reward token address
+        '0x11cdb42b0eb46d95f990bedd4695a6e3fa034978', # reward token address
         # assets
         # p tokens
-        {'from': owner, 'gas_limit': 1000000000},
+        '0x97E2768e8E73511cA874545DC5Ff8067eB19B787', # crv gauge address
+        interface.IWETH9('0x82af49447d8a07e3bd95bd0d56f35241523fbab1'), # arbitrum-one weth address
+        {'from': owner},
     )
 
     # call multihop buyback contract if intermediate token is provided

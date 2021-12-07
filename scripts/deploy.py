@@ -98,46 +98,54 @@ def main():
     txn = bancor.init()
 
     core = VaultCoreTools.deploy(
-        {'from': owner, 'gas_limit': 1000000000},
+        {'from': owner},
 #        publish_source=True,
     )
-    txn = core.initialize(bancor.address)
+    proxy = TransparentUpgradeableProxy.deploy(
+        core.address,
+        proxy_admin.address,
+        eth_utils.to_bytes(hexstr="0x"),
+        {'from': admin},
+#        publish_source=True,
+    )
+    core_proxy = Contract.from_abi("VaultCoreTools", proxy.address, VaultCoreTools.abi)
+    txn = core_proxy.initialize(bancor.address)
 
     vault = VaultCore.deploy(
-        {'from': owner, 'gas_limit': 1000000000},
+        {'from': owner},
 #        publish_source=True,
     )
     proxy = TransparentUpgradeableProxy.deploy(
         vault.address,
         proxy_admin.address,
         eth_utils.to_bytes(hexstr="0x"),
-        {'from': admin, 'gas_limit': 1000000000},
+        {'from': admin},
 #        publish_source=True,
     )
     vault_proxy = Contract.from_abi("VaultCore", proxy.address, VaultCore.abi)
 
     oracle = Oracle.deploy(
-        {'from': owner, 'gas_limit': 1000000000},
+        {'from': owner},
 #        publish_source=True,
     )
     proxy = TransparentUpgradeableProxy.deploy(
         oracle.address,
         proxy_admin.address,
         eth_utils.to_bytes(hexstr="0x"),
-        {'from': admin, 'gas_limit': 1000000000},
+        {'from': admin},
 #        publish_source=True,
     )
     oracle_proxy = Contract.from_abi("Oracle", proxy.address, Oracle.abi)
 
     usds = USDsL2.deploy(
-        {'from': owner, 'gas_limit': 1000000000},
+        {'from': owner},
 #        publish_source=True,
     )
     proxy = TransparentUpgradeableProxy.deploy(
         usds.address,
         proxy_admin.address,
         eth_utils.to_bytes(hexstr="0x"),
-        {'from': admin, 'gas_limit': 1000000000},
+        {'from': admin},
 #        publish_source=True,
     )
     usds_proxy = Contract.from_abi("USDsL2", proxy.address, USDsL2.abi)
@@ -148,7 +156,7 @@ def main():
         vault_proxy.address,
         l2_gateway,
         usds_l1_address,
-        {'from': owner, 'gas_limit': 1000000000},
+        {'from': owner},
 #        publish_source=True,
     )
 
@@ -157,7 +165,7 @@ def main():
         'SPA',
         l2_gateway,
         spa_l1_address,
-        {'from': owner, 'gas_limit': 1000000000},
+        {'from': owner},
 #        publish_source=True,
     )
 
@@ -166,36 +174,36 @@ def main():
         spa.address,
         weth_arbitrum,
         chainlink_flags,
-        {'from': owner, 'gas_limit': 1000000000}
+        {'from': owner}
     )
 
     oracle_proxy.updateVaultAddress(
         vault_proxy.address,
-        {'from': owner, 'gas_limit': 1000000000}
+        {'from': owner}
     )
 
     txn = vault_proxy.initialize(
         spa.address,
-        core.address,
+        core_proxy.address,
         fee_vault,
-        {'from': owner, 'gas_limit': 1000000000}
+        {'from': owner}
     )
 
     # configure VaultCore contract with USDs contract address
     txn = vault_proxy.updateUSDsAddress(
         usds_proxy,
-        {'from': owner, 'gas_limit': 1000000000}
+        {'from': owner}
     )
     # configure VaultCore contract with Oracle contract address
     txn = vault_proxy.updateOracleAddress(
         oracle_proxy.address,
-        {'from': owner, 'gas_limit': 1000000000}
+        {'from': owner}
     )
 
     txn = spa.setMintable(
         vault_proxy.address,
         True,
-        {'from': owner, 'gas_limit': 1000000000}
+        {'from': owner}
     )
 
     # configure stablecoin collaterals in vault and oracle
@@ -203,7 +211,10 @@ def main():
 
     print(f"\n{network.show_active()}:\n")
     print(f"Bancor Formula address: {bancor.address}")
-    print(f"Vault Core Tools address: {core.address}")
+
+    print(f"Vault Core Tools:")
+    print(f"\taddress: {core.address}")
+    print(f"\tproxy address: {core_proxy.address}")
 
     print(f"Vault Core:")
     print(f"\taddress: {vault.address}")
@@ -265,7 +276,7 @@ def configure_collaterals(
             0, # _allocatePercentage
             zero_address, # _buyBackAddr
             False, # _rebaseAllowed
-            {'from': owner, 'gas_limit': 1000000000}
+            {'from': owner}
         )
         # wire up price feed for the added collateral
         oracle_proxy.updateCollateralInfo(
@@ -273,5 +284,5 @@ def configure_collaterals(
             True, # supported
             chainlink, # chainlink price feed address
             precision, # chainlink price feed precision
-            {'from': owner, 'gas_limit': 1000000000}
+            {'from': owner}
         )

@@ -119,7 +119,7 @@ def sperax(
         owner_l2
     )
 
-    (vault_proxy, vault_core_tools) = deploy_vault(
+    (vault_proxy, core_proxy) = deploy_vault(
         VaultCoreTools,
         VaultCore,
         TransparentUpgradeableProxy,
@@ -197,7 +197,7 @@ def sperax(
 
     vault_proxy.initialize(
         spa.address,
-        vault_core_tools.address,
+        core_proxy.address,
         vault_fee,
         {'from': owner_l2}
     )
@@ -231,7 +231,7 @@ def sperax(
     return (
         spa,
         usds_proxy,
-        vault_core_tools,
+        core_proxy,
         vault_proxy,
         oracle_proxy,
         strategy_proxy,
@@ -260,10 +260,17 @@ def deploy_vault(
     admin,
     owner_l2
 ):
-    vault_core_tools = VaultCoreTools.deploy(
+    core = VaultCoreTools.deploy(
         {'from': owner_l2}
     )
-    vault_core_tools.initialize(bancor.address)
+    proxy = TransparentUpgradeableProxy.deploy(
+        core.address,
+        proxy_admin.address,
+        eth_utils.to_bytes(hexstr="0x"),
+        {'from': admin},
+    )
+    core_proxy = Contract.from_abi("VaultCoreTools", proxy.address, VaultCoreTools.abi)
+    core_proxy.initialize(bancor.address)
 
     vault = VaultCore.deploy(
         {'from': owner_l2}
@@ -275,7 +282,7 @@ def deploy_vault(
         {'from': admin}
     )
     vault_proxy = Contract.from_abi("VaultCore", proxy.address, VaultCore.abi)
-    return (vault_proxy, vault_core_tools)
+    return (vault_proxy, core_proxy)
 
 
 def deploy_oracle(

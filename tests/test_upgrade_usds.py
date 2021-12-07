@@ -6,8 +6,16 @@ import brownie
 # DON'T USE accounts[0-4]. 0-4 ARE RESERVED BY conftest.py
 #
 
-def test_upgrade_usds(sperax, USDsL2V2, Contract, admin, owner_l2, accounts):
-    (proxy_admin, spa, usds_proxy, vault_core_tools, vault_proxy, oracle_proxy, strategy, buyback) = sperax
+def test_upgrade_usds(sperax, USDsL2V2, proxy_admin, Contract, admin, owner_l2, accounts):
+    (
+        spa,
+        usds_proxy,
+        core_proxy,
+        vault_proxy,
+        oracle_proxy,
+        strategy_proxy,
+        buyback
+    ) = sperax
 
     print("upgrade USDsL2 contract:\n")
     # test case requires duplicating the contract, USDsL2.sol, renamed as USDsL2V2.sol
