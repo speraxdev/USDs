@@ -95,20 +95,21 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
         // Set the amount on the asset we want to deposit
         _amounts[poolCoinIndex] = _amount;
         ICurvePool curvePool = ICurvePool(platformAddress);
-        // uint256 assetDecimals = ERC20(_asset).decimals();
-        // uint256 depositValue = _amount
-        //     .scaleBy(int8(18 - assetDecimals))
-        //     .divPrecisely(curvePool.get_virtual_price());
-        // uint256 minMintAmount = depositValue.mulTruncate(
-        //     uint256(1e18).sub(maxSlippage)
-        // );
-        uint256 minMintAmount = 0;
+        uint256 assetDecimals = ERC20(_asset).decimals();
+        uint256 depositValue = _amount
+            .scaleBy(int8(18 - assetDecimals))
+            .divPrecisely(curvePool.get_virtual_price());
+        uint256 minMintAmount = depositValue.mulTruncate(
+            uint256(1e18).sub(maxSlippage)
+        );
+        //uint256 minMintAmount = 0;
         // When the asset is WETH, convert it to ETH and deposit
-        if (_asset == wethAdddress) {
-            IWETH9(wethAdddress).withdraw(_amount);
-        }
+        // if (_asset == wethAdddress) {
+        //     IWETH9(wethAdddress).withdraw(_amount);
+        // }
         // Do the deposit to 3pool
-        curvePool.add_liquidity{value:_amount}(_amounts, minMintAmount);
+        //curvePool.add_liquidity{value:_amount}(_amounts, minMintAmount);
+        curvePool.add_liquidity(_amounts, minMintAmount);
         allocatedAmt[_asset] = allocatedAmt[_asset].add(_amount);
         // Deposit into Gauge
         IERC20 pToken = IERC20(assetToPToken[_asset]);
@@ -144,7 +145,7 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
         // amount in the worst case (i.e withdrawing all LP tokens)
         uint256 maxAmount = curvePool.calc_withdraw_one_coin(
             totalPTokens,
-            int128(poolCoinIndex)
+            poolCoinIndex
         );
         uint256 maxBurnedPTokens = totalPTokens.mul(_amount).div(maxAmount);
 
@@ -158,18 +159,20 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
                 maxBurnedPTokens.sub(contractPTokens)
             );
         }
-
-        uint256[3] memory _amounts = [uint256(0), uint256(0), uint256(0)];
-        _amounts[poolCoinIndex] = _amount;
-        curvePool.remove_liquidity_imbalance(_amounts, maxBurnedPTokens);
-        if (_amount >= allocatedAmt[_asset]) {
+        (contractPTokens, , ) = _getTotalPTokens();
+        maxBurnedPTokens = maxBurnedPTokens < contractPTokens ? maxBurnedPTokens : contractPTokens;
+        uint256 balance_before = IERC20(_asset).balanceOf(address(this));
+        curvePool.remove_liquidity_one_coin(maxBurnedPTokens, poolCoinIndex, 0);
+        uint256 balance_after = IERC20(_asset).balanceOf(address(this));
+        uint256 _amount_received = balance_after.sub(balance_before);
+        if (_amount_received >= allocatedAmt[_asset]) {
             allocatedAmt[_asset] = 0;
         } else {
-            allocatedAmt[_asset] = allocatedAmt[_asset].sub(_amount);
+            allocatedAmt[_asset] = allocatedAmt[_asset].sub(_amount_received);
         }
 
-        IERC20(_asset).safeTransfer(_recipient, _amount);
-        emit Withdrawal(_asset, address(assetToPToken[_asset]), _amount);
+        IERC20(_asset).safeTransfer(_recipient, _amount_received);
+        emit Withdrawal(_asset, address(assetToPToken[_asset]), _amount_received);
     }
 
     /**
@@ -186,7 +189,10 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
         ICurvePool curvePool = ICurvePool(platformAddress);
         uint256 poolCoinIndex = _getPoolCoinIndex(_asset);
         uint256 _amount = checkInterestEarned(_asset);
-        uint256 amtReceived = curvePool.remove_liquidity_one_coin(_amount, int128(poolCoinIndex), 0);
+        uint256 balance_before = IERC20(_asset).balanceOf(address(this));
+        curvePool.remove_liquidity_one_coin(_amount, poolCoinIndex, 0);
+        uint256 balance_after = IERC20(_asset).balanceOf(address(this));
+        uint256 amtReceived = balance_after.sub(balance_before);
         IERC20(_asset).safeTransfer(_recipient, amtReceived);
 
         emit Withdrawal(_asset, address(assetToPToken[_asset]), amtReceived);
@@ -212,7 +218,7 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
         // amount in the worst case (i.e withdrawing all LP tokens)
         uint256 maxAmount = curvePool.calc_withdraw_one_coin(
             totalPTokens,
-            int128(poolCoinIndex)
+            poolCoinIndex
         );
         uint256 maxBurnedPTokens = totalPTokens.mul(_amount).div(maxAmount);
 
@@ -227,18 +233,21 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
             );
         }
 
-        uint256[3] memory _amounts = [uint256(0), uint256(0), uint256(0)];
-        _amounts[poolCoinIndex] = _amount;
-        curvePool.remove_liquidity_imbalance(_amounts, maxBurnedPTokens);
-        if (_amount >= allocatedAmt[_asset]) {
+        (contractPTokens, , ) = _getTotalPTokens();
+        maxBurnedPTokens = maxBurnedPTokens < contractPTokens ? maxBurnedPTokens : contractPTokens;
+        uint256 balance_before = IERC20(_asset).balanceOf(address(this));
+        curvePool.remove_liquidity_one_coin(maxBurnedPTokens, poolCoinIndex, 0);
+        uint256 balance_after = IERC20(_asset).balanceOf(address(this));
+        uint256 _amount_received = balance_after.sub(balance_before);
+
+        if (_amount_received >= allocatedAmt[_asset]) {
             allocatedAmt[_asset] = 0;
         } else {
-            allocatedAmt[_asset] = allocatedAmt[_asset].sub(_amount);
+            allocatedAmt[_asset] = allocatedAmt[_asset].sub(_amount_received);
         }
 
-        IERC20(_asset).safeTransfer(vaultAddress, _amount);
-
-        emit Withdrawal(_asset, address(assetToPToken[_asset]), _amount);
+        IERC20(_asset).safeTransfer(vaultAddress, _amount_received);
+        emit Withdrawal(_asset, address(assetToPToken[_asset]), _amount_received);
     }
 
     function withdrawAll() external override onlyVaultOrOwner nonReentrant {}
@@ -285,7 +294,7 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
         uint256 poolCoinIndex = _getPoolCoinIndex(_asset);
         uint256 maxAmount = curvePool.calc_withdraw_one_coin(
             totalPTokens,
-            int128(poolCoinIndex)
+            poolCoinIndex
         );
         uint256 assetInterest;
         if (maxAmount > allocatedAmt[_asset]) {

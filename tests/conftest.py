@@ -344,7 +344,7 @@ def deploy_strategy(
     owner_l2,
 ):
     # Arbitrum-one (mainnet):
-    platform_address = '0xF97c707024ef0DD3E77a0824555a46B622bfB500'
+    platform_address = '0x960ea3e3C7FB317332d990873d354E18d7645590'
     reward_token_address = '0x11cdb42b0eb46d95f990bedd4695a6e3fa034978'
     crv_gauge_address = '0x97E2768e8E73511cA874545DC5Ff8067eB19B787'
 
@@ -470,7 +470,7 @@ def create_uniswap_v3_pool(
     owner_l2
 ):
     mintSPA(spa, amount1, owner_l2)
-    
+
     position_mgr_address = '0xC36442b4a4522E871399CD717aBDD847Ab11FE88'
     position_mgr = brownie.interface.INonfungiblePositionManager(position_mgr_address)
 
