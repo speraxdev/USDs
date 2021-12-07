@@ -382,7 +382,6 @@ def deploy_strategy(
         assets,
         p_tokens,
         crv_gauge_address,
-        weth.address,
         {'from': owner_l2}
     )
     return strategy_proxy

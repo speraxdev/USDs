@@ -6,7 +6,6 @@
  */
  pragma solidity ^0.6.12;
 
-import "../interfaces/IWETH9.sol";
 import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import { ICurvePool } from "./ICurvePool.sol";
@@ -22,7 +21,6 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
 
     address internal crvGaugeAddress;
     address internal crvMinterAddress;
-    address internal wethAdddress;
     uint256 internal constant maxSlippage = 1e16; // 1%, same as the Curve UI
 
     receive() external payable {}
@@ -47,14 +45,12 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
         address _rewardTokenAddress, // CRV
         address[] calldata _assets,
         address[] calldata _pTokens,
-        address _crvGaugeAddress,
-        address _wethAdddress
+        address _crvGaugeAddress
     ) external initializer {
         require(_assets.length == 3, "Must have exactly three assets");
         // Should be set prior to abstract initialize call otherwise
         // abstractSetPToken calls will fail
         crvGaugeAddress = _crvGaugeAddress;
-        wethAdddress = _wethAdddress;
         InitializableAbstractStrategy._initialize(
             _platformAddress,
             _vaultAddress,
@@ -102,11 +98,6 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
         uint256 minMintAmount = depositValue.mulTruncate(
             uint256(1e18).sub(maxSlippage)
         );
-        //uint256 minMintAmount = 0;
-        // When the asset is WETH, convert it to ETH and deposit
-        // if (_asset == wethAdddress) {
-        //     IWETH9(wethAdddress).withdraw(_amount);
-        // }
         // Do the deposit to 3pool
         //curvePool.add_liquidity{value:_amount}(_amounts, minMintAmount);
         curvePool.add_liquidity(_amounts, minMintAmount);
