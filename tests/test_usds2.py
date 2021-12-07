@@ -9,7 +9,15 @@ from brownie.test import given, strategy
 
 @given(amount=strategy('uint256', min_value=1, max_value=2**256-1))
 def test_valid_mint(sperax, accounts, amount):
-    (proxy_admin, spa, usds_proxy, vault_core_tools, vault_proxy, oracle_proxy, strategy, buyback) = sperax
+    (
+        spa,
+        usds_proxy,
+        core_proxy,
+        vault_proxy,
+        oracle_proxy,
+        strategy_proxy,
+        buyback
+    ) = sperax
 
     print('amount: ', amount)
     first_owner = accounts[5]
