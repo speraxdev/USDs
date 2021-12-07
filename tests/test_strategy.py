@@ -42,7 +42,6 @@ def test_deposit(sperax, weth, accounts):
     assert txn.events['Deposit']['_amount'] == amount
 
 
-
 def test_deposit_invalid_amount(sperax, weth, accounts):
     (
         spa,
@@ -84,8 +83,8 @@ def test_deposit_invalid_assets(sperax, weth, accounts, mock_token2):
             {'from': vault_proxy.address}
         )
 
+
 def test_withdraw(sperax, weth, accounts):
-
     (
         spa,
         usds_proxy,
@@ -96,16 +95,32 @@ def test_withdraw(sperax, weth, accounts):
         buyback
     ) = sperax
 
-    amount = int(999)
+    amount = int(1000000000)
 
-    strategy_proxy.withdraw(
-        accounts[9],
+    txn = weth.deposit(
+        {'from': accounts[9].address, 'amount': amount}
+    )
+
+    weth_erc20 = brownie.interface.IERC20(weth.address)
+    txn = weth_erc20.transfer(strategy_proxy.address, amount, {'from': accounts[9]})
+    assert txn.return_value == True
+    txn = strategy_proxy.deposit(
         weth.address,
         amount,
         {'from': vault_proxy.address}
     )
+    assert txn.events['Deposit']['_asset'] == weth.address
+    assert txn.events['Deposit']['_amount'] == amount
 
-def test_withdraw_invalid_recipient(sperax, weth, accounts):
+    # withdraw 1/10 of the previous deposit
+    txn = strategy_proxy.withdraw(
+        accounts[8],
+        weth.address,
+        (amount/10),
+        {'from': vault_proxy.address}
+    )
+
+def test_withdraw_invalid_assets(sperax, mock_token2, accounts):
     (
         spa,
         usds_proxy,
@@ -115,17 +130,15 @@ def test_withdraw_invalid_recipient(sperax, weth, accounts):
         strategy_proxy,
         buyback
     ) = sperax
-    amount  = int(999)
-    invalid_address = ""
 
-    with brownie.reverts('Invalid recipient'):
-        strategy_proxy.withdraw(
-        invalid_address,
-        weth.address,
-        amount,
-        {'from': vault_proxy.address}
-    )
+    amount = int(9999)
 
+    with brownie.reverts("Invalid 3pool asset"):
+        txn = strategy_proxy.withdraw(
+            accounts[8],
+            mock_token2.address,
+            (amount/10),
+            {'from': vault_proxy.address})
 
 def test_withdraw_invalid_amount(sperax, weth, accounts):
     (
@@ -137,12 +150,93 @@ def test_withdraw_invalid_amount(sperax, weth, accounts):
         strategy_proxy,
         buyback
     ) = sperax
-    amount  = int(999)
 
-    with brownie.reverts('Invalid amount'):
-        strategy_proxy.withdraw(
-        accounts[9],
+    amount = int(0)
+
+    with brownie.reverts("Invalid amount"):
+        txn = strategy_proxy.withdraw(
+            accounts[8],
+            weth.address,
+            (amount),
+            {'from': vault_proxy.address}
+        )
+
+def test_withdraw_invalid_amount(sperax, weth, accounts):
+    (
+        spa,
+        usds_proxy,
+        vault_core_tools,
+        vault_proxy,
+        oracle_proxy,
+        strategy_proxy,
+        buyback
+    ) = sperax
+
+    amount = int(0)
+
+    with brownie.reverts("Invalid amount"):
+        txn = strategy_proxy.withdraw(
+            accounts[8],
+            weth.address,
+            (amount),
+            {'from': vault_proxy.address}
+        )
+
+def test_withdraw_interest(sperax, weth, accounts):
+    (
+        spa,
+        usds_proxy,
+        vault_core_tools,
+        vault_proxy,
+        oracle_proxy,
+        strategy_proxy,
+        buyback
+    ) = sperax
+
+    amount = int(1000000000)
+
+    txn = weth.deposit(
+        {'from': accounts[9].address, 'amount': amount}
+    )
+
+    weth_erc20 = brownie.interface.IERC20(weth.address)
+    txn = weth_erc20.transfer(strategy_proxy.address, amount, {'from': accounts[9]})
+    assert txn.return_value == True
+    txn = strategy_proxy.deposit(
         weth.address,
         amount,
         {'from': vault_proxy.address}
     )
+    assert txn.events['Deposit']['_asset'] == weth.address
+    assert txn.events['Deposit']['_amount'] == amount
+
+    # withdraw 1/10 of the previous deposit
+
+    interest = strategy_proxy.checkInterestEarned(weth.address, {'from': vault_proxy.address})
+
+    print(interest)
+
+    if(interest > 0):
+        txn = strategy_proxy.withdrawInterest(
+            accounts[8],
+            weth.address,
+            {'from': vault_proxy.address}
+        )
+
+def test_check_balance(sperax, weth, accounts):
+    (
+        spa,
+        usds_proxy,
+        vault_core_tools,
+        vault_proxy,
+        oracle_proxy,
+        strategy_proxy,
+        buyback
+    ) = sperax
+
+
+    balance = strategy_proxy.checkBalance(weth, {'from': vault_proxy.address})
+
+    assert  balance > 0
+
+
