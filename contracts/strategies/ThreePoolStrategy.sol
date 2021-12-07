@@ -95,20 +95,21 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
         // Set the amount on the asset we want to deposit
         _amounts[poolCoinIndex] = _amount;
         ICurvePool curvePool = ICurvePool(platformAddress);
-        // uint256 assetDecimals = ERC20(_asset).decimals();
-        // uint256 depositValue = _amount
-        //     .scaleBy(int8(18 - assetDecimals))
-        //     .divPrecisely(curvePool.get_virtual_price());
-        // uint256 minMintAmount = depositValue.mulTruncate(
-        //     uint256(1e18).sub(maxSlippage)
-        // );
-        uint256 minMintAmount = 0;
+        uint256 assetDecimals = ERC20(_asset).decimals();
+        uint256 depositValue = _amount
+            .scaleBy(int8(18 - assetDecimals))
+            .divPrecisely(curvePool.get_virtual_price());
+        uint256 minMintAmount = depositValue.mulTruncate(
+            uint256(1e18).sub(maxSlippage)
+        );
+        //uint256 minMintAmount = 0;
         // When the asset is WETH, convert it to ETH and deposit
-        if (_asset == wethAdddress) {
-            IWETH9(wethAdddress).withdraw(_amount);
-        }
+        // if (_asset == wethAdddress) {
+        //     IWETH9(wethAdddress).withdraw(_amount);
+        // }
         // Do the deposit to 3pool
-        curvePool.add_liquidity{value:_amount}(_amounts, minMintAmount);
+        //curvePool.add_liquidity{value:_amount}(_amounts, minMintAmount);
+        curvePool.add_liquidity(_amounts, minMintAmount);
         allocatedAmt[_asset] = allocatedAmt[_asset].add(_amount);
         // Deposit into Gauge
         IERC20 pToken = IERC20(assetToPToken[_asset]);
