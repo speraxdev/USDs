@@ -361,7 +361,7 @@ def deploy_strategy(
         weth,
     ]
 
-    p_tokens = [
+    lp_tokens = [
         '0x8e0B8c8BB9db49a46697F3a5Bb8A308e744821D2',
         '0x8e0B8c8BB9db49a46697F3a5Bb8A308e744821D2',
         '0x8e0B8c8BB9db49a46697F3a5Bb8A308e744821D2',
@@ -387,7 +387,7 @@ def deploy_strategy(
         vault_proxy,
         reward_token_address,
         assets,
-        p_tokens,
+        lp_tokens,
         crv_gauge_address,
         {'from': owner_l2}
     )

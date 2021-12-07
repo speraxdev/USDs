@@ -20,6 +20,21 @@ import eth_utils
 def signal_handler(signal, frame):
     sys.exit(0)
 
+def weth():
+    # Arbitrum-one mainnet:
+    weth_address = '0x82af49447d8a07e3bd95bd0d56f35241523fbab1'
+    return interface.IWETH9(weth_address)
+
+def usdt():
+    # Arbitrum-one mainnet:
+    usdt_address = '0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9'
+    return interface.IERC20(usdt_address)
+
+def wbtc():
+    # Arbitrum-one mainnet:
+    wbtc_address = '0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f'
+    return interface.IERC20(wbtc_address)
+
 def main():
     # handle ctrl-C event
     signal.signal(signal.SIGINT, signal_handler)
@@ -86,12 +101,22 @@ def main():
         proxy.address,
         ThreePoolStrategy.abi
     )
+    assets = [
+        usdt,
+        wbtc,
+        weth,
+    ]
+    lp_tokens = [
+        '0x8e0B8c8BB9db49a46697F3a5Bb8A308e744821D2',
+        '0x8e0B8c8BB9db49a46697F3a5Bb8A308e744821D2',
+        '0x8e0B8c8BB9db49a46697F3a5Bb8A308e744821D2',
+    ]
     strategy_proxy.initialize(
-        '0xF97c707024ef0DD3E77a0824555a46B622bfB500', # platform address
+        '0x960ea3e3C7FB317332d990873d354E18d7645590', # platform address
         vault_proxy.address, # vault address
         '0x11cdb42b0eb46d95f990bedd4695a6e3fa034978', # reward token address
-        # assets
-        # p tokens
+        assets, # assets
+        lp_tokens, # LP tokens
         '0x97E2768e8E73511cA874545DC5Ff8067eB19B787', # crv gauge address
         interface.IWETH9('0x82af49447d8a07e3bd95bd0d56f35241523fbab1'), # arbitrum-one weth address
         {'from': owner},
