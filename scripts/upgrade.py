@@ -70,15 +70,22 @@ def main():
     print(f"\n{network.show_active()}:\n")
 
     if len(vault_proxy_address) > 0:
-        print("upgrade Vault contract:\n")
-        new_vault = VaultCoreV2.deploy(
-            {'from': owner, 'gas_limit': 1000000000}
-        )
+        print("set mintRedeemAllowed to false to check that state changes:\n")
         vault_proxy = Contract.from_abi(
             "VaultCore",
             vault_proxy_address,
             VaultCore.abi
         )
+
+        # set mintRedeemAllowed to false to check that state changes
+        vault_proxy.updateMintBurnPermission(False, {'from': owner, 'gas_limit': 1000000000})
+        print(f"mintRedeemAllowed is now: {vault_proxy.mintRedeemAllowed()}\n")
+
+        print("upgrade Vault contract:\n")
+        new_vault = VaultCoreV2.deploy(
+            {'from': owner, 'gas_limit': 1000000000}
+        )
+        
         proxy_admin.upgrade(
             vault_proxy.address,
             new_vault.address,
@@ -98,7 +105,8 @@ def main():
         )
         print(f"original Vault proxy address: {vault_proxy.address}")
         print(f"upgraded Vault proxy address: {new_vault_proxy.address}")
-        print(new_vault_proxy.version())
+        print(f"Vault version: {new_vault_proxy.version()}")
+        print(f"mintRedeemAllowed is still (should be false): {vault_proxy.mintRedeemAllowed()}\n")
 
     if len(usds_proxy_address) > 0:
         print("upgrade USDs contract:\n")
@@ -114,14 +122,24 @@ def main():
             VaultCore.abi
         )
 
-        new_usds = USDsL2V2.deploy(
-            {'from': owner, 'gas_limit': 1000000000}
-        )
+        
         usds_proxy = Contract.from_abi(
             "USDsL2",
             usds_proxy_address,
             USDsL2.abi
         )
+
+        # change vault address to verify state changes persist
+        vitalik_address = "0xd8da6bf26964af9d7eed9e03e53415d37aa96045"
+        usds_proxy.changeVault(vitalik_address, {'from': owner, 'gas_limit': 1000000000})
+        print(f"vaultAddress is now: {usds_proxy.vaultAddress()}\n")
+        
+        
+        new_usds = USDsL2V2.deploy(
+            {'from': owner, 'gas_limit': 1000000000}
+        )
+
+
         proxy_admin.upgrade(
             usds_proxy.address,
             new_usds.address,
@@ -143,18 +161,28 @@ def main():
         )
         print(f"original USDsL2 proxy address: {usds_proxy.address}")
         print(f"upgraded USDsL2 proxy address: {new_usds_proxy.address}")
-        print(new_usds_proxy.version())
+        print(f"USDsL2 version: {new_usds_proxy.version()}")
+        print(f"vaultAddress is still (should be 0xd8da6bf26964af9d7eed9e03e53415d37aa96045): {usds_proxy.vaultAddress()}\n")
 
     if len(oracle_proxy_address) > 0:
-        print("upgrade Oracle contract:\n")
-        new_oracle = OracleV2.deploy(
-            {'from': owner, 'gas_limit': 1000000000}
-        )
+       
+        
         oracle_proxy = Contract.from_abi(
             "Oracle",
             oracle_proxy_address,
             Oracle.abi
         )
+
+        # change vault address to verify state changes persist
+        vitalik_address = "0xd8da6bf26964af9d7eed9e03e53415d37aa96045"
+        oracle_proxy.updateVaultAddress(vitalik_address, {'from': owner, 'gas_limit': 1000000000})
+        print(f"VaultAddr is now: {oracle_proxy.VaultAddr()}\n")
+
+        print("upgrade Oracle contract:\n")
+        new_oracle = OracleV2.deploy(
+            {'from': owner, 'gas_limit': 1000000000}
+        )
+
         proxy_admin.upgrade(
             oracle_proxy.address,
             new_oracle.address,
@@ -175,7 +203,8 @@ def main():
         )
         print(f"original Oracle proxy address: {oracle_proxy.address}")
         print(f"upgraded Oracle proxy address: {new_oracle_proxy.address}")
-        print(new_oracle_proxy.version())
+        print(f"Oracle  version: {new_oracle_proxy.version()}")
+        print(f"VaultAddr is still (should be 0xd8da6bf26964af9d7eed9e03e53415d37aa96045): {oracle_proxy.VaultAddr()}\n")
 
 
     if len(vault_proxy_address) > 0 and len(oracle_proxy_address) > 0:
