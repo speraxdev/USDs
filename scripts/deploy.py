@@ -16,6 +16,7 @@ from brownie import (
     convert
 )
 import eth_utils
+import constants
 
 def signal_handler(signal, frame):
     sys.exit(0)
@@ -49,24 +50,22 @@ def main():
     print(f"contract owner account: {owner.address}\n")
 
     print(f"\nDeploying on {network.show_active()}:\n")
-    spa_l1_address = input("Enter L1 wSPA address: ").strip()
-    if len(spa_l1_address) == 0:
-        print("\nMissing L1 wSPA address\n")
-        return
-    usds_l1_address = input("Enter L1 USDs address: ").strip()
-    if len(usds_l1_address) == 0:
-        print("\nMissing L1 USDs address\n")
-        return
-
-    fee_vault = input("Enter fee vault address: ").strip()
-    if len(fee_vault) == 0:
-        print("\nMissing fee vault address\n")
+    spa_l1_address = constants.testnetAddresses.deploy.L1wSPA if network.show_active() == 'arbitrum-rinkeby' else constants.mainnetAddresses.deploy.L1wSPA
+    usds_l1_address = constants.testnetAddresses.deploy.L1wUSD if network.show_active() == 'arbitrum-rinkeby' else constants.mainnetAddresses.deploy.L1wUSD
+    print(f"\nL1 wSPA address: {spa_l1_address}\n")
+    print(f"\nL1 USDs address: {usds_l1_address}\n")
+    confirm_addr_input = input("Confirm these addresses are correct (y/n)").strip()
+    if confirm_addr_input != "y":
+        print(f"\nStopping script here because you entered {confirm_addr_input} \n")
         return
 
 
     initial_balance = owner.balance()
 
-    name = input("\nEnter name (Sperax USD): ") or "Sperax USD"
+    name = constants.USDs_token_details.name
+    symbol = constants.USDs_token_details.symbol
+    
+    input("\nEnter name (Sperax USD): ") or "Sperax USD"
     symbol = input("Enter symbol (USDs): ") or "USDs"
     print('\n')
 
