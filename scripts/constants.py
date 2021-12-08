@@ -34,9 +34,9 @@ testnet_deploy_addresses = DeployAddresses(
 
 ## Note: these change after you deploy the contracts, so deploy first and then put those addresses here.
 testnet_upgrade_addresses = UpgradeAddresses(
-    "0x16EB5598EA31B347aC45b601672298CB0C57F5bA",
-    "0x1Eade64fB871CBe48c48c0f2012d59D4407386bc",
-    "0x054DdE4Cc572A9D2478940BD864d7C3853c0848f"
+    "0x2B514b10EECBD18bd7a4AF5Eb1c0eF079e850a97",
+    "0xA2d9e8c9D5648BD96a4Da52562EE5e2A121D66Ab",
+    "0xC85cad92316A48e48c7E826E31319999441Eafee"
     )
 
 testnet_third_party_addresses = ThirdPartyAddresses(
