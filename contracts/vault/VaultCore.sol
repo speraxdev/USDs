@@ -251,55 +251,55 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 	/**
 	 * @dev mint USDs (burn SPA, lock collateral) by entering USDs amount
 	 * @param collateralAddr the address of user's chosen collateral
-	 * @param USDsMintAmt the amount of USDs to be minted
-	 * @param slippageSPA maximum amount of SPA burnt
-	 * @param slippageCollateral maximum amount of collateral locked
+	 * @param USDsAmtToMint the amount of USDs to be minted
+	 * @param maxCollateralLocked maximum amount of collateral locked
+	 * @param maxSPAburnt maximum amount of SPA burnt
 	 * @param deadline transaction deadline
 	 */
-	function mintWithUSDs(address collateralAddr, uint USDsMintAmt, uint slippageCollateral, uint slippageSPA, uint deadline)
+	function mintBySpecifyingUSDsAmt(address collateralAddr, uint USDsAmtToMint, uint maxCollateralLocked, uint maxSPAburnt, uint deadline)
 		public
 		whenMintRedeemAllowed
 		nonReentrant
 	{
 		require(collateralsInfo[collateralAddr].added, "Collateral not added");
-		require(USDsMintAmt > 0, "Amount needs to be greater than 0");
-		_mint(collateralAddr, USDsMintAmt, 0, USDsMintAmt, slippageCollateral, slippageSPA, deadline);
+		require(USDsAmtToMint > 0, "Amount needs to be greater than 0");
+		_mint(collateralAddr, USDsAmtToMint, 0, USDsAmtToMint, maxCollateralLocked, maxSPAburnt, deadline);
 	}
 
 	/**
 	 * @dev mint USDs (burn SPA, lock collateral) by entering SPA amount
 	 * @param collateralAddr the address of user's chosen collateral
-	 * @param SPAamt the amount of SPA to burn
-	 * @param slippageUSDs minimum amount of USDs minted
-	 * @param slippageCollateral maximum amount of collateral locked
+	 * @param SPAamtToBurn the amount of SPA to burn
+	 * @param minUSDsMinted minimum amount of USDs minted
+	 * @param maxCollateralLocked maximum amount of collateral locked
 	 * @param deadline transaction deadline
 	 */
-	function mintWithSPA(address collateralAddr, uint SPAamt, uint slippageUSDs, uint slippageCollateral, uint deadline)
+	function mintBySpecifyingSPAamt(address collateralAddr, uint SPAamtToBurn, uint minUSDsMinted, uint maxCollateralLocked, uint deadline)
 		public
 		whenMintRedeemAllowed
 		nonReentrant
 	{
 		require(collateralsInfo[collateralAddr].added, "Collateral not added");
-		require(SPAamt > 0, "Amount needs to be greater than 0");
-		_mint(collateralAddr, SPAamt, 1, slippageUSDs, slippageCollateral, SPAamt, deadline);
+		require(SPAamtToBurn > 0, "Amount needs to be greater than 0");
+		_mint(collateralAddr, SPAamtToBurn, 1, minUSDsMinted, maxCollateralLocked, SPAamtToBurn, deadline);
 	}
 
 	/**
 	 * @dev mint USDs (burn SPA, lock collateral) by entering collateral amount
 	 * @param collateralAddr the address of user's chosen collateral
-	 * @param collateralAmt the amount of collateral locked
-	 * @param slippageUSDs minimum amount of USDs minted
-	 * @param slippageSPA maximum amount of SPA burnt
+	 * @param collateralAmtToLock the amount of collateral locked
+	 * @param minUSDsMinted minimum amount of USDs minted
+	 * @param maxSPAburnt maximum amount of SPA burnt
 	 * @param deadline transaction deadline
 	 */
-	function mintWithColla(address collateralAddr, uint collateralAmt, uint slippageUSDs, uint slippageSPA, uint deadline)
+	function mintBySpecifyingCollateralAmt(address collateralAddr, uint collateralAmtToLock, uint minUSDsMinted, uint maxSPAburnt, uint deadline)
 		public
 		whenMintRedeemAllowed
 		nonReentrant
 	{
 		require(collateralsInfo[collateralAddr].added, "Collateral not added");
-		require(collateralAmt > 0, "Amount needs to be greater than 0");
-		_mint(collateralAddr, collateralAmt, 2, slippageUSDs, collateralAmt, slippageSPA, deadline);
+		require(collateralAmtToLock > 0, "Amount needs to be greater than 0");
+		_mint(collateralAddr, collateralAmtToLock, 2, minUSDsMinted, collateralAmtToLock, maxSPAburnt, deadline);
 	}
 
 	/**
@@ -307,9 +307,9 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 	 * @param collateralAddr the address of the collateral
 	 * @param valueAmt the amount of tokens (the specific meaning depends on valueType)
 	 * @param valueType the type of tokens (specific meanings are listed lower)
-	 *		valueType = 0: mintWithUSDs
-	 *		valueType = 1: mintWithSPA
-	 *		valueType = 2: mintWithColla
+	 *		valueType = 0: mintBySpecifyingUSDsAmt
+	 *		valueType = 1: mintBySpecifyingSPAamt
+	 *		valueType = 2: mintBySpecifyingCollateralAmt
 	 */
 	function _mint(
 		address collateralAddr,
