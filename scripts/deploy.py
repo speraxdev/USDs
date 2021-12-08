@@ -16,6 +16,8 @@ from brownie import (
     convert
 )
 import eth_utils
+from . import constants, utils
+
 
 def signal_handler(signal, frame):
     sys.exit(0)
@@ -49,39 +51,28 @@ def main():
     print(f"contract owner account: {owner.address}\n")
 
     print(f"\nDeploying on {network.show_active()}:\n")
-    spa_l1_address = input("Enter L1 wSPA address: ").strip()
-    if len(spa_l1_address) == 0:
-        print("\nMissing L1 wSPA address\n")
-        return
-    usds_l1_address = input("Enter L1 USDs address: ").strip()
-    if len(usds_l1_address) == 0:
-        print("\nMissing L1 USDs address\n")
-        return
-
-    fee_vault = input("Enter fee vault address: ").strip()
-    if len(fee_vault) == 0:
-        print("\nMissing fee vault address\n")
-        return
-
+    spa_l1_address = constants.testnetAddresses.deploy.L1_wSPA if network.show_active() == 'arbitrum-rinkeby' else constants.mainnetAddresses.deploy.L1_wSPA
+    usds_l1_address = constants.testnetAddresses.deploy.L1_USDs if network.show_active() == 'arbitrum-rinkeby' else constants.mainnetAddresses.deploy.L1_USDs
+    fee_vault = constants.testnetAddresses.deploy.fee_vault if network.show_active() == 'arbitrum-rinkeby' else constants.mainnetAddresses.deploy.fee_vault
+    print(f"\nL1 wSPA address: {spa_l1_address}\n")
+    print(f"\nL1 USDs address: {usds_l1_address}\n")
+    print(f"\nFee Vault address: {fee_vault}\n")
+    utils.confirm("Are the above addresses correct?")
 
     initial_balance = owner.balance()
 
-    name = input("\nEnter name (Sperax USD): ") or "Sperax USD"
-    symbol = input("Enter symbol (USDs): ") or "USDs"
+    name = constants.USDs_token_details.name
+    symbol = constants.USDs_token_details.symbol
+    print(f"\nToken Name: {name}\n")
+    print(f"\nToken Symbol: {symbol}\n")
+    utils.confirm("Are the above details correct?")
     print('\n')
 
-    # Arbitrum-one (mainnet):
-    l2_gateway = '0x096760F208390250649E3e8763348E783AEF5562'
-    chainlink_eth_price_feed = '0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612'
-    weth_arbitrum = '0x82af49447d8a07e3bd95bd0d56f35241523fbab1'
-    chainlink_flags = '0x3C14e07Edd0dC67442FA96f1Ec6999c57E810a83'
-
-    # Arbitrum rinkeby:
-    if network.show_active() == 'arbitrum-rinkeby':
-        l2_gateway = '0x9b014455AcC2Fe90c52803849d0002aeEC184a06'
-        chainlink_eth_price_feed = '0x5f0423B1a6935dc5596e7A24d98532b67A0AeFd8'
-        weth_arbitrum = '0xb47e6a5f8b33b3f17603c83a0535a9dcd7e32681'
-        chainlink_flags = '0x491B1dDA0A8fa069bbC1125133A975BF4e85a91b'
+    # third party addresses
+    l2_gateway = constants.testnet_third_party_addresses.l2_gateway if network.show_active() == 'arbitrum-rinkeby' else constants.mainnet_third_party_addresses.l2_gateway
+    chainlink_eth_price_feed = constants.testnet_third_party_addresses.chainlink_eth_price_feed if network.show_active() == 'arbitrum-rinkeby' else constants.mainnet_third_party_addresses.chainlink_eth_price_feed
+    weth_arbitrum = constants.testnet_third_party_addresses.weth_arbitrum if network.show_active() == 'arbitrum-rinkeby' else constants.mainnet_third_party_addresses.weth_arbitrum
+    chainlink_flags = constants.testnet_third_party_addresses.chainlink_flags if network.show_active() == 'arbitrum-rinkeby' else constants.mainnet_third_party_addresses.chainlink_flags
 
 
     # admin contract
@@ -109,7 +100,7 @@ def main():
 #        publish_source=True,
     )
     core_proxy = Contract.from_abi("VaultCoreTools", proxy.address, VaultCoreTools.abi)
-    txn = core_proxy.initialize(bancor.address)
+    txn = core_proxy.initialize(bancor.address, {'from': owner})
 
     vault = VaultCore.deploy(
         {'from': owner},
@@ -243,27 +234,8 @@ def configure_collaterals(
     owner,
     convert
 ):
-    # Arbitrum mainnet:
-    collaterals = {
-        # USDC
-        '0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8': '0x50834F3163758fcC1Df9973b6e91f0F0F0434aD3',
-        # USDT
-        '0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9': '0x3f3f5dF88dC9F13eac63DF89EC16ef6e7E25DdE7',
-        # DAI
-        '0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1': '0xc5C8E77B397E531B8EC06BFb0048328B30E9eCfB',
-        # WBTC
-        '0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f': '0x6ce185860a4963106506C203335A2910413708e9',
-        # WETH
-        '0x82aF49447D8a07e3bd95BD0d56f35241523fBab1': '0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612'
-    }
-    # Arbitrum rinkeby collaterals:
-    if network.show_active() == 'arbitrum-rinkeby':
-        collaterals = {
-            # USDC
-            '0x09b98f8b2395d076514037ff7d39a091a536206c': '0xe020609A0C31f4F96dCBB8DF9882218952dD95c4',
-            # WETH
-            '0xB47e6A5f8b33b3F17603C83a0535A9dcD7E32681': '0x5f0423B1a6935dc5596e7A24d98532b67A0AeFd8'
-        }
+    # configure stablecoin collaterals in vault and oracle
+    collaterals = constants.testnetAddresses.collaterals if network.show_active() == 'arbitrum-rinkeby' else constants.mainnetAddresses.collaterals
 
     precision = 10**8
     zero_address = convert.to_address('0x0000000000000000000000000000000000000000')
