@@ -39,8 +39,8 @@ contract Oracle is Initializable, IOracle, OwnableUpgradeable {
     address public USDsAddr;
     address public USDsOraclePool;
     address public SPAoraclePool;
-    address public SPAoracleBaseTokenAddr;
-    address public USDsOracleBaseTokenAddr;
+    address public SPAoracleQuoteTokenAddr;
+    address public USDsOracleQuoteTokenAddr;
     address constant private FLAG_ARBITRUM_SEQ_OFFLINE = address(bytes20(bytes32(uint256(keccak256("chainlink.flags.arbitrum-seq-offline")) - 1)));
     FlagsInterface internal chainlinkFlags;
 
@@ -66,8 +66,8 @@ contract Oracle is Initializable, IOracle, OwnableUpgradeable {
     event USDsAddressUpdated(address oldAddr, address newAddr);
     event VaultAddressUpdated(address oldAddr, address newAddr);
     event poolAddressesUpdated(
-        address SPAoracleBaseTokenAddr,
-        address USDsOracleBaseTokenAddr,
+        address SPAoracleQuoteTokenAddr,
+        address USDsOracleQuoteTokenAddr,
         address USDsOraclePool,
         address SPAoraclePool
     );
@@ -107,12 +107,12 @@ contract Oracle is Initializable, IOracle, OwnableUpgradeable {
         VaultAddr = _VaultAddr;
     }
 
-    function updateOraclePoolsAddress(address _SPAoracleBaseTokenAddr, address _USDsOracleBaseTokenAddr, address _USDsOraclePool, address _SPAoraclePool) external onlyOwner {
-        SPAoracleBaseTokenAddr = _SPAoracleBaseTokenAddr;
-        USDsOracleBaseTokenAddr = _USDsOracleBaseTokenAddr;
+    function updateOraclePoolsAddress(address _SPAoracleQuoteTokenAddr, address _USDsOracleQuoteTokenAddr, address _USDsOraclePool, address _SPAoraclePool) external onlyOwner {
+        SPAoracleQuoteTokenAddr = _SPAoracleQuoteTokenAddr;
+        USDsOracleQuoteTokenAddr = _USDsOracleQuoteTokenAddr;
         USDsOraclePool = _USDsOraclePool;
         SPAoraclePool = _SPAoraclePool;
-        emit poolAddressesUpdated(SPAoracleBaseTokenAddr, USDsOracleBaseTokenAddr, USDsOraclePool, SPAoraclePool);
+        emit poolAddressesUpdated(SPAoracleQuoteTokenAddr, USDsOracleQuoteTokenAddr, USDsOraclePool, SPAoraclePool);
     }
 
     /**
@@ -178,7 +178,7 @@ contract Oracle is Initializable, IOracle, OwnableUpgradeable {
         uint32 longestSec = OracleLibrary.getOldestObservationSecondsAgo(SPAoraclePool);
         uint32 period = movingAvgShortPeriod < longestSec ? movingAvgShortPeriod : longestSec;
         int24 timeWeightedAverageTick = OracleLibrary.consult(SPAoraclePool, period);
-        uint quoteAmount = OracleLibrary.getQuoteAtTick(timeWeightedAverageTick, uint128(SPAprice_prec), SPAaddr, SPAoracleBaseTokenAddr);
+        uint quoteAmount = OracleLibrary.getQuoteAtTick(timeWeightedAverageTick, uint128(SPAprice_prec), SPAaddr, SPAoracleQuoteTokenAddr);
         uint SPAprice = _getETHprice().mul(quoteAmount).div(ETHprice_prec);
         return SPAprice;
     }
@@ -190,8 +190,8 @@ contract Oracle is Initializable, IOracle, OwnableUpgradeable {
         uint32 longestSec = OracleLibrary.getOldestObservationSecondsAgo(USDsOraclePool);
         uint32 period = movingAvgShortPeriod < longestSec ? movingAvgShortPeriod : longestSec;
         int24 timeWeightedAverageTick = OracleLibrary.consult(USDsOraclePool, period);
-        uint quoteAmount = OracleLibrary.getQuoteAtTick(timeWeightedAverageTick, uint128(USDsPrice_prec), VaultAddr, USDsOracleBaseTokenAddr);
-        uint USDsPrice = _getCollateralPrice(USDsOracleBaseTokenAddr).mul(quoteAmount).div(_getCollateralPrice_prec(USDsOracleBaseTokenAddr));
+        uint quoteAmount = OracleLibrary.getQuoteAtTick(timeWeightedAverageTick, uint128(USDsPrice_prec), USDsAddr, USDsOracleQuoteTokenAddr);
+        uint USDsPrice = _getCollateralPrice(USDsOracleQuoteTokenAddr).mul(quoteAmount).div(_getCollateralPrice_prec(USDsOracleQuoteTokenAddr));
         return USDsPrice;
     }
 
@@ -202,8 +202,8 @@ contract Oracle is Initializable, IOracle, OwnableUpgradeable {
         uint32 longestSec = OracleLibrary.getOldestObservationSecondsAgo(USDsOraclePool);
         uint32 period = movingAvgLongPeriod < longestSec ? movingAvgLongPeriod : longestSec;
         int24 timeWeightedAverageTick = OracleLibrary.consult(USDsOraclePool, period);
-        uint quoteAmount = OracleLibrary.getQuoteAtTick(timeWeightedAverageTick, uint128(USDsPrice_prec), VaultAddr, USDsOracleBaseTokenAddr);
-        uint USDsPrice_average = _getCollateralPrice(USDsOracleBaseTokenAddr).mul(quoteAmount).div(_getCollateralPrice_prec(USDsOracleBaseTokenAddr));
+        uint quoteAmount = OracleLibrary.getQuoteAtTick(timeWeightedAverageTick, uint128(USDsPrice_prec), USDsAddr, USDsOracleQuoteTokenAddr);
+        uint USDsPrice_average = _getCollateralPrice(USDsOracleQuoteTokenAddr).mul(quoteAmount).div(_getCollateralPrice_prec(USDsOracleQuoteTokenAddr));
         return USDsPrice_average;
     }
     function getCollateralPrice_prec(address collateralAddr) external view override returns (uint) {

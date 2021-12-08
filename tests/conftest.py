@@ -178,8 +178,8 @@ def sperax(
         BuybackSingle,
         vault_proxy,
         spa,
-        usds_proxy,
-        1, # pool_fee
+        mock_token2,
+        3000, # pool_fee
         owner_l2
     )
 
@@ -220,14 +220,18 @@ def sperax(
         owner_l2
     )
 
+
     create_uniswap_v3_pool(
+        mock_token2.balanceOf(owner_l2),
         spa, # token1
-        mock_token2.balanceOf(owner_l2), # amount1
+        mock_token2.balanceOf(owner_l2)/2, # amount1
         mock_token2, # token2
-        mock_token2.balanceOf(owner_l2), # amount2
-        owner_l2
+        mock_token2.balanceOf(owner_l2)/2, # amount2
+        owner_l2,
+        vault_proxy
     )
 
+   
     return (
         spa,
         usds_proxy,
@@ -468,14 +472,18 @@ def configure_collaterals(
 # - contracts/interface/IPeripheryPayments.sol
 # - contracts/interface/IPoolInitializer.sol
 # - contracts/libraries/PoolAddress.sol
+
+
 def create_uniswap_v3_pool(
+    mint_amount,
     spa,
     amount1,
     token2,
     amount2,
-    owner_l2
+    owner_l2,
+    vault_proxy
 ):
-    mintSPA(spa, amount1, owner_l2)
+    mintSPA(spa, mint_amount, owner_l2, vault_proxy)
 
     position_mgr_address = '0xC36442b4a4522E871399CD717aBDD847Ab11FE88'
     position_mgr = brownie.interface.INonfungiblePositionManager(position_mgr_address)
@@ -521,7 +529,8 @@ def create_uniswap_v3_pool(
 def mintSPA(
     spa,
     amount,
-    owner_l2
+    owner_l2,
+    vault_proxy
 ):
     # make owner allowed to mint SPA tokens
     txn = spa.setMintable(
@@ -548,3 +557,10 @@ def upper_tick():
 
 def encode_price(n1, n2):
     return math.trunc(math.sqrt(int(n1)/int(n2)) * 2**96)
+
+
+@pytest.fixture(autouse=True)
+def isolate(fn_isolation):
+    # perform a chain rewind after completing each test, to ensure proper isolation
+    # https://eth-brownie.readthedocs.io/en/v1.10.3/tests-pytest-intro.html#isolation-fixtures
+    pass
