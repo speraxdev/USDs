@@ -36,14 +36,16 @@ def test_upgrade_oracle(sperax, OracleV2, proxy_admin, Contract, admin, owner_l2
         {'from': admin}
     )
 
-    # Arbitrum rinkeby:
-    price_feed_eth_arbitrum_testnet = '0x5f0423B1a6935dc5596e7A24d98532b67A0AeFd8'
-    weth_arbitrum_testnet = '0xb47e6a5f8b33b3f17603c83a0535a9dcd7e32681'
+    # Arbitrum-one:
+    chainlink_eth_price_feed = '0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612'
+    chainlink_flags = '0x3C14e07Edd0dC67442FA96f1Ec6999c57E810a83'
+    weth_address = '0x82af49447d8a07e3bd95bd0d56f35241523fbab1'
 
     new_oracle.initialize(
-        price_feed_eth_arbitrum_testnet,
+        chainlink_eth_price_feed,
         spa.address,
-        weth_arbitrum_testnet,
+        weth_address,
+        chainlink_flags,
         {'from': owner_l2}
     )
 
