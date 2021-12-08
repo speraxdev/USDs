@@ -10,7 +10,7 @@ def test_deposit(sperax, weth, accounts):
     (
         spa,
         usds_proxy,
-        vault_core_tools,
+        core_proxy,
         vault_proxy,
         oracle_proxy,
         strategy_proxy,
