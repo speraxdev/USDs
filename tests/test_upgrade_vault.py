@@ -6,8 +6,16 @@ import brownie
 # DON'T USE accounts[0-4]. 0-4 ARE RESERVED BY conftest.py
 #
 
-def test_upgrade_vault(sperax, VaultCoreV2, Contract, admin, owner_l2, accounts):
-    (proxy_admin, spa, usds_proxy, vault_core_tools, vault_proxy, oracle_proxy, strategy, buyback) = sperax
+def test_upgrade_vault(sperax, VaultCoreV2, proxy_admin, Contract, admin, owner_l2, accounts):
+    (
+        spa,
+        usds_proxy,
+        core_proxy,
+        vault_proxy,
+        oracle_proxy,
+        strategy_proxy,
+        buyback
+    ) = sperax
 
     print("upgrade Vault contract:\n")
     # test case requires duplicating the contract, VaulCore.sol, renamed as VaultCoreV2.sol
@@ -31,7 +39,7 @@ def test_upgrade_vault(sperax, VaultCoreV2, Contract, admin, owner_l2, accounts)
     fee_vault = accounts[5]
     new_vault.initialize(
         spa.address,
-        vault_core_tools.address,
+        core_proxy.address,
         fee_vault,
         {'from': owner_l2}
     )
