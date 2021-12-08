@@ -42,5 +42,30 @@ def onlyTestnet(func):
     if network.show_active() == 'arbitrum-rinkeby':
         func()
 
-    
+def getVersion(msg):
+    """
+    Prompts the user to enter a version number.
+    """
+    while True:
+        version = input(msg)
+        try:
+            version = int(version)
+            return version
+        except ValueError:
+            print("Please enter a number.")
+
+def getContractVersionedName(contract, version):
+    return contract + "V" + str(version)
+
+def getContract(contract, version, scopeDict):
+    """
+    Takes string and gets contract. Requires all brownie items to be imported ("import * from brownie")
+    """
+    contract_name = getContractVersionedName(contract, version)
+    return scopeDict[contract_name]
+
+def getContractToUpgrade(contract, scopeDict):
+    version = getVersion(f"Enter version to upgrade {contract} to:")
+    confirm(f"Confirm you want to upgrade {contract} to version {version}")
+    return (getContractVersionedName(contract, version), getContract(contract, version, scopeDict))
     
