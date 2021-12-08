@@ -33,7 +33,6 @@ def test_valid_mint(sperax, accounts, amount):
     # approve transfer 
     usds_proxy.approve(approver, amount, {'from': first_owner})
     txn = usds_proxy.transferFrom(first_owner, second_owner, amount, {'from': approver})
-    assert True == txn.return_value
     assert txn.events['Transfer']['from'] == first_owner 
     assert txn.events['Transfer']['to'] == second_owner
     assert txn.events['Transfer']['value'] == amount

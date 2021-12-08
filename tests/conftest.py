@@ -274,7 +274,10 @@ def deploy_vault(
         {'from': admin},
     )
     core_proxy = Contract.from_abi("VaultCoreTools", proxy.address, VaultCoreTools.abi)
-    core_proxy.initialize(bancor.address)
+    core_proxy.initialize(
+        bancor.address,
+        {'from': owner_l2}
+    )
 
     vault = VaultCore.deploy(
         {'from': owner_l2}
