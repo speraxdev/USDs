@@ -42,6 +42,11 @@ def onlyTestnet(func):
     if network.show_active() == 'arbitrum-rinkeby':
         func()
 
+def getContractToUpgrade(contract, scopeDict):
+    version = getVersion(f"Enter version to upgrade {contract} to:")
+    confirm(f"Confirm you want to upgrade {contract} to version {version}")
+    return (getContractVersionedName(contract, version), getContract(contract, version, scopeDict))
+
 def getVersion(msg):
     """
     Prompts the user to enter a version number.
@@ -64,8 +69,5 @@ def getContract(contract, version, scopeDict):
     contract_name = getContractVersionedName(contract, version)
     return scopeDict[contract_name]
 
-def getContractToUpgrade(contract, scopeDict):
-    version = getVersion(f"Enter version to upgrade {contract} to:")
-    confirm(f"Confirm you want to upgrade {contract} to version {version}")
-    return (getContractVersionedName(contract, version), getContract(contract, version, scopeDict))
+
     

@@ -2,9 +2,18 @@ import sys
 import signal
 import click
 import importlib
-from brownie import *
+import brownie
 from . import constants, utils
 
+accounts = brownie.accounts
+network = brownie.network
+Contract = brownie.Contract
+VaultCore = brownie.VaultCore
+ProxyAdmin = brownie.ProxyAdmin
+SperaxTokenL2 = brownie.SperaxTokenL2
+VaultCoreTools = brownie.VaultCoreTools
+USDsL2 = brownie.USDsL2
+Oracle = brownie.Oracle
 
 def signal_handler(signal, frame):
     sys.exit(0)

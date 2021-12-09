@@ -29,6 +29,7 @@ class Addresses:
 testnet_deploy_addresses = DeployAddresses(
     "0x53012655C4eDA87a2cE603e65Cb53c6aF8e5F674",
     "0x377ff873b648b678608b216467ee94713116c4cd", 
+    ## Note: the feeVault can be anything in testnet. here it's 0xdeadbeef... 
     "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
     ) 
 
@@ -67,15 +68,16 @@ testnetAddresses = Addresses(
 ## then when deployed, you can put the proxy addresses here for upgrades
 
 mainnet_deploy_address = DeployAddresses(
-    "0xgibberish",
-    "0xgibberish", 
-    "0xgibberish"
+    ## Note: these need to be added. here it's  0xgibberish in the meantime... 
+    "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
+    "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef", 
+    "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
     )
 
 mainnet_upgrade_address = UpgradeAddresses(
-    "0xgibberish",
-    "0xgibberish",
-    "0xgibberish"
+    "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
+    "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
+    "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
     )
 
 mainnet_third_party_address = ThirdPartyAddresses(
