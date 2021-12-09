@@ -1,4 +1,3 @@
-import sys
 import signal
 import click
 from brownie import (
@@ -16,11 +15,18 @@ from brownie import (
     convert
 )
 import eth_utils
-from . import constants, utils
+from .constants import (
+    mainnetAddresses,
+    testnetAddresses,
+    USDs_token_details
+)
+from .utils import (
+    confirm,
+    getAddressFromNetwork,
+    signal_handler
+)
 
 
-def signal_handler(signal, frame):
-    sys.exit(0)
 
 def main():
     # handle ctrl-C event
@@ -51,29 +57,49 @@ def main():
     print(f"contract owner account: {owner.address}\n")
 
     print(f"\nDeploying on {network.show_active()}:\n")
-    spa_l1_address = constants.testnetAddresses.deploy.L1_wSPA if network.show_active() == 'arbitrum-rinkeby' else constants.mainnetAddresses.deploy.L1_wSPA
-    usds_l1_address = constants.testnetAddresses.deploy.L1_USDs if network.show_active() == 'arbitrum-rinkeby' else constants.mainnetAddresses.deploy.L1_USDs
-    fee_vault = constants.testnetAddresses.deploy.fee_vault if network.show_active() == 'arbitrum-rinkeby' else constants.mainnetAddresses.deploy.fee_vault
+    spa_l1_address = getAddressFromNetwork(
+        testnetAddresses.deploy.L1_wSPA,
+        mainnetAddresses.deploy.L1_wSPA
+    )
+    usds_l1_address = getAddressFromNetwork(
+        testnetAddresses.deploy.L1_USDs,
+        mainnetAddresses.deploy.L1_USDs
+    )
+    fee_vault = getAddressFromNetwork(
+        testnetAddresses.deploy.fee_vault,
+        mainnetAddresses.deploy.fee_vault
+    )
     print(f"\nL1 wSPA address: {spa_l1_address}\n")
     print(f"\nL1 USDs address: {usds_l1_address}\n")
     print(f"\nFee Vault address: {fee_vault}\n")
-    utils.confirm("Are the above addresses correct?")
+    confirm("Are the above addresses correct?")
 
     initial_balance = owner.balance()
 
-    name = constants.USDs_token_details.name
-    symbol = constants.USDs_token_details.symbol
+    name = USDs_token_details.name
+    symbol = USDs_token_details.symbol
     print(f"\nToken Name: {name}\n")
     print(f"\nToken Symbol: {symbol}\n")
-    utils.confirm("Are the above details correct?")
+    confirm("Are the above details correct?")
     print('\n')
 
     # third party addresses
-    l2_gateway = constants.testnet_third_party_addresses.l2_gateway if network.show_active() == 'arbitrum-rinkeby' else constants.mainnet_third_party_addresses.l2_gateway
-    chainlink_eth_price_feed = constants.testnet_third_party_addresses.chainlink_eth_price_feed if network.show_active() == 'arbitrum-rinkeby' else constants.mainnet_third_party_addresses.chainlink_eth_price_feed
-    weth_arbitrum = constants.testnet_third_party_addresses.weth_arbitrum if network.show_active() == 'arbitrum-rinkeby' else constants.mainnet_third_party_addresses.weth_arbitrum
-    chainlink_flags = constants.testnet_third_party_addresses.chainlink_flags if network.show_active() == 'arbitrum-rinkeby' else constants.mainnet_third_party_addresses.chainlink_flags
-
+    l2_gateway = getAddressFromNetwork(
+        testnetAddresses.third_party.l2_gateway,
+        mainnetAddresses.third_party.l2_gateway
+    )
+    chainlink_eth_price_feed = getAddressFromNetwork(
+        testnetAddresses.third_party.chainlink_eth_price_feed,
+        mainnetAddresses.third_party.chainlink_eth_price_feed
+    )
+    weth_arbitrum = getAddressFromNetwork(
+        testnetAddresses.third_party.weth_arbitrum,
+        mainnetAddresses.third_party.weth_arbitrum
+    )
+    chainlink_flags = getAddressFromNetwork(
+        testnetAddresses.third_party.chainlink_flags,
+        mainnetAddresses.third_party.chainlink_flags
+    )
 
     # admin contract
     proxy_admin = ProxyAdmin.deploy(
@@ -235,8 +261,10 @@ def configure_collaterals(
     convert
 ):
     # configure stablecoin collaterals in vault and oracle
-    collaterals = constants.testnetAddresses.collaterals if network.show_active() == 'arbitrum-rinkeby' else constants.mainnetAddresses.collaterals
-
+    collaterals = getAddressFromNetwork(
+        testnetAddresses.collaterals,
+        mainnetAddresses.collaterals
+    )
     precision = 10**8
     zero_address = convert.to_address('0x0000000000000000000000000000000000000000')
     for collateral, chainlink in collaterals.items():

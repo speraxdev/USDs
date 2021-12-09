@@ -1,8 +1,13 @@
-from brownie import (
-    network
-)
+from brownie import *
+import sys
+import signal
 
-def getYorN(msg):
+# network = brownie.network
+
+def signal_handler(signal, frame):
+    sys.exit(0)
+
+def _getYorN(msg):
     while True:
         answer = input(msg + " [y/n] ")
         lowercase_answer = answer.lower()
@@ -17,7 +22,7 @@ def confirm(msg):
     If they hit yes, nothing happens, meaning the script continues.
     If they hit no, the script exits.
     """
-    answer = getYorN(msg)
+    answer = _getYorN(msg)
     if answer == "y":
         return
     elif answer == "n":
@@ -29,25 +34,49 @@ def choice(msg):
     """
     Prompts the user to choose y or n. If y, return true. If n, return false
     """
-    answer = getYorN(msg)
+    answer = _getYorN(msg)
     if answer.lower() == "y":
         return True
     else:
         return False
 
-def onlyTestnet(func):
+def onlyDevelopment(func):
     """
-    Checks if the network is testnet. If not does nothing
+    Checks if the network is in the list of testnet or mainnet forks. 
+    If so, it calls the function
+    If not does nothing
     """
-    if network.show_active() == 'arbitrum-rinkeby':
-        func()
+    dev_networks = [
+        'arbitrum-rinkeby', 
+        'arbitrum-main-fork', 
+        'development', 
+        'geth-dev', 
+        'rinkeby'
+    ]
+    if network.show_active() in dev_networks: 
+        func() # can also just return t/f
 
-def getContractToUpgrade(contract, scopeDict):
-    version = getVersion(f"Enter version to upgrade {contract} to:")
+def getAddressFromNetwork(testnetAddr, mainnetAddr):
+    """
+    Checks if network is in the list of testnets
+    If so, returns testnet address
+    If not, returns mainnet address
+    """
+    testnets = [
+        'arbitrum-rinkeby', 
+        'rinkeby'
+    ]
+    if network.show_active() in testnets:
+        return testnetAddr
+    return mainnetAddr
+
+
+def getContractToUpgrade(contract):
+    version = _getVersion(f"Enter version to upgrade {contract} to:")
     confirm(f"Confirm you want to upgrade {contract} to version {version}")
-    return (getContractVersionedName(contract, version), getContract(contract, version, scopeDict))
+    return (_getContractVersionedName(contract, version), _getContract(contract, version))
 
-def getVersion(msg):
+def _getVersion(msg):
     """
     Prompts the user to enter a version number.
     """
@@ -59,15 +88,15 @@ def getVersion(msg):
         except ValueError:
             print("Please enter a number.")
 
-def getContractVersionedName(contract, version):
+def _getContractVersionedName(contract, version):
     return contract + "V" + str(version)
 
-def getContract(contract, version, scopeDict):
+def _getContract(contract, version):
     """
     Takes string and gets contract. Requires all brownie items to be imported ("import * from brownie")
     """
-    contract_name = getContractVersionedName(contract, version)
-    return scopeDict[contract_name]
+    contract_name = _getContractVersionedName(contract, version)
+    return globals()[contract_name]
 
 
     

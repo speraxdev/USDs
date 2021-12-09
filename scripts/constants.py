@@ -5,7 +5,9 @@ class DeployAddresses:
         self.fee_vault = fee_vault
 
 class UpgradeAddresses:
-    def __init__(self, vault_core_proxy, oracle_proxy, USDs_l2_proxy):
+    def __init__(self, bancor_formula_address, vault_core_tools_proxy, vault_core_proxy, oracle_proxy, USDs_l2_proxy):
+        self.bancor_formula_address = bancor_formula_address
+        self.vault_core_tools_proxy = vault_core_tools_proxy
         self.vault_core_proxy = vault_core_proxy
         self.oracle_proxy = oracle_proxy
         self.USDs_l2_proxy = USDs_l2_proxy
@@ -35,9 +37,11 @@ testnet_deploy_addresses = DeployAddresses(
 
 ## Note: these change after you deploy the contracts, so deploy first and then put those addresses here.
 testnet_upgrade_addresses = UpgradeAddresses(
-    "0x2B514b10EECBD18bd7a4AF5Eb1c0eF079e850a97",
-    "0xA2d9e8c9D5648BD96a4Da52562EE5e2A121D66Ab",
-    "0xC85cad92316A48e48c7E826E31319999441Eafee"
+    "0x2b90b6f820D07D575663Ef30D349720798Fe9F7A",
+    "0x09E99C86B45718a249CD386906bf348f07f5f03e", 
+    "0xBB040Cc053770986b978e134Ff6068AaFA9194Ff",
+    "0x4C8e9B99497875deaB2304662430c8d67D624a33",
+    "0x2Cc419135666DA91aa6925b0ca488167D9866a4d"
     )
 
 testnet_third_party_addresses = ThirdPartyAddresses(
@@ -68,13 +72,16 @@ testnetAddresses = Addresses(
 ## then when deployed, you can put the proxy addresses here for upgrades
 
 mainnet_deploy_address = DeployAddresses(
-    ## Note: these need to be added. here it's  0xgibberish in the meantime... 
+    ## Note: these need to be added. here it's  0xdeadbeef in the meantime... 
     "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
     "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef", 
     "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
     )
 
 mainnet_upgrade_address = UpgradeAddresses(
+    ## Note: these need to be added. here it's  0xdeadbeef in the meantime... 
+    "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
+    "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
     "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
     "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
     "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
@@ -103,7 +110,7 @@ mainnet_collaterals = {
 mainnetAddresses = Addresses(
     mainnet_deploy_address, 
     mainnet_upgrade_address, 
-    mainnet_deploy_address, 
+    testnet_third_party_addresses,
     mainnet_collaterals
     )
 

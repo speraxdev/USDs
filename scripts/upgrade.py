@@ -1,9 +1,19 @@
-import sys
 import signal
 import click
 import importlib
 import brownie
-from . import constants, utils
+from .constants import (
+    mainnetAddresses,
+    testnetAddresses,
+)
+from .utils import (
+    confirm,
+    choice,
+    onlyDevelopment,
+    getAddressFromNetwork,
+    getContractToUpgrade,
+    signal_handler
+)
 
 accounts = brownie.accounts
 network = brownie.network
@@ -14,9 +24,6 @@ SperaxTokenL2 = brownie.SperaxTokenL2
 VaultCoreTools = brownie.VaultCoreTools
 USDsL2 = brownie.USDsL2
 Oracle = brownie.Oracle
-
-def signal_handler(signal, frame):
-    sys.exit(0)
 
 vitalik_address = "0xd8da6bf26964af9d7eed9e03e53415d37aa96045"
 def vault_test_state_change(vault_proxy, owner):
@@ -58,23 +65,53 @@ def main():
     # TODO: create a separate wallet for fee_vault account
     fee_vault = owner
 
-    usds_proxy_address = constants.testnetAddresses.upgrade.USDs_l2_proxy if network.show_active() == 'arbitrum-rinkeby' else constants.mainnetAddresses.upgrade.USDs_l2_proxy
-    vault_proxy_address = constants.testnetAddresses.upgrade.vault_core_proxy if network.show_active() == 'arbitrum-rinkeby' else constants.mainnetAddresses.upgrade.vault_core_proxy
-    oracle_proxy_address = constants.testnetAddresses.upgrade.oracle_proxy if network.show_active() == 'arbitrum-rinkeby' else constants.mainnetAddresses.upgrade.oracle_proxy
+    usds_proxy_address = getAddressFromNetwork(
+        testnetAddresses.upgrade.USDs_l2_proxy, 
+        mainnetAddresses.upgrade.USDs_l2_proxy
+    )
+    vault_tools_proxy_address = getAddressFromNetwork(
+        testnetAddresses.upgrade.vault_core_tools_proxy,
+        mainnetAddresses.upgrade.vault_core_tools_proxy
+    )
+    bancor_formula_address = getAddressFromNetwork(
+        testnetAddresses.upgrade.bancor_formula_address,
+        mainnetAddresses.upgrade.bancor_formula_address
+    )
 
+    vault_proxy_address = getAddressFromNetwork(
+        testnetAddresses.upgrade.vault_core_proxy,
+        mainnetAddresses.upgrade.vault_core_proxy
+    )
+    oracle_proxy_address = getAddressFromNetwork(
+        testnetAddresses.upgrade.oracle_proxy,
+        mainnetAddresses.upgrade.oracle_proxy
+    )
+
+    bancor_formula = "BancorFormula"
+    vault_core_tools = "VaultCoreTools"
     vault_core = "VaultCore"
     USDs = "USDsL2"
     oracle = "Oracle"
     
-    vault_proxy_upgrade = utils.choice(f"Do you wish to upgrade {vault_core}?")
-    usds_proxy_upgrade = utils.choice(f"Do you wish to upgrade {USDs}?")
-    oracle_proxy_upgrade = utils.choice(f"Do you wish to upgrade {oracle}?")
-
+    vault_tools_proxy_upgrade = choice(f"Do you wish to upgrade {vault_core_tools}?")
+    vault_proxy_upgrade = choice(f"Do you wish to upgrade {vault_core}?")
+    usds_proxy_upgrade = choice(f"Do you wish to upgrade {USDs}?")
+    oracle_proxy_upgrade = choice(f"Do you wish to upgrade {oracle}?")
+    # TODO: add vault tools upgrade flow
   
     # initialize third party addresses
-    chainlink_eth_price_feed = constants.testnetAddresses.third_party.chainlink_eth_price_feed if network.show_active() == 'arbitrum-rinkeby' else constants.mainnetAddresses.third_party.chainlink_eth_price_feed
-    weth_arbitrum = constants.testnetAddresses.third_party.weth_arbitrum if network.show_active() == 'arbitrum-rinkeby' else constants.mainnetAddresses.third_party.weth_arbitrum
-    chainlink_flags = constants.testnetAddresses.third_party.chainlink_flags if network.show_active() == 'arbitrum-rinkeby' else constants.mainnetAddresses.third_party.chainlink_flags
+    chainlink_eth_price_feed = getAddressFromNetwork(
+        testnetAddresses.third_party.chainlink_eth_price_feed,
+        mainnetAddresses.third_party.chainlink_eth_price_feed
+    )
+    weth_arbitrum = getAddressFromNetwork(
+        testnetAddresses.third_party.weth_arbitrum,
+        mainnetAddresses.third_party.weth_arbitrum
+    )
+    chainlink_flags = getAddressFromNetwork(
+        testnetAddresses.third_party.chainlink_flags,
+        mainnetAddresses.third_party.chainlink_flags
+    )
 
     initial_balance = admin.balance()
 
@@ -83,8 +120,45 @@ def main():
 
     print(f"\n{network.show_active()}:\n")
 
+    if vault_tools_proxy_upgrade:
+        confirm(f"Confirm that the {vault_core_tools}' proxy address is {vault_tools_proxy_address}")
+        confirm(f"Confirm that the {bancor_formula} contract's address is {bancor_formula_address}")
+        vault_tools_proxy = Contract.from_abi(
+            vault_core_tools,
+            vault_tools_proxy_address,
+            VaultCoreTools.abi
+        )
+
+        version_contract_name, version_contract =  getContractToUpgrade(vault_core_tools)
+
+        # Note: we cannot *easily* test state changes because there are no setters in VaultCoreTools
+        # the version check and checks in other functions should suffice
+
+        print(f"upgrade {vault_core} contract:\n")
+        new_vault_tools = version_contract.deploy(
+            {'from': owner, 'gas_limit': 1000000000}
+        )
+
+        proxy_admin.upgrade(
+            vault_tools_proxy.address,
+            new_vault_tools.address,
+            {'from': admin, 'gas_limit': 1000000000}
+        )
+
+        new_vault_tools.initialize(bancor_formula_address, {'from': owner})
+
+        new_vault_tools_proxy = Contract.from_abi(
+            version_contract_name,
+            vault_tools_proxy.address,
+            version_contract.abi
+        )
+
+        print(f"original {vault_core_tools} proxy address: {vault_tools_proxy.address}")
+        print(f"upgraded {vault_core_tools} proxy address: {new_vault_tools_proxy.address}")
+        print(f"{vault_core_tools} version: {new_vault_tools_proxy.version()}")
+
     if vault_proxy_upgrade:
-        utils.confirm(f"Confirm that the {vault_core}'s proxy address is {vault_proxy_address}")
+        confirm(f"Confirm that the {vault_core}'s proxy address is {vault_proxy_address}")
         
         vault_proxy = Contract.from_abi(
             vault_core,
@@ -92,10 +166,10 @@ def main():
             VaultCore.abi
         )
         
-        version_contract_name, version_contract =  utils.getContractToUpgrade(vault_core, globals())
+        version_contract_name, version_contract =  getContractToUpgrade(vault_core)
         
         # we only want to do these state changes in testnet
-        utils.onlyTestnet(lambda: vault_test_state_change(vault_proxy, owner))
+        onlyDevelopment(lambda: vault_test_state_change(vault_proxy, owner))
        
         print(f"upgrade {vault_core} contract:\n")
         new_vault = version_contract.deploy(
@@ -122,29 +196,28 @@ def main():
         print(f"original {vault_core} proxy address: {vault_proxy.address}")
         print(f"upgraded {vault_core} proxy address: {new_vault_proxy.address}")
         print(f"{vault_core} version: {new_vault_proxy.version()}")
-        utils.onlyTestnet(lambda: print(f"mintRedeemAllowed is still (should be false): {vault_proxy.mintRedeemAllowed()}\n"))
+        onlyDevelopment(lambda: print(f"mintRedeemAllowed is still (should be false): {vault_proxy.mintRedeemAllowed()}\n"))
 
     if usds_proxy_upgrade:
-        utils.confirm(f"Confirm that the {USDs}' proxy address is {usds_proxy_address}")
-        utils.confirm(f"Confirm that the {vault_core}'s proxy address is {vault_proxy_address}")
+        confirm(f"Confirm that the {USDs}' proxy address is {usds_proxy_address}")
+        confirm(f"Confirm that the {vault_core}'s proxy address is {vault_proxy_address}")
         print(f"upgrade {USDs} contract:\n")
         vault_proxy = Contract.from_abi(
             vault_core,
             vault_proxy_address,
             VaultCore.abi
         )
-
-        
+   
         usds_proxy = Contract.from_abi(
             USDs,
             usds_proxy_address,
             USDsL2.abi
         )
         
-        version_contract_name, version_contract =  utils.getContractToUpgrade(USDs, globals())
+        version_contract_name, version_contract =  getContractToUpgrade(USDs)
 
         # change vault address to verify state changes persist (only in testnet)
-        utils.onlyTestnet(lambda: USDs_test_state_change(usds_proxy, owner))
+        onlyDevelopment(lambda: USDs_test_state_change(usds_proxy, owner))
         
         new_usds = version_contract.deploy(
             {'from': owner, 'gas_limit': 1000000000}
@@ -172,10 +245,10 @@ def main():
         print(f"original {USDs} proxy address: {usds_proxy.address}")
         print(f"upgraded {USDs} proxy address: {new_usds_proxy.address}")
         print(f"{USDs} version: {new_usds_proxy.version()}")
-        utils.onlyTestnet(lambda: print(f"vaultAddress is still (should be {vitalik_address}): {usds_proxy.vaultAddress()}\n"))
+        onlyDevelopment(lambda: print(f"vaultAddress is still (should be {vitalik_address}): {usds_proxy.vaultAddress()}\n"))
 
     if oracle_proxy_upgrade:
-        utils.confirm(f"Confirm that the {oracle}'s proxy address is {oracle_proxy_address}")
+        confirm(f"Confirm that the {oracle}'s proxy address is {oracle_proxy_address}")
         
         oracle_proxy = Contract.from_abi(
             oracle,
@@ -183,9 +256,9 @@ def main():
             Oracle.abi
         )
 
-        version_contract_name, version_contract =  utils.getContractToUpgrade(oracle, globals())
+        version_contract_name, version_contract =  getContractToUpgrade(oracle)
         # change vault address to verify state changes persist
-        utils.onlyTestnet(lambda: oracle_test_state_change(oracle_proxy, owner))
+        onlyDevelopment(lambda: oracle_test_state_change(oracle_proxy, owner))
 
         print(f"upgrade {oracle} contract:\n")
         new_oracle = version_contract.deploy(
@@ -213,7 +286,7 @@ def main():
         print(f"original {oracle} proxy address: {oracle_proxy.address}")
         print(f"upgraded {oracle} proxy address: {new_oracle_proxy.address}")
         print(f"{oracle}  version: {new_oracle_proxy.version()}")
-        utils.onlyTestnet(lambda: print(f"VaultAddr is still (should be {vitalik_address}): {oracle_proxy.VaultAddr()}\n"))
+        onlyDevelopment(lambda: print(f"VaultAddr is still (should be {vitalik_address}): {oracle_proxy.VaultAddr()}\n"))
 
 
     if vault_proxy_upgrade and oracle_proxy_upgrade:
