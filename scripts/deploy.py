@@ -1,4 +1,3 @@
-import sys
 import signal
 import click
 from brownie import (
@@ -16,9 +15,18 @@ from brownie import (
     convert
 )
 import eth_utils
+from .constants import (
+    mainnetAddresses,
+    testnetAddresses,
+    USDs_token_details
+)
+from .utils import (
+    confirm,
+    getAddressFromNetwork,
+    signal_handler
+)
 
-def signal_handler(signal, frame):
-    sys.exit(0)
+
 
 def main():
     # handle ctrl-C event
@@ -49,103 +57,112 @@ def main():
     print(f"contract owner account: {owner.address}\n")
 
     print(f"\nDeploying on {network.show_active()}:\n")
-    spa_l1_address = input("Enter L1 wSPA address: ").strip()
-    if len(spa_l1_address) == 0:
-        print("\nMissing L1 wSPA address\n")
-        return
-    usds_l1_address = input("Enter L1 USDs address: ").strip()
-    if len(usds_l1_address) == 0:
-        print("\nMissing L1 USDs address\n")
-        return
-
-    fee_vault = input("Enter fee vault address: ").strip()
-    if len(fee_vault) == 0:
-        print("\nMissing fee vault address\n")
-        return
-
+    spa_l1_address = getAddressFromNetwork(
+        testnetAddresses.deploy.L1_wSPA,
+        mainnetAddresses.deploy.L1_wSPA
+    )
+    usds_l1_address = getAddressFromNetwork(
+        testnetAddresses.deploy.L1_USDs,
+        mainnetAddresses.deploy.L1_USDs
+    )
+    fee_vault = getAddressFromNetwork(
+        testnetAddresses.deploy.fee_vault,
+        mainnetAddresses.deploy.fee_vault
+    )
+    print(f"\nL1 wSPA address: {spa_l1_address}\n")
+    print(f"\nL1 USDs address: {usds_l1_address}\n")
+    print(f"\nFee Vault address: {fee_vault}\n")
+    confirm("Are the above addresses correct?")
 
     initial_balance = owner.balance()
 
-    name = input("\nEnter name (Sperax USD): ") or "Sperax USD"
-    symbol = input("Enter symbol (USDs): ") or "USDs"
+    name = USDs_token_details.name
+    symbol = USDs_token_details.symbol
+    print(f"\nToken Name: {name}\n")
+    print(f"\nToken Symbol: {symbol}\n")
+    confirm("Are the above details correct?")
     print('\n')
 
-    # Arbitrum-one (mainnet):
-    l2_gateway = '0x096760F208390250649E3e8763348E783AEF5562'
-    chainlink_eth_price_feed = '0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612'
-    weth_arbitrum = '0x82af49447d8a07e3bd95bd0d56f35241523fbab1'
-    chainlink_flags = '0x3C14e07Edd0dC67442FA96f1Ec6999c57E810a83'
-
-    # Arbitrum rinkeby:
-    if network.show_active() == 'arbitrum-rinkeby':
-        l2_gateway = '0x9b014455AcC2Fe90c52803849d0002aeEC184a06'
-        chainlink_eth_price_feed = '0x5f0423B1a6935dc5596e7A24d98532b67A0AeFd8'
-        weth_arbitrum = '0xb47e6a5f8b33b3f17603c83a0535a9dcd7e32681'
-        chainlink_flags = '0x491B1dDA0A8fa069bbC1125133A975BF4e85a91b'
-
+    # third party addresses
+    l2_gateway = getAddressFromNetwork(
+        testnetAddresses.third_party.l2_gateway,
+        mainnetAddresses.third_party.l2_gateway
+    )
+    chainlink_eth_price_feed = getAddressFromNetwork(
+        testnetAddresses.third_party.chainlink_eth_price_feed,
+        mainnetAddresses.third_party.chainlink_eth_price_feed
+    )
+    weth_arbitrum = getAddressFromNetwork(
+        testnetAddresses.third_party.weth_arbitrum,
+        mainnetAddresses.third_party.weth_arbitrum
+    )
+    chainlink_flags = getAddressFromNetwork(
+        testnetAddresses.third_party.chainlink_flags,
+        mainnetAddresses.third_party.chainlink_flags
+    )
 
     # admin contract
     proxy_admin = ProxyAdmin.deploy(
-        {'from': admin},
+        {'from': admin, 'gas_limit': 1000000000}
 #        publish_source=True,
     )
 
     # deploy smart contracts
     bancor = BancorFormula.deploy(
-        {'from': owner},
+        {'from': owner, 'gas_limit': 1000000000}
 #        publish_source=True,
     )
     txn = bancor.init()
 
     core = VaultCoreTools.deploy(
-        {'from': owner},
+        {'from': owner, 'gas_limit': 1000000000}
 #        publish_source=True,
     )
     proxy = TransparentUpgradeableProxy.deploy(
         core.address,
         proxy_admin.address,
         eth_utils.to_bytes(hexstr="0x"),
-        {'from': admin},
+        {'from': admin, 'gas_limit': 1000000000}
 #        publish_source=True,
     )
     core_proxy = Contract.from_abi("VaultCoreTools", proxy.address, VaultCoreTools.abi)
-    txn = core_proxy.initialize(bancor.address)
+    txn = core_proxy.initialize(bancor.address, {'from': owner})
 
     vault = VaultCore.deploy(
-        {'from': owner},
+        {'from': owner, 'gas_limit': 1000000000}
 #        publish_source=True,
     )
     proxy = TransparentUpgradeableProxy.deploy(
         vault.address,
         proxy_admin.address,
         eth_utils.to_bytes(hexstr="0x"),
-        {'from': admin},
+        {'from': admin, 'gas_limit': 1000000000},
 #        publish_source=True,
     )
     vault_proxy = Contract.from_abi("VaultCore", proxy.address, VaultCore.abi)
 
     oracle = Oracle.deploy(
-        {'from': owner},
+        {'from': owner, 'gas_limit': 1000000000},
 #        publish_source=True,
     )
     proxy = TransparentUpgradeableProxy.deploy(
         oracle.address,
         proxy_admin.address,
         eth_utils.to_bytes(hexstr="0x"),
-        {'from': admin},
+        {'from': admin, 'gas_limit': 1000000000},
 #        publish_source=True,
     )
     oracle_proxy = Contract.from_abi("Oracle", proxy.address, Oracle.abi)
 
     usds = USDsL2.deploy(
-        {'from': owner},
+        {'from': owner, 'gas_limit': 1000000000},
 #        publish_source=True,
     )
     proxy = TransparentUpgradeableProxy.deploy(
         usds.address,
         proxy_admin.address,
         eth_utils.to_bytes(hexstr="0x"),
-        {'from': admin},
+        {'from': admin, 'gas_limit': 1000000000},
 #        publish_source=True,
     )
     usds_proxy = Contract.from_abi("USDsL2", proxy.address, USDsL2.abi)
@@ -156,7 +173,7 @@ def main():
         vault_proxy.address,
         l2_gateway,
         usds_l1_address,
-        {'from': owner},
+        {'from': owner, 'gas_limit': 1000000000},
 #        publish_source=True,
     )
 
@@ -165,7 +182,7 @@ def main():
         'SPA',
         l2_gateway,
         spa_l1_address,
-        {'from': owner},
+        {'from': owner, 'gas_limit': 1000000000},
 #        publish_source=True,
     )
 
@@ -174,36 +191,36 @@ def main():
         spa.address,
         weth_arbitrum,
         chainlink_flags,
-        {'from': owner}
+        {'from': owner, 'gas_limit': 1000000000}
     )
 
     oracle_proxy.updateVaultAddress(
         vault_proxy.address,
-        {'from': owner}
+        {'from': owner, 'gas_limit': 1000000000}
     )
 
     txn = vault_proxy.initialize(
         spa.address,
         core_proxy.address,
         fee_vault,
-        {'from': owner}
+        {'from': owner, 'gas_limit': 1000000000}
     )
 
     # configure VaultCore contract with USDs contract address
     txn = vault_proxy.updateUSDsAddress(
         usds_proxy,
-        {'from': owner}
+        {'from': owner, 'gas_limit': 1000000000}
     )
     # configure VaultCore contract with Oracle contract address
     txn = vault_proxy.updateOracleAddress(
         oracle_proxy.address,
-        {'from': owner}
+        {'from': owner, 'gas_limit': 1000000000}
     )
 
     txn = spa.setMintable(
         vault_proxy.address,
         True,
-        {'from': owner}
+        {'from': owner, 'gas_limit': 1000000000}
     )
 
     # configure stablecoin collaterals in vault and oracle
@@ -243,28 +260,11 @@ def configure_collaterals(
     owner,
     convert
 ):
-    # Arbitrum mainnet:
-    collaterals = {
-        # USDC
-        '0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8': '0x50834F3163758fcC1Df9973b6e91f0F0F0434aD3',
-        # USDT
-        '0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9': '0x3f3f5dF88dC9F13eac63DF89EC16ef6e7E25DdE7',
-        # DAI
-        '0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1': '0xc5C8E77B397E531B8EC06BFb0048328B30E9eCfB',
-        # WBTC
-        '0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f': '0x6ce185860a4963106506C203335A2910413708e9',
-        # WETH
-        '0x82aF49447D8a07e3bd95BD0d56f35241523fBab1': '0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612'
-    }
-    # Arbitrum rinkeby collaterals:
-    if network.show_active() == 'arbitrum-rinkeby':
-        collaterals = {
-            # USDC
-            '0x09b98f8b2395d076514037ff7d39a091a536206c': '0xe020609A0C31f4F96dCBB8DF9882218952dD95c4',
-            # WETH
-            '0xB47e6A5f8b33b3F17603C83a0535A9dcD7E32681': '0x5f0423B1a6935dc5596e7A24d98532b67A0AeFd8'
-        }
-
+    # configure stablecoin collaterals in vault and oracle
+    collaterals = getAddressFromNetwork(
+        testnetAddresses.collaterals,
+        mainnetAddresses.collaterals
+    )
     precision = 10**8
     zero_address = convert.to_address('0x0000000000000000000000000000000000000000')
     for collateral, chainlink in collaterals.items():
@@ -276,7 +276,7 @@ def configure_collaterals(
             0, # _allocatePercentage
             zero_address, # _buyBackAddr
             False, # _rebaseAllowed
-            {'from': owner}
+            {'from': owner, 'gas_limit': 1000000000}
         )
         # wire up price feed for the added collateral
         oracle_proxy.updateCollateralInfo(
@@ -284,5 +284,5 @@ def configure_collaterals(
             True, # supported
             chainlink, # chainlink price feed address
             precision, # chainlink price feed precision
-            {'from': owner}
+            {'from': owner, 'gas_limit': 1000000000}
         )
