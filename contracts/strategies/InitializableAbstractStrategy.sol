@@ -52,31 +52,6 @@ abstract contract InitializableAbstractStrategy is Initializable, OwnableUpgrade
     // Reserved for future expansion
     int256[100] private _reserved;
 
-    /**
-     * @dev Internal initialize function, to set up initial internal state
-     * @param _platformAddress Generic platform address
-     * @param _vaultAddress Address of the Vault
-     * @param _rewardTokenAddress Address of reward token for platform
-     * @param _assets Addresses of initial supported assets
-     * @param _pTokens Platform Token corresponding addresses
-     */
-    function initialize(
-        address _platformAddress,
-        address _vaultAddress,
-        address _rewardTokenAddress,
-        address[] calldata _assets,
-        address[] calldata _pTokens
-    ) external initializer {
-        OwnableUpgradeable.__Ownable_init();
-        InitializableAbstractStrategy._initialize(
-            _platformAddress,
-            _vaultAddress,
-            _rewardTokenAddress,
-            _assets,
-            _pTokens
-        );
-    }
-
     function _initialize(
         address _platformAddress,
         address _vaultAddress,
@@ -84,6 +59,7 @@ abstract contract InitializableAbstractStrategy is Initializable, OwnableUpgrade
         address[] memory _assets,
         address[] memory _pTokens
     ) internal {
+        OwnableUpgradeable.__Ownable_init();
         platformAddress = _platformAddress;
         vaultAddress = _vaultAddress;
         rewardTokenAddress = _rewardTokenAddress;
