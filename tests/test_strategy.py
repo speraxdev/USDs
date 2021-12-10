@@ -49,7 +49,8 @@ def test_withdraw(sperax, weth, accounts):
         vault_proxy,
         oracle_proxy,
         strategy_proxy,
-        buyback
+        buyback,
+        buyback_multihop
     ) = sperax
 
     amount = int(1000000000)

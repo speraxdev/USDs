@@ -12,7 +12,8 @@ def buyback_single_no_pool(sperax, weth, BuybackSingle, owner_l2):
         vault_proxy,
         oracle_proxy,
         strategy_proxy,
-        buyback
+        buyback,
+        buyback_multihop
     ) = sperax
 
     return BuybackSingle.deploy(
@@ -28,7 +29,8 @@ def test_swap(sperax, mock_token2, owner_l2):
         vault_proxy,
         oracle_proxy,
         strategy_proxy,
-        buyback
+        buyback,
+        buyback_multihop
     ) = sperax
 
     amount = 10000
@@ -65,7 +67,8 @@ def test_swap_unsuccesful_call_not_vault(sperax, mock_token2, owner_l2):
         vault_proxy,
         oracle_proxy,
         strategy_proxy,
-        buyback
+        buyback,
+        buyback_multihop
     ) = sperax
 
     amount = 10000
@@ -94,7 +97,8 @@ def test_swap_unsuccesful_call_token_not_supported(sperax, mock_token2, weth, ow
         vault_proxy,
         oracle_proxy,
         strategy_proxy,
-        buyback
+        buyback,
+        buyback_multihop
     ) = sperax
     amount = 10000
     balance1 = spa.balanceOf(owner_l2.address)
@@ -122,7 +126,8 @@ def test_unsuccesful_test_swap_with_no_pool(buyback_single_no_pool, sperax, mock
         vault_proxy,
         oracle_proxy,
         strategy_proxy,
-        buyback
+        buyback,
+        buyback_multihop
     ) = sperax
     failed = False
     amount = 10000

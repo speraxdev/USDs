@@ -28,14 +28,24 @@ def usds1(USDsL1, owner_l1):
     return usds1
 
 @pytest.fixture(scope="module", autouse=True)
+def owner_l2(accounts):
+    return accounts[2]
+
+@pytest.fixture(scope="module", autouse=True)
 def mock_token2(MockToken, owner_l2):
     return MockToken.deploy(
         {'from': owner_l2}
     )
 
 @pytest.fixture(scope="module", autouse=True)
-def owner_l2(accounts):
-    return accounts[2]
+def mock_token3(MockToken, owner_l1, owner_l2):
+    mock_token = MockToken.deploy(
+        {'from': owner_l1}
+    )
+    mock_token.approve(owner_l2.address, mock_token.balanceOf(owner_l1), {'from': owner_l1})
+    mock_token.transfer(owner_l2.address, mock_token.balanceOf(owner_l1), {'from': owner_l1})
+    return mock_token
+
 
 @pytest.fixture(scope="module", autouse=True)
 def vault_fee(accounts):
@@ -101,6 +111,7 @@ def sperax(
     wbtc,
     weth,
     mock_token2,
+    mock_token3,
     Contract,
     admin,
     vault_fee,
@@ -183,6 +194,22 @@ def sperax(
         owner_l2
     )
 
+    buyback_multihop  =  BuybackMultihop.deploy(
+        mock_token3.address, # token1
+        vault_proxy.address,
+        {'from': owner_l2}
+    )
+    pool_fee1 = 3000
+    pool_fee2 = 3000
+    
+    buyback_multihop.updateInputTokenInfo(
+        spa.address,
+        True, #supported
+        mock_token2.address, #_intermediateToken
+        pool_fee1,
+        pool_fee2
+    )
+
     oracle_proxy.initialize(
         chainlink_eth_price_feed,
         spa.address,
@@ -220,16 +247,29 @@ def sperax(
         owner_l2
     )
 
+    mintSPA(spa,  mock_token2.balanceOf(owner_l2) , owner_l2, vault_proxy)
 
+    amount = 100000
     create_uniswap_v3_pool(
         mock_token2.balanceOf(owner_l2),
         spa, # token1
-        mock_token2.balanceOf(owner_l2)/2, # amount1
+        amount, # amount1
         mock_token2, # token2
-        mock_token2.balanceOf(owner_l2)/2, # amount2
+        amount, # amount2
         owner_l2,
         vault_proxy
     )
+
+    create_uniswap_v3_pool(
+        0,
+        mock_token2, # token1
+        amount, # amount1
+        mock_token3, # token2
+        amount, # amount2
+        owner_l2,
+        vault_proxy
+    )
+
 
    
     return (
@@ -239,7 +279,8 @@ def sperax(
         vault_proxy,
         oracle_proxy,
         strategy_proxy,
-        buyback
+        buyback,
+        buyback_multihop
     )
 
 
@@ -486,8 +527,6 @@ def create_uniswap_v3_pool(
     owner_l2,
     vault_proxy
 ):
-    mintSPA(spa, mint_amount, owner_l2, vault_proxy)
-
     position_mgr_address = '0xC36442b4a4522E871399CD717aBDD847Ab11FE88'
     position_mgr = brownie.interface.INonfungiblePositionManager(position_mgr_address)
 

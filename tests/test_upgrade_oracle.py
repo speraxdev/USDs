@@ -14,7 +14,8 @@ def test_upgrade_oracle(sperax, OracleV2, proxy_admin, Contract, admin, owner_l2
         vault_proxy,
         oracle_proxy,
         strategy_proxy,
-        buyback
+        buyback,
+        buyback_multihop
     ) = sperax
 
     print("upgrade Oracle contract:\n")

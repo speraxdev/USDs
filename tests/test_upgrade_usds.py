@@ -14,7 +14,8 @@ def test_upgrade_usds(sperax, USDsL2V2, proxy_admin, Contract, admin, owner_l2, 
         vault_proxy,
         oracle_proxy,
         strategy_proxy,
-        buyback
+        buyback,
+        buyback_multihop
     ) = sperax
 
     print("upgrade USDsL2 contract:\n")
