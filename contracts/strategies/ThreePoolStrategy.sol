@@ -154,7 +154,7 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
     }
 
     /**
-     * @dev Withdraw asset from 3Pool
+     * @dev Withdraw interest earned from 3Pool
      * @param _recipient Address to receive withdrawn asset
      * @param _asset Address of asset to withdraw
      */
@@ -167,6 +167,7 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
         ICurvePool curvePool = ICurvePool(platformAddress);
         uint256 poolCoinIndex = _getPoolCoinIndex(_asset);
         uint256 _amount = checkInterestEarned(_asset);
+        require(_amount > 0, "No interest earned");
         uint256 balance_before = IERC20(_asset).balanceOf(address(this));
         curvePool.remove_liquidity_one_coin(_amount, poolCoinIndex, 0);
         uint256 balance_after = IERC20(_asset).balanceOf(address(this));
@@ -279,9 +280,10 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
     }
 
     /**
-     * @dev Get the amouunt interest earned
-     * @param _asset      Address of the asset
-     * @return interestEarned    The amouunt interest earned
+     * @dev Get the amount of LP token to redeem to retrieve the interest earned
+     * @param _asset  Address of the asset
+     * @return interestEarned
+               The amount LP tokento redeem to retrieve the interest earned
      */
     function checkInterestEarned(address _asset)
         public
