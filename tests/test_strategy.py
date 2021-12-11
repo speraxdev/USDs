@@ -134,6 +134,12 @@ def test_withdraw(sperax, weth, accounts):
     # assert txn.events['Withdrawal']['_asset'] == weth.address
     # assert txn.events['Withdrawal']['_amount']==amount/10
 
+    txn = strategy_proxy.withdraw(
+        accounts[9],
+        weth.address,
+        (amount +1),
+        {'from': vault_proxy.address}
+    )
 def test_withdraw_invalid_assets(sperax, mock_token2, accounts):
     (
         spa,
