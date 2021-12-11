@@ -306,5 +306,5 @@ def test_withdraw_to_vault_invalid_assets(sperax, mock_token2, owner_l2):
         txn = strategy_proxy.withdrawToVault(
             mock_token2.address,
             (amount/10),
-            {'from': owner_l2.address}),
+            {'from': owner_l2.address})
 
