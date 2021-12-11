@@ -72,13 +72,13 @@ def getAddressFromNetwork(testnetAddr, mainnetAddr):
 
 
 def getContractToUpgrade(contract):
-    version = _getVersion(f"Enter version to upgrade {contract} to:")
+    version = getNumber(f"Enter version to upgrade {contract} to:")
     confirm(f"Confirm you want to upgrade {contract} to version {version}")
     return (_getContractVersionedName(contract, version), _getContract(contract, version))
 
-def _getVersion(msg):
+def getNumber(msg):
     """
-    Prompts the user to enter a version number.
+    Prompts the user to enter a number. Checks that it is a number.
     """
     while True:
         version = input(msg)

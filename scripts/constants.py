@@ -120,4 +120,27 @@ class TokenDetails:
         self.symbol = symbol
 
 USDs_token_details = TokenDetails("Sperax USD", "USDs")
-    
+
+wSPAL1_token_details = TokenDetails("Wrapped Sperax", "wSPA")
+
+class L1DeployAddresses:
+    def __init__(self, L1_SPA, bridge, router):
+        self.L1_SPA = L1_SPA
+        self.bridge = bridge
+        self.router = router
+
+
+# Arbitrum addresses from: https://developer.offchainlabs.com/docs/useful_addresses  
+testnet_L1_addresses = L1DeployAddresses( 
+    # SPA: https://rinkeby.etherscan.io/address/0x53012655C4eDA87a2cE603e65Cb53c6aF8e5F674#readContract
+    "0xa8DffF20B5Ad7116DddfD669d4FE207591ac03eD", # SPA
+    "0x917dc9a69f65dc3082d518192cd3725e1fa96ca2", # Bridge
+    "0x70c143928ecffaf9f5b406f7f4fc28dc43d68380" # Router
+    )
+
+mainnet_L1_addresses = L1DeployAddresses(
+    # SPA: https://etherscan.io/token/0xb4a3b0faf0ab53df58001804dda5bfc6a3d59008#readContract
+    "0xB4A3B0Faf0Ab53df58001804DdA5Bfc6a3D59008", # SPA 
+    "0xcEe284F754E854890e311e3280b767F80797180d", # Bridge
+    "0x72Ce9c846789fdB6fC1f34aC4AD25Dd9ef7031ef" # Router
+    )
