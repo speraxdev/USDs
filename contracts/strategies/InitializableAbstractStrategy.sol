@@ -71,16 +71,6 @@ abstract contract InitializableAbstractStrategy is Initializable, OwnableUpgrade
     }
 
     /**
-     * @dev Collect accumulated reward token and send to Vault.
-     */
-    function collectRewardToken() external virtual onlyVault nonReentrant {
-        IERC20Upgradeable rewardToken = IERC20Upgradeable(rewardTokenAddress);
-        uint256 balance = rewardToken.balanceOf(address(this));
-        emit RewardTokenCollected(vaultAddress, balance);
-        rewardToken.safeTransfer(vaultAddress, balance);
-    }
-
-    /**
      * @dev Verifies that the caller is the Vault.
      */
     modifier onlyVault() {
@@ -170,6 +160,8 @@ abstract contract InitializableAbstractStrategy is Initializable, OwnableUpgrade
         emit PTokenRemoved(asset, pToken);
     }
 
+
+
     /**
      * @dev Provide support for asset by passing its pToken address.
      *      Add to internal mappings and execute the platform specific,
@@ -193,39 +185,27 @@ abstract contract InitializableAbstractStrategy is Initializable, OwnableUpgrade
     }
 
     /**
-     * @dev Transfer token to owner. Intended for recovering tokens stuck in
-     *      strategy contracts, i.e. mistaken sends.
-     * @param _asset Address for the asset
-     * @param _amount Amount of the asset to transfer
+     * @dev Check if an asset is supported.
+     * @param _asset    Address of the asset
+     * @return bool     Whether asset is supported
      */
-    function transferToken(address _asset, uint256 _amount)
-        public
-        onlyOwner
-    {
-        IERC20Upgradeable(_asset).safeTransfer(owner(), _amount);
+    function supportsAsset(address _asset) external view returns (bool) {
+        return assetToPToken[_asset] != address(0);
     }
 
     /***************************************
                  Abstract
     ****************************************/
 
-    function _abstractSetPToken(address _asset, address _pToken)
-        internal
-        virtual;
-
-    function safeApproveAllTokens() external virtual;
-
     /**
      * @dev Deposit an amount of asset into the platform
      * @param _asset               Address for the asset
      * @param _amount              Units of asset to deposit
      */
-    function deposit(address _asset, uint256 _amount) external virtual;
-
-    /**
-     * @dev Deposit balance of all supported assets into the platform
-     */
-    function depositAll() external virtual;
+    function deposit(
+        address _asset,
+        uint256 _amount
+    ) external virtual;
 
     /**
      * @dev Withdraw an amount of asset from the platform.
@@ -235,16 +215,6 @@ abstract contract InitializableAbstractStrategy is Initializable, OwnableUpgrade
      */
     function withdraw(
         address _recipient,
-        address _asset,
-        uint256 _amount
-    ) external virtual;
-
-    /**
-     * @dev Withdraw an amount of asset from the platform to vault
-     * @param _asset             Address of the asset
-     * @param _amount            Units of asset to withdraw
-     */
-    function withdrawToVault(
         address _asset,
         uint256 _amount
     ) external virtual;
@@ -260,9 +230,21 @@ abstract contract InitializableAbstractStrategy is Initializable, OwnableUpgrade
     ) external virtual;
 
     /**
-     * @dev Withdraw all assets from strategy sending assets to Vault.
+     * @dev Collect accumulated reward token and send to Vault.
      */
-    function withdrawAll() external virtual;
+    function collectRewardToken() external virtual;
+
+    /**
+     * @dev Withdraw an amount of asset from the platform to vault
+     * @param _asset             Address of the asset
+     * @param _amount            Units of asset to withdraw
+     */
+    function withdrawToVault(
+        address _asset,
+        uint256 _amount
+    ) external virtual;
+
+    function safeApproveAllTokens() external virtual;
 
     /**
      * @dev Get the total asset value held in the platform.
@@ -276,7 +258,11 @@ abstract contract InitializableAbstractStrategy is Initializable, OwnableUpgrade
         virtual
         returns (uint256 balance);
 
-
+    /**
+     * @dev Get the amouunt interest earned
+     * @param _asset      Address of the asset
+     * @return interestEarned    The amouunt interest earned
+     */
     function checkInterestEarned(address _asset)
         external
         view
@@ -284,9 +270,13 @@ abstract contract InitializableAbstractStrategy is Initializable, OwnableUpgrade
         returns (uint256 interestEarned);
 
     /**
-     * @dev Check if an asset is supported.
-     * @param _asset    Address of the asset
-     * @return bool     Whether asset is supported
+     * @dev Call the necessary approvals for the Curve pool and gauge
+     * @param _asset Address of the asset
+     * @param _pToken Address of the corresponding platform token (i.e. 3CRV)
      */
-    function supportsAsset(address _asset) external view virtual returns (bool);
+    function _abstractSetPToken(address _asset, address _pToken)
+        internal
+        virtual;
+
+
 }
