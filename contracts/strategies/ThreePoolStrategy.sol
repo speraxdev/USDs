@@ -61,17 +61,6 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
     }
 
     /**
-     * @dev Collect accumulated CRV and send to Vault.
-     */
-    function collectRewardToken() external override onlyVault nonReentrant {
-        IERC20 crvToken = IERC20(rewardTokenAddress);
-        uint256 balance_before = crvToken.balanceOf(vaultAddress);
-        ICurveGauge(crvGaugeAddress).claim_rewards(address(this), vaultAddress);
-        uint256 balance_after = crvToken.balanceOf(vaultAddress);
-        emit RewardTokenCollected(vaultAddress, balance_after.sub(balance_before));
-    }
-
-    /**
      * @dev Deposit asset into the Curve 3Pool
      * @param _asset Address of asset to deposit
      * @param _amount Amount of asset to deposit
@@ -99,7 +88,6 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
             uint256(1e18).sub(maxSlippage)
         );
         // Do the deposit to 3pool
-        //curvePool.add_liquidity{value:_amount}(_amounts, minMintAmount);
         curvePool.add_liquidity(_amounts, minMintAmount);
         allocatedAmt[_asset] = allocatedAmt[_asset].add(_amount);
         // Deposit into Gauge
@@ -110,8 +98,6 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
         );
         emit Deposit(_asset, address(assetToPToken[_asset]), _amount);
     }
-
-    function depositAll() external override onlyVaultOrOwner nonReentrant {}
 
     /**
      * @dev Withdraw asset from Curve 3Pool
@@ -151,7 +137,8 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
             );
         }
         (contractPTokens, , ) = _getTotalPTokens();
-        maxBurnedPTokens = maxBurnedPTokens < contractPTokens ? maxBurnedPTokens : contractPTokens;
+        maxBurnedPTokens = maxBurnedPTokens < contractPTokens ?
+                           maxBurnedPTokens : contractPTokens;
         uint256 balance_before = IERC20(_asset).balanceOf(address(this));
         curvePool.remove_liquidity_one_coin(maxBurnedPTokens, poolCoinIndex, 0);
         uint256 balance_after = IERC20(_asset).balanceOf(address(this));
@@ -187,6 +174,17 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
         IERC20(_asset).safeTransfer(_recipient, amtReceived);
 
         emit Withdrawal(_asset, address(assetToPToken[_asset]), amtReceived);
+    }
+
+    /**
+     * @dev Collect accumulated CRV and send to Vault.
+     */
+    function collectRewardToken() external override onlyVault nonReentrant {
+        IERC20 crvToken = IERC20(rewardTokenAddress);
+        uint256 balance_before = crvToken.balanceOf(vaultAddress);
+        ICurveGauge(crvGaugeAddress).claim_rewards(address(this), vaultAddress);
+        uint256 balance_after = crvToken.balanceOf(vaultAddress);
+        emit RewardTokenCollected(vaultAddress, balance_after.sub(balance_before));
     }
 
     /**
@@ -241,8 +239,16 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
         emit Withdrawal(_asset, address(assetToPToken[_asset]), _amount_received);
     }
 
-    function withdrawAll() external override onlyVaultOrOwner nonReentrant {}
-
+    /**
+     * @dev Approve the spending of all assets by their corresponding pool tokens,
+     *      if for some reason is it necessary.
+     */
+    function safeApproveAllTokens() override external {
+        // This strategy is a special case since it only supports one asset
+        for (uint256 i = 0; i < assetsMapped.length; i++) {
+            _abstractSetPToken(assetsMapped[i], assetToPToken[assetsMapped[i]]);
+        }
+    }
 
     /**
      * @dev Get the total asset value held in the platform
@@ -272,6 +278,11 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
         }
     }
 
+    /**
+     * @dev Get the amouunt interest earned
+     * @param _asset      Address of the asset
+     * @return interestEarned    The amouunt interest earned
+     */
     function checkInterestEarned(address _asset)
         public
         view
@@ -298,22 +309,22 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
     }
 
     /**
-     * @dev Retuns bool indicating whether asset is supported by strategy
+     * @dev Call the necessary approvals for the Curve pool and gauge
      * @param _asset Address of the asset
+     * @param _pToken Address of the corresponding platform token (i.e. 3CRV)
      */
-    function supportsAsset(address _asset) external override view returns (bool) {
-        return assetToPToken[_asset] != address(0);
-    }
-
-    /**
-     * @dev Approve the spending of all assets by their corresponding pool tokens,
-     *      if for some reason is it necessary.
-     */
-    function safeApproveAllTokens() override external {
-        // This strategy is a special case since it only supports one asset
-        for (uint256 i = 0; i < assetsMapped.length; i++) {
-            _abstractSetPToken(assetsMapped[i], assetToPToken[assetsMapped[i]]);
-        }
+    function _abstractSetPToken(address _asset, address _pToken) override internal {
+        IERC20 asset = IERC20(_asset);
+        IERC20 pToken = IERC20(_pToken);
+        // 3Pool for asset (required for adding liquidity)
+        asset.safeApprove(platformAddress, 0);
+        asset.safeApprove(platformAddress, uint256(-1));
+        // 3Pool for LP token (required for removing liquidity)
+        pToken.safeApprove(platformAddress, 0);
+        pToken.safeApprove(platformAddress, uint256(-1));
+        // Gauge for LP token
+        pToken.safeApprove(crvGaugeAddress, 0);
+        pToken.safeApprove(crvGaugeAddress, uint256(-1));
     }
 
     /**
@@ -336,25 +347,6 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
         ICurveGauge gauge = ICurveGauge(crvGaugeAddress);
         gaugePTokens = gauge.balanceOf(address(this));
         totalPTokens = contractPTokens.add(gaugePTokens);
-    }
-
-    /**
-     * @dev Call the necessary approvals for the Curve pool and gauge
-     * @param _asset Address of the asset
-     * @param _pToken Address of the corresponding platform token (i.e. 3CRV)
-     */
-    function _abstractSetPToken(address _asset, address _pToken) override internal {
-        IERC20 asset = IERC20(_asset);
-        IERC20 pToken = IERC20(_pToken);
-        // 3Pool for asset (required for adding liquidity)
-        asset.safeApprove(platformAddress, 0);
-        asset.safeApprove(platformAddress, uint256(-1));
-        // 3Pool for LP token (required for removing liquidity)
-        pToken.safeApprove(platformAddress, 0);
-        pToken.safeApprove(platformAddress, uint256(-1));
-        // Gauge for LP token
-        pToken.safeApprove(crvGaugeAddress, 0);
-        pToken.safeApprove(crvGaugeAddress, uint256(-1));
     }
 
     /**

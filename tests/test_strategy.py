@@ -14,7 +14,8 @@ def test_deposit(sperax, weth, accounts):
         vault_proxy,
         oracle_proxy,
         strategy_proxy,
-        buyback
+        buyback,
+        buyback_multihop
     ) = sperax
 
     amount = int(9999)
