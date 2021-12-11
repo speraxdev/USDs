@@ -33,9 +33,10 @@ def owner_l2(accounts):
 
 @pytest.fixture(scope="module", autouse=True)
 def mock_token2(MockToken, owner_l2):
-    return MockToken.deploy(
+    mock_token = MockToken.deploy(
         {'from': owner_l2}
     )
+    return mock_token
 
 @pytest.fixture(scope="module", autouse=True)
 def mock_token3(MockToken, owner_l1, owner_l2):
@@ -77,6 +78,14 @@ def usdt():
     return brownie.interface.IERC20(usdt_address)
 
 @pytest.fixture(scope="module", autouse=True)
+def mock_token4(MockToken, accounts):
+    mock_token = MockToken.deploy(
+        {'from': accounts[5]}
+    )
+    usdt_address = mock_token.address
+    return brownie.interface.IERC20(usdt_address)
+
+@pytest.fixture(scope="module", autouse=True)
 def wbtc():
     # Arbitrum-one mainnet:
     wbtc_address = '0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f'
@@ -112,6 +121,7 @@ def sperax(
     weth,
     mock_token2,
     mock_token3,
+    mock_token4,
     Contract,
     admin,
     vault_fee,
@@ -244,10 +254,13 @@ def sperax(
         buyback,
         usdt,
         wbtc,
+        mock_token4,
         owner_l2
     )
 
     mintSPA(spa,  mock_token2.balanceOf(owner_l2) , owner_l2, vault_proxy)
+
+    
 
     amount = 100000
     create_uniswap_v3_pool(
@@ -470,6 +483,7 @@ def configure_collaterals(
     buyback,
     usdt,
     wbtc,
+    mock_token4,
     owner_l2
 ):
     # Arbitrum mainnet collaterals: token address, chainlink
@@ -477,7 +491,7 @@ def configure_collaterals(
         # USDC
         '0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8': '0x50834F3163758fcC1Df9973b6e91f0F0F0434aD3',
         # USDT
-        usdt: '0x3f3f5dF88dC9F13eac63DF89EC16ef6e7E25DdE7',
+        mock_token4: '0x3f3f5dF88dC9F13eac63DF89EC16ef6e7E25DdE7',
         # DAI
         '0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1': '0xc5C8E77B397E531B8EC06BFb0048328B30E9eCfB',
         # WBTC
@@ -487,6 +501,7 @@ def configure_collaterals(
     precision = 10**8
     zero_address = brownie.convert.to_address('0x0000000000000000000000000000000000000000')
     for collateral, chainlink in collaterals.items():
+        print("collaternal", collateral)
         # authorize a new collateral
         vault_proxy.addCollateral(
             collateral, # address of: USDC, USDT, DAI or WBTC
