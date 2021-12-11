@@ -39,9 +39,12 @@ def test_deposit(sperax, weth, accounts):
         amount,
         {'from': vault_proxy.address}
     )
+    balance = strategy_proxy.checkBalance(weth, {'from': vault_proxy.address})
     assert txn.events['Deposit']['_asset'] == weth.address
     assert txn.events['Deposit']['_amount'] == amount
+    assert balance > 0
    
+
 
 def test_deposit_invalid_amount(sperax, weth):
     (
@@ -140,6 +143,7 @@ def test_withdraw(sperax, weth, accounts):
         (amount +1),
         {'from': vault_proxy.address}
     )
+    
 def test_withdraw_invalid_assets(sperax, mock_token2, accounts):
     (
         spa,
@@ -255,10 +259,10 @@ def test_check_balance(sperax, weth):
         buyback,
         buyback_multihop
     ) = sperax
-
     balance = strategy_proxy.checkBalance(weth, {'from': vault_proxy.address})
 
-    assert  balance ==0
+    assert  balance == 0
+
 
     
 

@@ -338,7 +338,6 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
         internal
         view
         returns (
-            uint256 contractPTokens,
             uint256 gaugePTokens,
             uint256 totalPTokens
         )
