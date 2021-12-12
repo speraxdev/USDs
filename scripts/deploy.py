@@ -88,7 +88,7 @@ def main():
         testnetAddresses.third_party.l2_gateway,
         mainnetAddresses.third_party.l2_gateway
     )
-    chainlink_eth_price_feed = getAddressFromNetwork(
+    chainlink_usdc_price_feed = getAddressFromNetwork(
         testnetAddresses.third_party.chainlink_usdc_price_feed,
         mainnetAddresses.third_party.chainlink_usdc_price_feed
     )
