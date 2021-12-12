@@ -13,12 +13,12 @@ class UpgradeAddresses:
         self.USDs_l2_proxy = USDs_l2_proxy
 
 class ThirdPartyAddresses:
-    def __init__(self, l2_gateway, chainlink_eth_price_feed, weth_arbitrum, chainlink_flags):
+    def __init__(self, l2_gateway, chainlink_usdc_price_feed, usdc_arbitrum, chainlink_flags):
         self.l2_gateway = l2_gateway
-        self.chainlink_eth_price_feed = chainlink_eth_price_feed
-        self.weth_arbitrum = weth_arbitrum
+        self.chainlink_usdc_price_feed = chainlink_usdc_price_feed
+        self.usdc_arbitrum = usdc_arbitrum
         self.chainlink_flags = chainlink_flags
-       
+
 class Addresses:
     def __init__(self, deploy, upgrade, third_party, collaterals):
         self.deploy = deploy
@@ -27,18 +27,18 @@ class Addresses:
         self.collaterals = collaterals
 
 # testnet
-## Note: the feeVault can be anything in testnet. here it's 0xdeadbeef... 
+## Note: the feeVault can be anything in testnet. here it's 0xdeadbeef...
 testnet_deploy_addresses = DeployAddresses(
     "0x53012655C4eDA87a2cE603e65Cb53c6aF8e5F674",
-    "0x377ff873b648b678608b216467ee94713116c4cd", 
-    ## Note: the feeVault can be anything in testnet. here it's 0xdeadbeef... 
+    "0x377ff873b648b678608b216467ee94713116c4cd",
+    ## Note: the feeVault can be anything in testnet. here it's 0xdeadbeef...
     "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
-    ) 
+    )
 
 ## Note: these change after you deploy the contracts, so deploy first and then put those addresses here.
 testnet_upgrade_addresses = UpgradeAddresses(
     "0x2b90b6f820D07D575663Ef30D349720798Fe9F7A",
-    "0x09E99C86B45718a249CD386906bf348f07f5f03e", 
+    "0x09E99C86B45718a249CD386906bf348f07f5f03e",
     "0xBB040Cc053770986b978e134Ff6068AaFA9194Ff",
     "0x4C8e9B99497875deaB2304662430c8d67D624a33",
     "0x2Cc419135666DA91aa6925b0ca488167D9866a4d"
@@ -59,8 +59,8 @@ testnet_collaterals = {
     }
 
 testnetAddresses = Addresses(
-    testnet_deploy_addresses, 
-    testnet_upgrade_addresses, 
+    testnet_deploy_addresses,
+    testnet_upgrade_addresses,
     testnet_third_party_addresses,
     testnet_collaterals
     )
@@ -72,14 +72,14 @@ testnetAddresses = Addresses(
 ## then when deployed, you can put the proxy addresses here for upgrades
 
 mainnet_deploy_address = DeployAddresses(
-    ## Note: these need to be added. here it's  0xdeadbeef in the meantime... 
+    ## Note: these need to be added. here it's  0xdeadbeef in the meantime...
     "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
-    "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef", 
+    "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
     "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
     )
 
 mainnet_upgrade_address = UpgradeAddresses(
-    ## Note: these need to be added. here it's  0xdeadbeef in the meantime... 
+    ## Note: these need to be added. here it's  0xdeadbeef in the meantime...
     "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
     "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
     "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
@@ -108,8 +108,8 @@ mainnet_collaterals = {
     }
 
 mainnetAddresses = Addresses(
-    mainnet_deploy_address, 
-    mainnet_upgrade_address, 
+    mainnet_deploy_address,
+    mainnet_upgrade_address,
     testnet_third_party_addresses,
     mainnet_collaterals
     )
@@ -120,4 +120,3 @@ class TokenDetails:
         self.symbol = symbol
 
 USDs_token_details = TokenDetails("Sperax USD", "USDs")
-    
