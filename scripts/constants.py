@@ -29,7 +29,7 @@ class Addresses:
 # testnet
 ## Note: the feeVault can be anything in testnet. here it's 0xdeadbeef... 
 testnet_deploy_addresses = DeployAddresses(
-    "0x53012655C4eDA87a2cE603e65Cb53c6aF8e5F674",
+    "0x24cA7C7aD824D0fD8c0375436a931931239d342D",
     "0x377ff873b648b678608b216467ee94713116c4cd", 
     ## Note: the feeVault can be anything in testnet. here it's 0xdeadbeef... 
     "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
@@ -37,11 +37,11 @@ testnet_deploy_addresses = DeployAddresses(
 
 ## Note: these change after you deploy the contracts, so deploy first and then put those addresses here.
 testnet_upgrade_addresses = UpgradeAddresses(
-    "0x2b90b6f820D07D575663Ef30D349720798Fe9F7A",
-    "0x09E99C86B45718a249CD386906bf348f07f5f03e", 
-    "0xBB040Cc053770986b978e134Ff6068AaFA9194Ff",
-    "0x4C8e9B99497875deaB2304662430c8d67D624a33",
-    "0x2Cc419135666DA91aa6925b0ca488167D9866a4d"
+    "0xbc81f60F49cAAD84E3d4557D60c0333835F680e3",
+    "0xAe990Cd681C82D9EfB4c12061c2cecB3f7675e83", 
+    "0x828B7cA9f1eb2E1e67085Bb51c85f518065CcA57",
+    "0x1A6B1de5A5dF710D50A5af781a66a55F14634455",
+    "0x111e55F142e0611492D07eE761531841A0e86146"
     )
 
 testnet_third_party_addresses = ThirdPartyAddresses(
@@ -133,7 +133,7 @@ class L1DeployAddresses:
 # Arbitrum addresses from: https://developer.offchainlabs.com/docs/useful_addresses  
 testnet_L1_addresses = L1DeployAddresses( 
     # SPA: https://rinkeby.etherscan.io/address/0x53012655C4eDA87a2cE603e65Cb53c6aF8e5F674#readContract
-    "0xa8DffF20B5Ad7116DddfD669d4FE207591ac03eD", # SPA
+    "0x7776B097f723eBbc8cd1a17f1fe253D11235cCE1", # SPA
     "0x917dc9a69f65dc3082d518192cd3725e1fa96ca2", # Bridge
     "0x70c143928ecffaf9f5b406f7f4fc28dc43d68380" # Router
     )
