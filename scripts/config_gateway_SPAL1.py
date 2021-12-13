@@ -25,7 +25,7 @@ def main():
     print(f"contract owner account: {owner.address}\n")
 
     print(f"\nConfigure Arbitrum gateway on {network.show_active()}:\n")
-    spa_l1_address = input("Enter L1 SPA address: ").strip()
+    spa_l1_address = input("Enter L1 wSPA address: ").strip()
     if len(spa_l1_address) == 0:
         print("\nMissing L1 SPA address\n")
         return
