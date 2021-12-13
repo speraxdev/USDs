@@ -1,8 +1,9 @@
 class DeployAddresses:
-    def __init__(self, L1_wSPA, L1_USDs, fee_vault):
+    def __init__(self, L1_wSPA, L1_USDs, fee_vault, L2_SPA):
         self.L1_wSPA = L1_wSPA
         self.L1_USDs = L1_USDs
         self.fee_vault = fee_vault
+        self.L2_SPA = L2_SPA
 
 class UpgradeAddresses:
     def __init__(self, bancor_formula_address, vault_core_tools_proxy, vault_core_proxy, oracle_proxy, USDs_l2_proxy):
@@ -32,7 +33,8 @@ testnet_deploy_addresses = DeployAddresses(
     "0x24cA7C7aD824D0fD8c0375436a931931239d342D", #L1_wSPA
     "0x0000000000000000000000000000000000000000", #L1_USDs
     ## Note: the feeVault can be anything in testnet. here it's 0xdeadbeef...
-    "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef" #L1_feeVault
+    "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef", #L1_feeVault
+    "0x5D146Fc21f447Ce5C8EdB0C5AefB41530c91EA35" #L2_SPA
     )
 
 ## Note: these change after you deploy the contracts, so deploy first and then put those addresses here.
@@ -73,6 +75,7 @@ testnetAddresses = Addresses(
 
 mainnet_deploy_address = DeployAddresses(
     ## Note: these need to be added. here it's  0xdeadbeef in the meantime...
+    "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
     "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
     "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
     "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
@@ -122,6 +125,8 @@ class TokenDetails:
 USDs_token_details = TokenDetails("Sperax USD", "USDs")
 
 wSPAL1_token_details = TokenDetails("Wrapped Sperax", "wSPA")
+
+SPAL2_token_details = TokenDetails("Sperax", "SPA")
 
 class L1DeployAddresses:
     def __init__(self, L1_SPA, bridge, router):
