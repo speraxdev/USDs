@@ -29,10 +29,10 @@ class Addresses:
 # testnet
 ## Note: the feeVault can be anything in testnet. here it's 0xdeadbeef...
 testnet_deploy_addresses = DeployAddresses(
-    "0x53012655C4eDA87a2cE603e65Cb53c6aF8e5F674",
-    "0x377ff873b648b678608b216467ee94713116c4cd",
+    "0x24cA7C7aD824D0fD8c0375436a931931239d342D", #L1_wSPA
+    "0x0000000000000000000000000000000000000000", #L1_USDs
     ## Note: the feeVault can be anything in testnet. here it's 0xdeadbeef...
-    "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+    "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef" #L1_feeVault
     )
 
 ## Note: these change after you deploy the contracts, so deploy first and then put those addresses here.

@@ -31,9 +31,9 @@ contract Oracle is Initializable, IOracle, OwnableUpgradeable {
     uint public constant USDCprice_prec = 10**8;
     uint public constant SPAprice_prec = 10**18;
     uint public constant USDsPrice_prec = 10**18;
-    uint128 public USDC_prec = uint128(10)**ERC20(USDCaddr).decimals();
-    uint128 public SPA_prec = uint128(10)**ERC20(SPAaddr).decimals();
-    uint128 public USDs_prec = uint128(10)**ERC20(USDsAddr).decimals();
+    uint128 public USDC_prec;
+    uint128 public SPA_prec;
+    uint128 public USDs_prec;
     uint32 public movingAvgShortPeriod;
     uint32 public movingAvgLongPeriod;
     AggregatorV3Interface priceFeedUSDC;
@@ -94,20 +94,23 @@ contract Oracle is Initializable, IOracle, OwnableUpgradeable {
         lastUpdateTime = uint32(now % 2**32);
         priceFeedUSDC = AggregatorV3Interface(_priceFeedUSDC);
         SPAaddr = _SPAaddr;
+        SPA_prec = uint128(10)**ERC20(SPAaddr).decimals();
         USDCaddr = _USDCaddr;
+        USDC_prec = uint128(10)**ERC20(USDCaddr).decimals();
         movingAvgShortPeriod = 600;
         movingAvgLongPeriod = 3600;
         chainlinkFlags = FlagsInterface(_chainlinkFlags);
     }
 
     function updateUSDsAddress(address _USDsAddr) external onlyOwner {
-        emit USDsAddressUpdated(USDsAddr, _USDsAddr);
         USDsAddr = _USDsAddr;
+        USDs_prec = uint128(10)**ERC20(USDsAddr).decimals();
+        emit USDsAddressUpdated(USDsAddr, _USDsAddr);
     }
 
     function updateVaultAddress(address _VaultAddr) external onlyOwner {
-        emit VaultAddressUpdated(VaultAddr, _VaultAddr);
         VaultAddr = _VaultAddr;
+        emit VaultAddressUpdated(VaultAddr, _VaultAddr);
     }
 
     function updateOraclePoolsAddress(address _SPAoracleQuoteTokenAddr, address _USDsOracleQuoteTokenAddr, address _USDsOraclePool, address _SPAoraclePool) external onlyOwner {
