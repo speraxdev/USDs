@@ -27,14 +27,14 @@ contract Oracle is Initializable, IOracle, OwnableUpgradeable {
     uint32 public updateNextIndex;
     uint32 public lastUpdateTime; // the timstamp of the lastest update
     uint32 public updatePeriod; // the default updatePeriod of one update is 1 hours
-    uint public constant ETHprice_prec = 10**8;
+    uint public constant USDCprice_prec = 10**8;
     uint public constant SPAprice_prec = 10**18;
     uint public constant USDsPrice_prec = 10**18;
     uint32 public movingAvgShortPeriod;
     uint32 public movingAvgLongPeriod;
-    AggregatorV3Interface priceFeedETH;
+    AggregatorV3Interface priceFeedUSDC;
     address public SPAaddr;
-    address public WETH;
+    address public USDCaddr;
     address public VaultAddr;
     address public USDsAddr;
     address public USDsOraclePool;
@@ -85,13 +85,13 @@ contract Oracle is Initializable, IOracle, OwnableUpgradeable {
     //
     // Initializer
     //
-    function initialize(address _priceFeedETH, address _SPAaddr, address _WETH, address _chainlinkFlags) public initializer {
+    function initialize(address _priceFeedUSDC, address _SPAaddr, address _USDCaddr, address _chainlinkFlags) public initializer {
         OwnableUpgradeable.__Ownable_init();
         updatePeriod = 12 hours;
         lastUpdateTime = uint32(now % 2**32);
-        priceFeedETH = AggregatorV3Interface(_priceFeedETH);
+        priceFeedUSDC = AggregatorV3Interface(_priceFeedUSDC);
         SPAaddr = _SPAaddr;
-        WETH = _WETH;
+        USDCaddr = _USDCaddr;
         movingAvgShortPeriod = 600;
         movingAvgLongPeriod = 3600;
         chainlinkFlags = FlagsInterface(_chainlinkFlags);
@@ -170,8 +170,8 @@ contract Oracle is Initializable, IOracle, OwnableUpgradeable {
         return _getCollateralPrice(collateralAddr);
     }
 
-    function getETHprice() external view override returns (uint) {
-        return _getETHprice();
+    function getUSDCprice() external view override returns (uint) {
+        return _getUSDCprice();
 	}
 
     function getSPAprice() external view override returns (uint) {
@@ -179,7 +179,7 @@ contract Oracle is Initializable, IOracle, OwnableUpgradeable {
         uint32 period = movingAvgShortPeriod < longestSec ? movingAvgShortPeriod : longestSec;
         int24 timeWeightedAverageTick = OracleLibrary.consult(SPAoraclePool, period);
         uint quoteAmount = OracleLibrary.getQuoteAtTick(timeWeightedAverageTick, uint128(SPAprice_prec), SPAaddr, SPAoracleQuoteTokenAddr);
-        uint SPAprice = _getETHprice().mul(quoteAmount).div(ETHprice_prec);
+        uint SPAprice = _getUSDCprice().mul(quoteAmount).div(USDCprice_prec);
         return SPAprice;
     }
 
@@ -212,8 +212,8 @@ contract Oracle is Initializable, IOracle, OwnableUpgradeable {
         return _getCollateralPrice_prec(collateralAddr);
     }
 
-    function getETHprice_prec() external view override returns (uint) {
-        return ETHprice_prec;
+    function getUSDCprice_prec() external view override returns (uint) {
+        return USDCprice_prec;
     }
 
     function getSPAprice_prec() external view override returns (uint) {
@@ -242,7 +242,7 @@ contract Oracle is Initializable, IOracle, OwnableUpgradeable {
     }
 
 
-	function _getETHprice() internal view returns (uint) {
+	function _getUSDCprice() internal view returns (uint) {
         bool isRaised = chainlinkFlags.getFlag(FLAG_ARBITRUM_SEQ_OFFLINE);
         if (isRaised) {
                 // If flag is raised we shouldn't perform any critical operations
@@ -253,7 +253,7 @@ contract Oracle is Initializable, IOracle, OwnableUpgradeable {
             int price,
             ,
             ,
-		) = priceFeedETH.latestRoundData();
+		) = priceFeedUSDC.latestRoundData();
 		return uint(price);
 	}
 

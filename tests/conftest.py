@@ -83,6 +83,12 @@ def wbtc():
     return brownie.interface.IERC20(wbtc_address)
 
 @pytest.fixture(scope="module", autouse=True)
+def usdc():
+    # Arbitrum-one mainnet:
+    usdc_address = '0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8'
+    return brownie.interface.IERC20(usdc_address)
+
+@pytest.fixture(scope="module", autouse=True)
 def proxy_admin(
     ProxyAdmin,
     admin
@@ -110,6 +116,7 @@ def sperax(
     usdt,
     wbtc,
     weth,
+    usdc,
     mock_token2,
     mock_token3,
     Contract,
@@ -118,11 +125,11 @@ def sperax(
     owner_l2
 ):
     # Arbitrum-one (mainnet):
-    chainlink_eth_price_feed = '0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612'
+    chainlink_usdc_price_feed = '0x50834F3163758fcC1Df9973b6e91f0F0F0434aD3'
     l2_gateway = '0x096760F208390250649E3e8763348E783AEF5562'
 
     # Arbitrum rinkeby:
-    #chainlink_eth_price_feed = '0x5f0423B1a6935dc5596e7A24d98532b67A0AeFd8'
+    #chainlink_usdc_price_feed = '0xe020609A0C31f4F96dCBB8DF9882218952dD95c4'
     #l2_gateway = '0x9b014455AcC2Fe90c52803849d0002aeEC184a06'
 
     bancor = deploy_bancor(
@@ -201,7 +208,7 @@ def sperax(
     )
     pool_fee1 = 3000
     pool_fee2 = 3000
-    
+
     buyback_multihop.updateInputTokenInfo(
         spa.address,
         True, #supported
@@ -211,9 +218,9 @@ def sperax(
     )
 
     oracle_proxy.initialize(
-        chainlink_eth_price_feed,
+        chainlink_usdc_price_feed,
         spa.address,
-        weth.address,
+        usdc.address,
         chainlink_flags,
         {'from': owner_l2}
     )
@@ -271,7 +278,7 @@ def sperax(
     )
 
 
-   
+
     return (
         spa,
         usds_proxy,
