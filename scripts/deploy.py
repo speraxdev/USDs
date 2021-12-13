@@ -69,9 +69,16 @@ def main():
         testnetAddresses.deploy.fee_vault,
         mainnetAddresses.deploy.fee_vault
     )
+
+    spa_l2_address = getAddressFromNetwork(
+        testnetAddresses.deploy.L2_SPA,
+        mainnetAddresses.deploy.L2_SPA
+    )
+
     print(f"\nL1 wSPA address: {spa_l1_address}\n")
     print(f"\nL1 USDs address: {usds_l1_address}\n")
     print(f"\nFee Vault address: {fee_vault}\n")
+    print(f"\nL2 SPA address: {spa_l2_address}\n")
     confirm("Are the above addresses correct?")
 
     initial_balance = owner.balance()
@@ -177,18 +184,10 @@ def main():
 #        publish_source=True,
     )
 
-    spa = SperaxTokenL2.deploy(
-        'Sperax',
-        'SPA',
-        l2_gateway,
-        spa_l1_address,
-        {'from': owner, 'gas_limit': 1000000000},
-#        publish_source=True,
-    )
 
     txn = oracle_proxy.initialize(
         chainlink_usdc_price_feed,
-        spa.address,
+        spa_l2_address,
         usdc_arbitrum,
         chainlink_flags,
         {'from': owner, 'gas_limit': 1000000000}
@@ -200,7 +199,7 @@ def main():
     )
 
     txn = vault_proxy.initialize(
-        spa.address,
+        spa_l2_address,
         core_proxy.address,
         fee_vault,
         {'from': owner, 'gas_limit': 1000000000}
@@ -217,6 +216,8 @@ def main():
         {'from': owner, 'gas_limit': 1000000000}
     )
 
+    spa = Contract.from_abi("SperaxTokenL2", spa_l2_address, SperaxTokenL2.abi)
+    
     txn = spa.setMintable(
         vault_proxy.address,
         True,
@@ -244,8 +245,6 @@ def main():
     print(f"USDsL2:")
     print(f"\taddress: {usds.address}")
     print(f"\tproxy address: {usds_proxy.address}")
-
-    print(f"SPA layer 2 address: {spa.address}")
 
     final_balance = owner.balance()
     print(f'\naccount balance: {final_balance}')
