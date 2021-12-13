@@ -3,9 +3,32 @@ import json
 import time
 import brownie
 
-
 def user(accounts):
     return accounts[9]
+
+def test_remove_PToken(sperax, owner_l2, accounts):
+    (
+        spa,
+        usds_proxy,
+        core_proxy,
+        vault_proxy,
+        oracle_proxy,
+        strategy_proxy,
+        buyback,
+        buyback_multihop
+    ) = sperax
+    value= int (0)
+
+    txn = strategy_proxy.removePToken(
+        value,
+        {'from': owner_l2.address}
+    )
+    print ("removed PToken:", txn.events['PTokenRemoved']['_pToken'] )
+    value2= int(9999999999)
+    txn = strategy_proxy.removePToken(
+        value2,
+        {'from': owner_l2.address}
+    )
 
 
 def test_deposit(sperax, weth, accounts):
