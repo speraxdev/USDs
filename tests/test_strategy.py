@@ -17,7 +17,7 @@ def test_remove_PToken(sperax, owner_l2, accounts):
         buyback,
         buyback_multihop
     ) = sperax
-    value= int (0),
+    value= int (0)
 
     txn = strategy_proxy.removePToken(
         value,
