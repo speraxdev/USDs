@@ -66,7 +66,7 @@ def main():
     fee_vault = owner
 
     usds_proxy_address = getAddressFromNetwork(
-        testnetAddresses.upgrade.USDs_l2_proxy, 
+        testnetAddresses.upgrade.USDs_l2_proxy,
         mainnetAddresses.upgrade.USDs_l2_proxy
     )
     vault_tools_proxy_address = getAddressFromNetwork(
@@ -92,21 +92,21 @@ def main():
     vault_core = "VaultCore"
     USDs = "USDsL2"
     oracle = "Oracle"
-    
+
     vault_tools_proxy_upgrade = choice(f"Do you wish to upgrade {vault_core_tools}?")
     vault_proxy_upgrade = choice(f"Do you wish to upgrade {vault_core}?")
     usds_proxy_upgrade = choice(f"Do you wish to upgrade {USDs}?")
     oracle_proxy_upgrade = choice(f"Do you wish to upgrade {oracle}?")
     # TODO: add vault tools upgrade flow
-  
+
     # initialize third party addresses
-    chainlink_eth_price_feed = getAddressFromNetwork(
-        testnetAddresses.third_party.chainlink_eth_price_feed,
-        mainnetAddresses.third_party.chainlink_eth_price_feed
+    chainlink_usdc_price_feed = getAddressFromNetwork(
+        testnetAddresses.third_party.chainlink_usdc_price_feed,
+        mainnetAddresses.third_party.chainlink_usdc_price_feed
     )
-    weth_arbitrum = getAddressFromNetwork(
-        testnetAddresses.third_party.weth_arbitrum,
-        mainnetAddresses.third_party.weth_arbitrum
+    usdc_arbitrum = getAddressFromNetwork(
+        testnetAddresses.third_party.usdc_arbitrum,
+        mainnetAddresses.third_party.usdc_arbitrum
     )
     chainlink_flags = getAddressFromNetwork(
         testnetAddresses.third_party.chainlink_flags,
@@ -159,23 +159,23 @@ def main():
 
     if vault_proxy_upgrade:
         confirm(f"Confirm that the {vault_core}'s proxy address is {vault_proxy_address}")
-        
+
         vault_proxy = Contract.from_abi(
             vault_core,
             vault_proxy_address,
             VaultCore.abi
         )
-        
+
         version_contract_name, version_contract =  getContractToUpgrade(vault_core)
-        
+
         # we only want to do these state changes in testnet
         onlyDevelopment(lambda: vault_test_state_change(vault_proxy, owner))
-       
+
         print(f"upgrade {vault_core} contract:\n")
         new_vault = version_contract.deploy(
             {'from': owner, 'gas_limit': 1000000000}
         )
-        
+
         proxy_admin.upgrade(
             vault_proxy.address,
             new_vault.address,
@@ -207,18 +207,18 @@ def main():
             vault_proxy_address,
             VaultCore.abi
         )
-   
+
         usds_proxy = Contract.from_abi(
             USDs,
             usds_proxy_address,
             USDsL2.abi
         )
-        
+
         version_contract_name, version_contract =  getContractToUpgrade(USDs)
 
         # change vault address to verify state changes persist (only in testnet)
         onlyDevelopment(lambda: USDs_test_state_change(usds_proxy, owner))
-        
+
         new_usds = version_contract.deploy(
             {'from': owner, 'gas_limit': 1000000000}
         )
@@ -249,7 +249,7 @@ def main():
 
     if oracle_proxy_upgrade:
         confirm(f"Confirm that the {oracle}'s proxy address is {oracle_proxy_address}")
-        
+
         oracle_proxy = Contract.from_abi(
             oracle,
             oracle_proxy_address,
@@ -271,9 +271,9 @@ def main():
             {'from': admin, 'gas_limit': 1000000000}
         )
         new_oracle.initialize(
-            chainlink_eth_price_feed,
+            chainlink_usdc_price_feed,
             SperaxTokenL2[-1],
-            weth_arbitrum,
+            usdc_arbitrum,
             chainlink_flags,
             {'from': owner, 'gas_limit': 1000000000}
         )

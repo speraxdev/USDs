@@ -88,13 +88,13 @@ def main():
         testnetAddresses.third_party.l2_gateway,
         mainnetAddresses.third_party.l2_gateway
     )
-    chainlink_eth_price_feed = getAddressFromNetwork(
-        testnetAddresses.third_party.chainlink_eth_price_feed,
-        mainnetAddresses.third_party.chainlink_eth_price_feed
+    chainlink_usdc_price_feed = getAddressFromNetwork(
+        testnetAddresses.third_party.chainlink_usdc_price_feed,
+        mainnetAddresses.third_party.chainlink_usdc_price_feed
     )
-    weth_arbitrum = getAddressFromNetwork(
-        testnetAddresses.third_party.weth_arbitrum,
-        mainnetAddresses.third_party.weth_arbitrum
+    usdc_arbitrum = getAddressFromNetwork(
+        testnetAddresses.third_party.usdc_arbitrum,
+        mainnetAddresses.third_party.usdc_arbitrum
     )
     chainlink_flags = getAddressFromNetwork(
         testnetAddresses.third_party.chainlink_flags,
@@ -187,9 +187,9 @@ def main():
     )
 
     txn = oracle_proxy.initialize(
-        chainlink_eth_price_feed,
+        chainlink_usdc_price_feed,
         spa.address,
-        weth_arbitrum,
+        usdc_arbitrum,
         chainlink_flags,
         {'from': owner, 'gas_limit': 1000000000}
     )
@@ -270,7 +270,7 @@ def configure_collaterals(
     for collateral, chainlink in collaterals.items():
         # authorize a new collateral
         vault_proxy.addCollateral(
-            collateral, # address of: USDC, USDT, DAI or WBTC
+            collateral, # address of: , USDT, DAI or WBTC
             zero_address, # _defaultStrategyAddr: CURVE, AAVE, etc
             False, # _allocationAllowed
             0, # _allocatePercentage
