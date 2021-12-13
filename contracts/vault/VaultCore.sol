@@ -72,6 +72,11 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 	event CollateralAllocated(address indexed collateralAddr, address indexed depositStrategyAddr, uint allocateAmount);
 	event USDsAddressUpdated(address oldAddr, address newAddr);
     event OracleAddressUpdated(address oldAddr, address newAddr);
+	event TotalValueLocked(
+		uint totalValueLocked,
+		uint totalValueInVault,
+		uint totalValueInStrategies
+	);
 
 	/**
 	 * @dev check if USDs mint & redeem are both allowed
@@ -348,6 +353,7 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 		IUSDs(USDsAddr).mint(msg.sender, USDsAmt);
 		IUSDs(USDsAddr).mint(feeVault, swapFeeAmount);
 		emit USDsMinted(msg.sender, USDsAmt, collateralDepAmt, SPABurnAmt, swapFeeAmount);
+		emit TotalValueLocked(totalValueLocked(), totalValueInVault(), totalValueInStrategies());
 	}
 
 	/**
@@ -408,6 +414,7 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 		IERC20Upgradeable(USDsAddr).safeTransferFrom(msg.sender, feeVault, swapFeeAmount);
 
 		emit USDsRedeemed(msg.sender, USDsBurntAmt, collateralUnlockedAmt, SPAMintAmt, swapFeeAmount);
+		emit TotalValueLocked(totalValueLocked(), totalValueInVault(), totalValueInStrategies());
 	}
 
 	/**
@@ -426,6 +433,7 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 		} else {
 			emit Rebase(USDsOldSupply, USDsOldSupply);
 		}
+		emit TotalValueLocked(totalValueLocked(), totalValueInVault(), totalValueInStrategies());
 	}
 
 	/**
