@@ -313,7 +313,7 @@ def test_add_strategy(sperax, mock_token4, accounts, owner_l2, weth):
         buyback_multihop
     ) = sperax
 
-    txn = vault_proxy.addStrategy(strategy_proxy, {'from': owner_l2})
+    vault_proxy.addStrategy(strategy_proxy, {'from': owner_l2})
 
     with reverts('Strategy added'):
         vault_proxy.addStrategy(strategy_proxy, {'from': owner_l2})
