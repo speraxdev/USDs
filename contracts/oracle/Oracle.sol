@@ -4,6 +4,7 @@ pragma solidity >=0.6.12;
 import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@chainlink/contracts/src/v0.6/interfaces/AggregatorV3Interface.sol";
 import "@chainlink/contracts/src/v0.6/interfaces/FlagsInterface.sol";
 
@@ -30,6 +31,9 @@ contract Oracle is Initializable, IOracle, OwnableUpgradeable {
     uint public constant USDCprice_prec = 10**8;
     uint public constant SPAprice_prec = 10**18;
     uint public constant USDsPrice_prec = 10**18;
+    uint128 public USDC_prec = uint128(10)**ERC20(USDCaddr).decimals();
+    uint128 public SPA_prec = uint128(10)**ERC20(SPAaddr).decimals();
+    uint128 public USDs_prec = uint128(10)**ERC20(USDsAddr).decimals();
     uint32 public movingAvgShortPeriod;
     uint32 public movingAvgLongPeriod;
     AggregatorV3Interface priceFeedUSDC;
@@ -43,7 +47,6 @@ contract Oracle is Initializable, IOracle, OwnableUpgradeable {
     address public USDsOracleQuoteTokenAddr;
     address constant private FLAG_ARBITRUM_SEQ_OFFLINE = address(bytes20(bytes32(uint256(keccak256("chainlink.flags.arbitrum-seq-offline")) - 1)));
     FlagsInterface internal chainlinkFlags;
-
 
     event USDsInOutRatioUpdated(
         uint USDsInOutRatio,
@@ -139,7 +142,7 @@ contract Oracle is Initializable, IOracle, OwnableUpgradeable {
     }
 
     /**
-     * @notice update the price of token0 to the latest
+     * @notice update the price of tokenA to the latest
      * @dev the price would be updated only once per updatePeriod time
      * @dev USDsInOutRatio is accurate after 24 hours (one iteration)
      */
@@ -175,36 +178,63 @@ contract Oracle is Initializable, IOracle, OwnableUpgradeable {
 	}
 
     function getSPAprice() external view override returns (uint) {
-        uint32 longestSec = OracleLibrary.getOldestObservationSecondsAgo(SPAoraclePool);
-        uint32 period = movingAvgShortPeriod < longestSec ? movingAvgShortPeriod : longestSec;
-        int24 timeWeightedAverageTick = OracleLibrary.consult(SPAoraclePool, period);
-        uint quoteAmount = OracleLibrary.getQuoteAtTick(timeWeightedAverageTick, uint128(SPAprice_prec), SPAaddr, SPAoracleQuoteTokenAddr);
-        uint SPAprice = _getUSDCprice().mul(quoteAmount).div(USDCprice_prec);
-        return SPAprice;
+        uint128 SPAoracleQuoteToken_prec =
+            uint128(10)**ERC20(SPAoracleQuoteTokenAddr).decimals();
+        uint quoteTokenAmtPerSPA = _getUniMAPrice(
+            SPAoraclePool,
+            SPAaddr,
+            SPAoracleQuoteTokenAddr,
+            SPA_prec,
+            SPAoracleQuoteToken_prec,
+            movingAvgShortPeriod
+        );
+        return _getUSDCprice()
+            .mul(quoteTokenAmtPerSPA)
+            .mul(SPAprice_prec)
+            .div(SPAoracleQuoteToken_prec)
+            .div(USDCprice_prec);
     }
 
     function getUSDsPrice() external view override returns (uint) {
         if (USDsOraclePool == address(0)) {
             return USDsPrice_prec;
         }
-        uint32 longestSec = OracleLibrary.getOldestObservationSecondsAgo(USDsOraclePool);
-        uint32 period = movingAvgShortPeriod < longestSec ? movingAvgShortPeriod : longestSec;
-        int24 timeWeightedAverageTick = OracleLibrary.consult(USDsOraclePool, period);
-        uint quoteAmount = OracleLibrary.getQuoteAtTick(timeWeightedAverageTick, uint128(USDsPrice_prec), USDsAddr, USDsOracleQuoteTokenAddr);
-        uint USDsPrice = _getCollateralPrice(USDsOracleQuoteTokenAddr).mul(quoteAmount).div(_getCollateralPrice_prec(USDsOracleQuoteTokenAddr));
-        return USDsPrice;
+        uint128 USDsOracleQuoteToken_prec =
+            uint128(10)**ERC20(USDsOracleQuoteTokenAddr).decimals();
+        uint quoteTokenAmtPerUSDs = _getUniMAPrice(
+            USDsOraclePool,
+            USDsAddr,
+            USDsOracleQuoteTokenAddr,
+            USDs_prec,
+            USDsOracleQuoteToken_prec,
+            movingAvgShortPeriod
+        );
+        return _getCollateralPrice(USDsOracleQuoteTokenAddr)
+            .mul(quoteTokenAmtPerUSDs)
+            .mul(USDsPrice_prec)
+            .div(USDsOracleQuoteToken_prec)
+            .div(USDCprice_prec);
     }
 
     function getUSDsPrice_average() external view override returns (uint) {
-        if (USDsOraclePool == address(0)){
+        if (USDsOraclePool == address(0)) {
             return USDsPrice_prec;
         }
-        uint32 longestSec = OracleLibrary.getOldestObservationSecondsAgo(USDsOraclePool);
-        uint32 period = movingAvgLongPeriod < longestSec ? movingAvgLongPeriod : longestSec;
-        int24 timeWeightedAverageTick = OracleLibrary.consult(USDsOraclePool, period);
-        uint quoteAmount = OracleLibrary.getQuoteAtTick(timeWeightedAverageTick, uint128(USDsPrice_prec), USDsAddr, USDsOracleQuoteTokenAddr);
-        uint USDsPrice_average = _getCollateralPrice(USDsOracleQuoteTokenAddr).mul(quoteAmount).div(_getCollateralPrice_prec(USDsOracleQuoteTokenAddr));
-        return USDsPrice_average;
+        uint128 USDsOracleQuoteToken_prec =
+            uint128(10)**ERC20(USDsOracleQuoteTokenAddr).decimals();
+        uint quoteTokenAmtPerUSDs = _getUniMAPrice(
+            USDsOraclePool,
+            USDsAddr,
+            USDsOracleQuoteTokenAddr,
+            USDs_prec,
+            USDsOracleQuoteToken_prec,
+            movingAvgLongPeriod
+        );
+        return _getCollateralPrice(USDsOracleQuoteTokenAddr)
+            .mul(quoteTokenAmtPerUSDs)
+            .mul(USDsPrice_prec)
+            .div(USDsOracleQuoteToken_prec)
+            .div(USDCprice_prec);
     }
     function getCollateralPrice_prec(address collateralAddr) external view override returns (uint) {
         collateralStruct memory  collateralInfo = collateralsInfo[collateralAddr];
@@ -222,6 +252,37 @@ contract Oracle is Initializable, IOracle, OwnableUpgradeable {
 
     function getUSDsPrice_prec() external view override returns (uint) {
         return USDsPrice_prec;
+    }
+
+    /**
+     * @notice get the Uniswap V3 Moving Average (MA) of tokenBPertokenA
+     * @dev tokenA is baseToken, tokenB is quoteToken
+     *      e.g. for USDsPerSPA, tokenA = SPA and tokenB = USDs
+     * @dev tokenBPertokenA has the same precision as tokenB
+     */
+    function _getUniMAPrice(
+        address tokenAtokenBPool,
+        address tokenA,
+        address tokenB,
+        uint128 tokenA_prec,
+        uint128 tokenB_prec,
+        uint32 movingAvgPeriod
+    ) internal view returns(uint) {
+        // get MA tick
+        uint32 oldestObservationSecondsAgo =
+            OracleLibrary.getOldestObservationSecondsAgo(tokenAtokenBPool);
+        uint32 period = movingAvgPeriod < oldestObservationSecondsAgo ?
+            movingAvgPeriod : oldestObservationSecondsAgo;
+        int24 timeWeightedAverageTick =
+            OracleLibrary.consult(tokenAtokenBPool, period);
+        // get MA price from MA tick
+        uint tokenBPertokenA = OracleLibrary.getQuoteAtTick(
+            timeWeightedAverageTick,
+            tokenA_prec,
+            tokenA,
+            tokenB
+        );
+        return tokenBPertokenA;
     }
 
     function _getCollateralPrice(address collateralAddr) internal view returns (uint) {
