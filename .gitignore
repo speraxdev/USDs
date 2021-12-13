@@ -6,7 +6,6 @@ packages/
 truffle-config.js
 LICENSE
 flat.sh
-*.json
 package-lock.json
 __pycache__
 .history
