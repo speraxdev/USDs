@@ -42,6 +42,10 @@ def main():
         l1_gateway = '0x917dc9a69F65dC3082D518192cd3725E1Fa96cA2'
         l1_router = '0x70C143928eCfFaf9F5b406f7f4fC28Dc43d68380'
 
+    if network.show_active() == 'mainnet':
+        l1_gateway = '0xcEe284F754E854890e311e3280b767F80797180d'
+        l1_router = '0x72Ce9c846789fdB6fC1f34aC4AD25Dd9ef7031ef'
+
 
     spa_l1 = Contract.from_abi(
         "SperaxTokenL1",
