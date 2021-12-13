@@ -22,6 +22,7 @@ abstract contract InitializableAbstractStrategy is Initializable, OwnableUpgrade
     event Withdrawal(address indexed _asset, address _pToken, uint256 _amount);
     event RewardTokenCollected(address recipient, uint256 amount);
     event RewardTokenAddressUpdated(address _oldAddress, address _newAddress);
+    event Validation (uint256 value);
     event RewardLiquidationThresholdUpdated(
         uint256 _oldThreshold,
         uint256 _newThreshold

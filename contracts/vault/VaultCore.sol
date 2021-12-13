@@ -58,19 +58,26 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 	uint16 public override constant swapFee_A_prec = 10**4;
 	uint8 public override constant allocatePercentage_prec = 10**2;
 
-	event parametersUpdated(uint _chiInit, uint32 _chi_beta, uint32 _chi_gamma, uint32 _swapFee_p, uint32 _swapFee_theta, uint32 _swapFee_a, uint32 _swapFee_A);
+	event ParametersUpdated(uint _chiInit, uint32 _chi_beta, uint32 _chi_gamma, uint32 _swapFee_p, uint32 _swapFee_theta, uint32 _swapFee_a, uint32 _swapFee_A);
 	event USDsMinted(address indexed wallet, uint indexed USDsAmt, uint collateralAmt, uint SPAsAmt, uint feeAmt);
 	event USDsRedeemed(address indexed wallet, uint indexed USDsAmt, uint collateralAmt, uint SPAsAmt, uint feeAmt);
 	event Rebase(uint indexed oldSupply, uint indexed newSupply);
 	event CollateralAdded(address indexed collateralAddr, bool addded, address defaultStrategyAddr, bool allocationAllowed, uint8 allocatePercentage, address buyBackAddr, bool rebaseAllowed);
 	event CollateralChanged(address indexed collateralAddr, bool addded, address defaultStrategyAddr, bool allocationAllowed, uint8 allocatePercentage, address buyBackAddr, bool rebaseAllowed);
 	event StrategyAdded(address strategyAddr, bool added);
-	event MintRedeemPermssionChanged(bool indexed permission);
-	event AllocationPermssionChanged(bool indexed permission);
+	event MintRedeemPermssionChanged(bool permission);
+	event AllocationPermssionChanged(bool permission);
+	event RebasePermssionChanged(bool permission);
 	event SwapFeeInOutPermissionChanged(bool indexed swapfeeInAllowed, bool indexed swapfeeOutAllowed);
 	event CollateralAllocated(address indexed collateralAddr, address indexed depositStrategyAddr, uint allocateAmount);
 	event USDsAddressUpdated(address oldAddr, address newAddr);
     event OracleAddressUpdated(address oldAddr, address newAddr);
+	event TotalValueLocked(
+		uint totalValueLocked,
+		uint totalValueInVault,
+		uint totalValueInStrategies
+	);
+
 	/**
 	 * @dev check if USDs mint & redeem are both allowed
 	 */
@@ -170,7 +177,7 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 		swapFee_theta = _swapFee_theta;
 		swapFee_a = _swapFee_a;
 		swapFee_A = _swapFee_A;
-		emit parametersUpdated(chiInit, chi_beta, chi_gamma, swapFee_p, swapFee_theta, swapFee_a, swapFee_A);
+		emit ParametersUpdated(chiInit, chi_beta, chi_gamma, swapFee_p, swapFee_theta, swapFee_a, swapFee_A);
 	}
 
 	/**
@@ -187,6 +194,14 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 	function updateAllocationPermission(bool _allocationAllowed) external onlyOwner {
 		allocationAllowed = _allocationAllowed;
 		emit AllocationPermssionChanged(allocationAllowed);
+	}
+
+	/**
+	 * @dev enable/disable rebasing
+	 */
+	function updateRebasePermission(bool _rebaseAllowed) external onlyOwner {
+		rebaseAllowed = _rebaseAllowed;
+		emit RebasePermssionChanged(rebaseAllowed);
 	}
 
 	/**
@@ -338,6 +353,7 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 		IUSDs(USDsAddr).mint(msg.sender, USDsAmt);
 		IUSDs(USDsAddr).mint(feeVault, swapFeeAmount);
 		emit USDsMinted(msg.sender, USDsAmt, collateralDepAmt, SPABurnAmt, swapFeeAmount);
+		emit TotalValueLocked(totalValueLocked(), totalValueInVault(), totalValueInStrategies());
 	}
 
 	/**
@@ -398,6 +414,7 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 		IERC20Upgradeable(USDsAddr).safeTransferFrom(msg.sender, feeVault, swapFeeAmount);
 
 		emit USDsRedeemed(msg.sender, USDsBurntAmt, collateralUnlockedAmt, SPAMintAmt, swapFeeAmount);
+		emit TotalValueLocked(totalValueLocked(), totalValueInVault(), totalValueInStrategies());
 	}
 
 	/**
@@ -416,6 +433,7 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 		} else {
 			emit Rebase(USDsOldSupply, USDsOldSupply);
 		}
+		emit TotalValueLocked(totalValueLocked(), totalValueInVault(), totalValueInStrategies());
 	}
 
 	/**
