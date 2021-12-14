@@ -50,6 +50,16 @@ def test_mint_usds(sperax, mock_token4, owner_l2, accounts, mock_token2):
             {'from': accounts[5]}
         )
 
+    with reverts('Deadline expired'):
+        vault_proxy.mintBySpecifyingUSDsAmt(
+            mock_token4.address,
+            int(amount),
+            slippage_collateral,
+            slippage_spa,
+            0,
+            {'from': accounts[5]}
+        )
+
     vault_proxy.mintBySpecifyingUSDsAmt(
         mock_token4.address,
         int(amount),
@@ -76,11 +86,11 @@ def test_mint_spa(sperax, weth, owner_l2, accounts, mock_token4):
     slippage_collateral = 1000000000000000000000000000000
     slippage_spa = 1000000000000000000000000000000
 
-    spa.approve(accounts[5].address, amount, {'from': owner_l2})
-    spa.transfer(accounts[5].address, amount, {'from': owner_l2})
+    # spa.approve(accounts[5].address, amount, {'from': owner_l2})
+    # spa.transfer(accounts[5].address, amount, {'from': owner_l2})
 
-    spa.approve(vault_proxy.address, slippage_spa, {'from': accounts[5] })
-    mock_token4.approve(vault_proxy.address, slippage_spa, {'from': accounts[5] })
+    # spa.approve(vault_proxy.address, slippage_spa, {'from': accounts[5] })
+    # mock_token4.approve(vault_proxy.address, slippage_spa, {'from': accounts[5] })
 
     with reverts():
         vault_proxy.mintBySpecifyingSPAamt(
@@ -172,7 +182,7 @@ def test_allow_allocate(sperax, accounts, owner_l2):
 
 
     txn = vault_proxy.updateAllocationPermission(True, {'from': owner_l2})
-    print(txn)
+    assert txn.events["AllocationPermssionChanged"]["permission"] == True
 
 
 def test_vault_core_allocate(sperax, accounts, owner_l2):
@@ -272,13 +282,16 @@ def test_upgrage_collateral(sperax, mock_token4, accounts, owner_l2, weth):
             buyBackAddr, 
             rebaseAllowed, {'from': owner_l2})
 
-    vault_proxy.updateCollateralInfo(
+    txn = vault_proxy.updateCollateralInfo(
             collateralAddr, 
             defaultStrategyAddr, 
             allocationAllowed, 
             allocatePercentage, 
             buyBackAddr, 
             rebaseAllowed, {'from': owner_l2})
+
+    assert txn.events["CollateralChanged"]["collateralAddr"] == collateralAddr
+    assert txn.events["CollateralChanged"]["addded"] == True
 
 
 
@@ -322,7 +335,9 @@ def test_add_strategy(sperax, mock_token4, accounts, owner_l2, weth):
         buyback_multihop
     ) = sperax
 
-    vault_proxy.addStrategy(strategy_proxy, {'from': owner_l2})
+    txn = vault_proxy.addStrategy(strategy_proxy, {'from': owner_l2})
+    assert txn.events["StrategyAdded"]["added"] == True
+
 
     with reverts('Strategy added'):
         vault_proxy.addStrategy(strategy_proxy, {'from': owner_l2})
@@ -340,12 +355,46 @@ def test_rebase(sperax, owner_l2):
         buyback_multihop
     ) = sperax
 
-
     with reverts('Rebase paused'):
         txn = vault_proxy.rebase({'from': owner_l2})
 
-    
     vault_proxy.updateRebasePermission(True, {'from': owner_l2})
+
+    with reverts('Caller is not a rebaser'):
+        vault_proxy.rebase({'from': owner_l2})
+
     vault_proxy.grantRole(vault_proxy.REBASER_ROLE(), owner_l2, {'from': owner_l2})
     vault_proxy.rebase({'from': owner_l2})
+
+
+def test_update_strategy_rwd_buyback_addr(sperax, owner_l2):
+    (   spa,
+        usds_proxy,
+        core_proxy,
+        vault_proxy,
+        oracle_proxy,
+        strategy_proxy,
+        buyback,
+        buyback_multihop
+    ) = sperax
+
+    with reverts('Strategy not added'):
+        txn = vault_proxy.updateStrategyRwdBuybackAddr(
+            strategy_proxy,
+            buyback,
+        {'from': owner_l2})
+    
+    vault_proxy.addStrategy(strategy_proxy, {'from': owner_l2})
+    txn = vault_proxy.updateStrategyRwdBuybackAddr(
+            strategy_proxy,
+            buyback,
+        {'from': owner_l2})
+
+    assert txn.events["StrategyRwdBuyBackUpdateded"]["strategyAddr"]  == strategy_proxy.address
+    assert txn.events["StrategyRwdBuyBackUpdateded"]["buybackAddr"]  == buyback.address
+
+
+
+
+
 
