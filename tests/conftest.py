@@ -262,6 +262,7 @@ def sperax(
         usdt,
         wbtc,
         mock_token4,
+        mock_token2,
         owner_l2
     )
 
@@ -290,7 +291,13 @@ def sperax(
         vault_proxy
     )
 
-
+    update_oracle_uni_pool(
+        oracle_proxy,
+        mock_token2,
+        usds_proxy,
+        spa_mock_pool,
+        owner_l2
+    )
 
     return (
         spa,
@@ -527,6 +534,7 @@ def configure_collaterals(
     usdt,
     wbtc,
     mock_token4,
+    mock_token2,
     owner_l2
 ):
     # Arbitrum mainnet collaterals: token address, chainlink
@@ -539,6 +547,7 @@ def configure_collaterals(
         '0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1': '0xc5C8E77B397E531B8EC06BFb0048328B30E9eCfB',
         # WBTC
         wbtc: '0x6ce185860a4963106506C203335A2910413708e9',
+        mock_token2: '0x3f3f5dF88dC9F13eac63DF89EC16ef6e7E25DdE7',
     }
 
     precision = 10**8
@@ -650,6 +659,23 @@ def mintSPA(
     )
     assert txn.events['Transfer']['to'] == owner_l2
     assert txn.events['Transfer']['value'] == amount
+
+def update_oracle_uni_pool(
+    oracle_proxy,
+    spa,
+    usds,
+    spa_pool_address,
+    owner_l2
+):
+
+    usds_pool_address = '0x0000000000000000000000000000000000000000'
+    txn = oracle_proxy.updateOraclePoolsAddress(
+        spa,
+        usds,
+        usds_pool_address,
+        spa_pool_address,
+        {'from': owner_l2, 'gas_limit': 10000000, 'allow_revert' : True}
+    )
 
 
 def lower_tick():
