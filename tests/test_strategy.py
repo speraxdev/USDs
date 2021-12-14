@@ -4,9 +4,32 @@ import time
 import brownie
 
 
+
 def user(accounts):
     return accounts[9]
 
+
+# def test__init(vault_proxy, owner_l2):
+#     deploy_strategy2(
+#         {'from': owner_l2.address}
+#     )
+
+def test__safe_approve_all_tokens(sperax, owner_l2):
+    (
+        spa,
+        usds_proxy,
+        core_proxy,
+        vault_proxy,
+        oracle_proxy,
+        strategy_proxy,
+        buyback,
+        buyback_multihop
+    ) = sperax
+
+    strategy_proxy.safeApproveAllTokens(
+        {'from': owner_l2.address}
+    )
+ 
 
 def test_collect_reward_token(sperax):
     (

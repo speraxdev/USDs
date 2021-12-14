@@ -430,11 +430,21 @@ def deploy_strategy(
         wbtc,
         weth,
     ]
+    assets_2 = [
+
+        weth,
+    ]
+
 
     lp_tokens = [
         '0x8e0B8c8BB9db49a46697F3a5Bb8A308e744821D2',
         '0x8e0B8c8BB9db49a46697F3a5Bb8A308e744821D2',
         '0x8e0B8c8BB9db49a46697F3a5Bb8A308e744821D2',
+    ]
+    lp_tokens_2 = [
+        '0x8e0B8c8BB9db49a46697F3a5Bb8A308e744821D2',
+        '0x8e0B8c8BB9db49a46697F3a5Bb8A308e744821D2',
+       
     ]
 
     # THREE POOL strategy
@@ -451,6 +461,29 @@ def deploy_strategy(
         "ThreePoolStrategy",
         proxy.address,
         ThreePoolStrategy.abi
+    
+    )
+    with brownie.reverts("Invalid input arrays"):
+         strategy_proxy.initialize(
+         platform_address,
+         vault_proxy,
+         reward_token_address,
+         assets,
+         lp_tokens_2,
+         crv_gauge_address,
+         {'from': owner_l2}
+    )
+
+    with brownie.reverts("Must have exactly three assets"):
+
+        strategy_proxy.initialize(
+        platform_address,
+        vault_proxy,
+        reward_token_address,
+        assets_2,
+        lp_tokens_2,
+        crv_gauge_address,
+        {'from': owner_l2}
     )
     strategy_proxy.initialize(
         platform_address,
@@ -462,6 +495,60 @@ def deploy_strategy(
         {'from': owner_l2}
     )
     return strategy_proxy
+
+def deploy_strategy2(
+    TransparentUpgradeableProxy,
+    ThreePoolStrategy,
+    vault_proxy,
+    usdt,
+    wbtc,
+    weth,
+    Contract,
+    proxy_admin,
+    admin,
+    owner_l2,
+):
+    # Arbitrum-one (mainnet):
+    platform_address = '0x960ea3e3C7FB317332d990873d354E18d7645590'
+    reward_token_address = '0x11cdb42b0eb46d95f990bedd4695a6e3fa034978'
+    crv_gauge_address = '0x97E2768e8E73511cA874545DC5Ff8067eB19B787'
+
+    assets = [
+        usdt,
+    
+    ]
+
+    lp_tokens = [
+        '0x8e0B8c8BB9db49a46697F3a5Bb8A308e744821D2',
+        '0x8e0B8c8BB9db49a46697F3a5Bb8A308e744821D2',
+   
+    ]
+
+    # THREE POOL strategy
+    strategy = ThreePoolStrategy.deploy(
+        {'from': owner_l2}
+    )
+    proxy = TransparentUpgradeableProxy.deploy(
+        strategy.address,
+        proxy_admin.address,
+        eth_utils.to_bytes(hexstr="0x"),
+        {'from': admin}
+    )
+    strategy_proxy2 = Contract.from_abi(
+        "ThreePoolStrategy",
+        proxy.address,
+        ThreePoolStrategy.abi
+    )
+    strategy_proxy2.initialize(
+        platform_address,
+        vault_proxy,
+        reward_token_address,
+        assets,
+        lp_tokens,
+        crv_gauge_address,
+        {'from': owner_l2}
+    )
+    return strategy_proxy2
 
 
 def deploy_buyback(
