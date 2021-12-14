@@ -335,7 +335,7 @@ def test_rebase(sperax, owner_l2):
 
     
     vault_proxy.updateRebasePermission(True, {'from': owner_l2})
-    vault_proxy.grantRole(vault_proxy.REBASER_ROLE, owner_l2, {'from': owner_l2})
+    vault_proxy.grantRole(vault_proxy.REBASER_ROLE(), owner_l2, {'from': owner_l2})
     vault_proxy.rebase({'from': owner_l2})
 
 
