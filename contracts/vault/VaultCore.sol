@@ -77,6 +77,9 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 		uint totalValueInVault,
 		uint totalValueInStrategies
 	);
+	event SPAprice(uint SPAprice);
+    event USDsPrice(uint USDsPrice);
+    event CollateralPrice(uint CollateralPrice);
 
 	/**
 	 * @dev check if USDs mint & redeem are both allowed
@@ -352,8 +355,16 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 		// mint USDs and collect swapIn fees
 		IUSDs(USDsAddr).mint(msg.sender, USDsAmt);
 		IUSDs(USDsAddr).mint(feeVault, swapFeeAmount);
+
+		uint priceColla = IOracle(oracleAddr).getCollateralPrice(collateralAddr);
+		uint priceSPA = IOracle(oracleAddr).getSPAprice();
+		uint priceUSDs = IOracle(oracleAddr).getUSDsPrice();
+
 		emit USDsMinted(msg.sender, USDsAmt, collateralDepAmt, SPABurnAmt, swapFeeAmount);
 		emit TotalValueLocked(totalValueLocked(), totalValueInVault(), totalValueInStrategies());
+		emit CollateralPrice(priceColla);
+		emit SPAprice(priceSPA);
+		emit USDsPrice(priceUSDs);
 	}
 
 	/**
@@ -413,8 +424,15 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 		IUSDs(USDsAddr).burn(msg.sender, USDsBurntAmt);
 		IERC20Upgradeable(USDsAddr).safeTransferFrom(msg.sender, feeVault, swapFeeAmount);
 
+		uint priceColla = IOracle(oracleAddr).getCollateralPrice(collateralAddr);
+		uint priceSPA = IOracle(oracleAddr).getSPAprice();
+		uint priceUSDs = IOracle(oracleAddr).getUSDsPrice();
+
 		emit USDsRedeemed(msg.sender, USDsBurntAmt, collateralUnlockedAmt, SPAMintAmt, swapFeeAmount);
 		emit TotalValueLocked(totalValueLocked(), totalValueInVault(), totalValueInStrategies());
+		emit CollateralPrice(priceColla);
+		emit SPAprice(priceSPA);
+		emit USDsPrice(priceUSDs);
 	}
 
 	/**
@@ -433,6 +451,12 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 		} else {
 			emit Rebase(USDsOldSupply, USDsOldSupply);
 		}
+
+		uint priceSPA = IOracle(oracleAddr).getSPAprice();
+		uint priceUSDs = IOracle(oracleAddr).getUSDsPrice();
+		
+		emit SPAprice(priceSPA);
+		emit USDsPrice(priceUSDs);
 		emit TotalValueLocked(totalValueLocked(), totalValueInVault(), totalValueInStrategies());
 	}
 
