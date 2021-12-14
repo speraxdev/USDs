@@ -47,15 +47,15 @@ def main():
         testnet_L1_addresses.router,
         mainnet_L1_addresses.router
     )
-    print(f"\nL1 SPA address: {spa_l1}\n")
-    print(f"\nL1 Bridge address: {bridge}\n")
-    print(f"\nL1 Router address: {router}\n")
+    print(f"\nL1 SPA address: {spa_l1}")
+    print(f"L1 Bridge address: {bridge}")
+    print(f"L1 Router address: {router}\n")
     confirm("Are the above addresses correct?")
 
     name = wSPAL1_token_details.name
     symbol = wSPAL1_token_details.symbol
-    print(f"\nToken Name: {name}\n")
-    print(f"\nToken Symbol: {symbol}\n")
+    print(f"\nToken Name: {name}")
+    print(f"Token Symbol: {symbol}\n")
     confirm("Are the above details correct?")
     print('\n')
 
