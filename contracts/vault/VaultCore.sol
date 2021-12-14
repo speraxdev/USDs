@@ -65,6 +65,7 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 	event CollateralAdded(address indexed collateralAddr, bool addded, address defaultStrategyAddr, bool allocationAllowed, uint8 allocatePercentage, address buyBackAddr, bool rebaseAllowed);
 	event CollateralChanged(address indexed collateralAddr, bool addded, address defaultStrategyAddr, bool allocationAllowed, uint8 allocatePercentage, address buyBackAddr, bool rebaseAllowed);
 	event StrategyAdded(address strategyAddr, bool added);
+	event StrategyRwdBuyBackUpdateded(address strategyAddr, address buybackAddr);
 	event MintRedeemPermssionChanged(bool permission);
 	event AllocationPermssionChanged(bool permission);
 	event RebasePermssionChanged(bool permission);
@@ -114,6 +115,7 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 	}
 	struct strategyStruct {
 		address strategyAddr;
+		address rewardTokenBuybackAddr;
 		bool added;
 	}
 	mapping(address => collateralStruct) public collateralsInfo;
@@ -265,6 +267,22 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 		allStrategies.push(addingStrategy);
 		emit StrategyAdded(_strategyAddr, true);
 	}
+
+	/**
+	 * @dev authorize an strategy
+	 * @param _strategyAddr strategy contract address
+	 */
+	function updateStrategyRwdBuybackAddr(
+		address _strategyAddr,
+		address _buyBackAddr
+	) external onlyOwner {
+		require(strategiesInfo[_strategyAddr].added, "Strategy not added");
+		strategyStruct storage addingStrategy = strategiesInfo[_strategyAddr];
+		addingStrategy.strategyAddr = _strategyAddr;
+		addingStrategy.rewardTokenBuybackAddr = _buyBackAddr;
+		emit StrategyRwdBuyBackUpdateded(_strategyAddr, _buyBackAddr);
+	}
+
 
 	/**
 	 * @dev mint USDs (burn SPA, lock collateral) by entering USDs amount
@@ -454,7 +472,7 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 
 		uint priceSPA = IOracle(oracleAddr).getSPAprice();
 		uint priceUSDs = IOracle(oracleAddr).getUSDsPrice();
-		
+
 		emit SPAprice(priceSPA);
 		emit USDsPrice(priceUSDs);
 		emit TotalValueLocked(totalValueLocked(), totalValueInVault(), totalValueInStrategies());
@@ -488,8 +506,10 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 			if (rewardTokenAmount > liquidationThreshold) {
 				strategy.collectRewardToken();
 				uint rewardAmt = IERC20Upgradeable(rewardTokenAddress).balanceOf(address(this));
-				IERC20Upgradeable(rewardTokenAddress).safeTransfer(strategy.rewardTokenBuybackAddress(), rewardAmt);
-				USDsIncrement_viaReward = IBuyback(strategy.rewardTokenBuybackAddress()).swap(rewardTokenAddress, rewardAmt);
+				address rewardTokenBuybackAddr =
+					strategiesInfo[address(strategy)].rewardTokenBuybackAddr;
+				IERC20Upgradeable(rewardTokenAddress).safeTransfer(rewardTokenBuybackAddr, rewardAmt);
+				USDsIncrement_viaReward = IBuyback(rewardTokenBuybackAddr).swap(rewardTokenAddress, rewardAmt);
 			}
 		}
 	}
@@ -502,7 +522,7 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 		uint liquidationThreshold = strategy.interestLiquidationThreshold();
 		uint interestEarned = strategy.checkInterestEarned(collateralAddr);
 		if (interestEarned > liquidationThreshold) {
-			strategy.withdraw(address(this), collateral.collateralAddr, interestEarned);
+			strategy.withdrawInterest(address(this), collateral.collateralAddr);
 			IERC20Upgradeable(collateralAddr).safeTransfer(collateral.buyBackAddr, interestEarned);
 			USDsIncrement_viaInterest = IBuyback(collateral.buyBackAddr).swap(collateralAddr, interestEarned);
 		}
