@@ -7,6 +7,22 @@ from brownie import (
     Contract,
     accounts
 )
+import os
+from .constants import (
+    mainnetAddresses,
+    testnetAddresses,
+    testnet_L1_addresses,
+    mainnet_L1_addresses,
+    wSPAL1_token_details
+)
+from .utils import (
+    confirm,
+    choice,
+    getAddressFromNetwork,
+    getNumber,
+    signal_handler
+)
+import json
 
 def signal_handler(signal, frame):
     sys.exit(0)
@@ -18,56 +34,66 @@ def main():
     # contract owner account
     owner = accounts.load(
         click.prompt(
-            "admin account",
+            "owner account",
             type=click.Choice(accounts.load())
         )
     )
     print(f"contract owner account: {owner.address}\n")
 
     print(f"\nConfigure Arbitrum gateway on {network.show_active()}:\n")
-    spa_l1_address = input("Enter L1 wSPA address: ").strip()
-    if len(spa_l1_address) == 0:
-        print("\nMissing L1 SPA address\n")
-        return
-    spa_l2_address = input("Enter L2 SPA address: ").strip()
-    if len(spa_l2_address) == 0:
-        print("\nMissing L2 SPA address\n")
-        return
-    credit_back_address = input("Enter credit back address: ").strip()
-    if len(credit_back_address) == 0:
-        print("\nMissing credit back address\n")
-        return
+    wspa_l1 = getAddressFromNetwork(
+        testnetAddresses.deploy.L1_wSPA,
+        mainnetAddresses.deploy.L1_wSPA
+    )
+    bridge = getAddressFromNetwork(
+        testnet_L1_addresses.bridge,
+        mainnet_L1_addresses.bridge
+    )
+    router = getAddressFromNetwork(
+        testnet_L1_addresses.router,
+        mainnet_L1_addresses.router
+    )
+    spa_l2 = getAddressFromNetwork(
+        testnetAddresses.deploy.L2_SPA,
+        mainnetAddresses.deploy.L2_SPA
+    )
 
-    if network.show_active() == 'rinkeby':
-        l1_gateway = '0x917dc9a69F65dC3082D518192cd3725E1Fa96cA2'
-        l1_router = '0x70C143928eCfFaf9F5b406f7f4fC28Dc43d68380'
+    print("\nSuggesting gas price bid: arb-rinkeby (20351396) arb-mainnet (1462799366)\n")
+    print("\nPlease check the lastest gas price")
+    gasPriceBid = getNumber("Enter L2 gas price bid: ")
+    maxSubmissionCostForCustomBridge = 1000000000000
+    maxSubmissionCostForRouter = 1000000000000
+    maxGas = 1000000
+    value = maxSubmissionCostForCustomBridge + maxSubmissionCostForRouter + 2 * (maxGas*gasPriceBid) + 100;
 
-    if network.show_active() == 'mainnet':
-        l1_gateway = '0xcEe284F754E854890e311e3280b767F80797180d'
-        l1_router = '0x72Ce9c846789fdB6fC1f34aC4AD25Dd9ef7031ef'
 
+    # spa_l2_address = input("Enter L2 SPA address: ").strip()
+    # if len(spa_l2_address) == 0:
+    #     print("\nMissing L2 SPA address\n")
+    #     return
+    print(f"\nL1 wSPA address: {wspa_l1}")
+    print(f"\nL2 SPA address: {spa_l2}")
+    print(f"L1 Bridge address: {bridge}")
+    print(f"L1 Router address: {router}\n")
+    confirm("Are the above addresses correct?")
+    credit_back_address = owner.address;
 
-    spa_l1 = Contract.from_abi(
+    wspa_l1_contract = Contract.from_abi(
         "SperaxTokenL1",
-        spa_l1_address,
+        wspa_l1,
         SperaxTokenL1.abi
     )
 
-    txn = spa_l1.changeArbToken(
-        l1_gateway,
-        l1_router,
-        {'from': owner, 'gas_limit': 5000381, 'allow_revert' : True}
-    )
-
-    txn = spa_l1.registerTokenOnL2(
-        spa_l2_address, # l2CustomTokenAddress
-        33406636145, # maxSubmissionCostForCustomBridge
-        33406636145, # maxSubmissionCostForRouter
-        1000000, # maxGas
-        25319114, # gasPriceBid
-        33406636145,
-        33406636145,
+    txn = wspa_l1_contract.registerTokenOnL2(
+        spa_l2, # l2CustomTokenAddress
+        maxSubmissionCostForCustomBridge, # maxSubmissionCostForCustomBridge
+        maxSubmissionCostForRouter, # maxSubmissionCostForRouter
+        maxGas, # maxGas
+        gasPriceBid, # gasPriceBid
+        maxSubmissionCostForCustomBridge,
+        maxSubmissionCostForRouter,
         credit_back_address, # creditBackAddress
-        {'from': owner, 'gas_limit': 5000381, 'allow_revert' : True, 'amount': 25385928272290}
+        {'from': owner, 'gas_limit': 500000, 'allow_revert' : True, 'amount': value}
         # amount: at least maxSubmissionCostForRouter + maxSubmissionCostForCustomBridge + 2*(maxGas * gaspricebid)
     )
+    print(f"wSPA {wspa_l1} and SperaxToeken L2 {spa_l2} linked up on {network.show_active()}")

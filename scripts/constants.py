@@ -30,11 +30,11 @@ class Addresses:
 # testnet
 ## Note: the feeVault can be anything in testnet. here it's 0xdeadbeef...
 testnet_deploy_addresses = DeployAddresses(
-    "0x24cA7C7aD824D0fD8c0375436a931931239d342D", #L1_wSPA
+    "0x5642B9bEB0031d640A80463385fdE9d6d2Bd2549", #L1_wSPA
     "0x0000000000000000000000000000000000000000", #L1_USDs
     ## Note: the feeVault can be anything in testnet. here it's 0xdeadbeef...
     "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef", #L1_feeVault
-    "0x5D146Fc21f447Ce5C8EdB0C5AefB41530c91EA35" #L2_SPA
+    "0xCE4a1fe0F21686E1D655c649B8EB3A4f92Df5259" #L2_SPA
     )
 
 ## Note: these change after you deploy the contracts, so deploy first and then put those addresses here.
@@ -135,8 +135,8 @@ class L1DeployAddresses:
         self.router = router
 
 
-# Arbitrum addresses from: https://developer.offchainlabs.com/docs/useful_addresses  
-testnet_L1_addresses = L1DeployAddresses( 
+# Arbitrum addresses from: https://developer.offchainlabs.com/docs/useful_addresses
+testnet_L1_addresses = L1DeployAddresses(
     # SPA: https://rinkeby.etherscan.io/address/0x53012655C4eDA87a2cE603e65Cb53c6aF8e5F674#readContract
     "0x7776B097f723eBbc8cd1a17f1fe253D11235cCE1", # SPA
     "0x917dc9a69f65dc3082d518192cd3725e1fa96ca2", # Bridge
@@ -145,7 +145,7 @@ testnet_L1_addresses = L1DeployAddresses(
 
 mainnet_L1_addresses = L1DeployAddresses(
     # SPA: https://etherscan.io/token/0xb4a3b0faf0ab53df58001804dda5bfc6a3d59008#readContract
-    "0xB4A3B0Faf0Ab53df58001804DdA5Bfc6a3D59008", # SPA 
+    "0xB4A3B0Faf0Ab53df58001804DdA5Bfc6a3D59008", # SPA
     "0xcEe284F754E854890e311e3280b767F80797180d", # Bridge
     "0x72Ce9c846789fdB6fC1f34aC4AD25Dd9ef7031ef" # Router
     )
