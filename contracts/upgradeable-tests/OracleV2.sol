@@ -21,7 +21,7 @@ import "../libraries/OracleLibrary.sol";
  * @dev providing records of USDs inflow and outflow ratio
  * @author Sperax Inc
  */
-contract OracleV2 is Initializable, IOracle, OwnableUpgradeable {
+contract Oracle is Initializable, IOracle, OwnableUpgradeable {
     using SafeMathUpgradeable for uint;
     uint public override USDsInOutRatio; // USDsInOutRatio is accurate after 24 hours (one iteration)
     uint32 public constant override USDsInOutRatio_prec = 10**6;
@@ -42,8 +42,6 @@ contract OracleV2 is Initializable, IOracle, OwnableUpgradeable {
     address public USDCaddr;
     address public VaultAddr;
     address public USDsAddr;
-    address public USDsOraclePool;
-    address public SPAoraclePool;
     address public SPAoracleQuoteTokenAddr;
     address public USDsOracleQuoteTokenAddr;
     address constant private FLAG_ARBITRUM_SEQ_OFFLINE = address(bytes20(bytes32(uint256(keccak256("chainlink.flags.arbitrum-seq-offline")) - 1)));

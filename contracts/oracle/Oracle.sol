@@ -42,8 +42,6 @@ contract Oracle is Initializable, IOracle, OwnableUpgradeable {
     address public USDCaddr;
     address public VaultAddr;
     address public USDsAddr;
-    address public USDsOraclePool;
-    address public SPAoraclePool;
     address public SPAoracleQuoteTokenAddr;
     address public USDsOracleQuoteTokenAddr;
     address constant private FLAG_ARBITRUM_SEQ_OFFLINE = address(bytes20(bytes32(uint256(keccak256("chainlink.flags.arbitrum-seq-offline")) - 1)));
