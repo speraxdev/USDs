@@ -21,7 +21,7 @@ import "../libraries/OracleLibrary.sol";
  * @dev providing records of USDs inflow and outflow ratio
  * @author Sperax Inc
  */
-contract Oracle is Initializable, IOracle, OwnableUpgradeable {
+contract OracleV2 is Initializable, IOracle, OwnableUpgradeable {
     using SafeMathUpgradeable for uint;
     uint public override USDsInOutRatio; // USDsInOutRatio is accurate after 24 hours (one iteration)
     uint32 public constant override USDsInOutRatio_prec = 10**6;
