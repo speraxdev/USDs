@@ -430,11 +430,21 @@ def deploy_strategy(
         wbtc,
         weth,
     ]
+    assets_2 = [
+
+        weth,
+    ]
+
 
     lp_tokens = [
         '0x8e0B8c8BB9db49a46697F3a5Bb8A308e744821D2',
         '0x8e0B8c8BB9db49a46697F3a5Bb8A308e744821D2',
         '0x8e0B8c8BB9db49a46697F3a5Bb8A308e744821D2',
+    ]
+    lp_tokens_2 = [
+        '0x8e0B8c8BB9db49a46697F3a5Bb8A308e744821D2',
+        '0x8e0B8c8BB9db49a46697F3a5Bb8A308e744821D2',
+       
     ]
 
     # THREE POOL strategy
@@ -451,6 +461,29 @@ def deploy_strategy(
         "ThreePoolStrategy",
         proxy.address,
         ThreePoolStrategy.abi
+    
+    )
+    with brownie.reverts("Invalid input arrays"):
+         strategy_proxy.initialize(
+         platform_address,
+         vault_proxy,
+         reward_token_address,
+         assets,
+         lp_tokens_2,
+         crv_gauge_address,
+         {'from': owner_l2}
+    )
+
+    with brownie.reverts("Must have exactly three assets"):
+
+        strategy_proxy.initialize(
+        platform_address,
+        vault_proxy,
+        reward_token_address,
+        assets_2,
+        lp_tokens_2,
+        crv_gauge_address,
+        {'from': owner_l2}
     )
     strategy_proxy.initialize(
         platform_address,
@@ -462,6 +495,7 @@ def deploy_strategy(
         {'from': owner_l2}
     )
     return strategy_proxy
+
 
 
 def deploy_buyback(

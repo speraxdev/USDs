@@ -4,9 +4,32 @@ import time
 import brownie
 
 
+
 def user(accounts):
     return accounts[9]
 
+
+# def test__init(vault_proxy, owner_l2):
+#     deploy_strategy2(
+#         {'from': owner_l2.address}
+#     )
+
+def test__safe_approve_all_tokens(sperax, owner_l2):
+    (
+        spa,
+        usds_proxy,
+        core_proxy,
+        vault_proxy,
+        oracle_proxy,
+        strategy_proxy,
+        buyback,
+        buyback_multihop
+    ) = sperax
+
+    strategy_proxy.safeApproveAllTokens(
+        {'from': owner_l2.address}
+    )
+ 
 
 def test_collect_reward_token(sperax):
     (
@@ -150,22 +173,6 @@ def test_set_Reward_Token_zero_address_ptoken(sperax, weth, owner_l2):
          {'from': owner_l2.address})
 
 
-def test_support_assets(sperax, weth, owner_l2):
-    (
-        spa,
-        usds_proxy,
-        core_proxy,
-        vault_proxy,
-        oracle_proxy,
-        strategy_proxy,
-        buyback,
-        buyback_multihop
-    ) = sperax
-    txn = strategy_proxy.supportsAsset(
-        weth.address, {'from': owner_l2.address})
-    print("support Asset: ", txn)
-
-
 def test_set_PToken_address(sperax, weth, owner_l2):
     (
         spa,
@@ -218,7 +225,7 @@ def test_remove_PToken(sperax, owner_l2):
          high_index,
          {'from': owner_l2.address}
     )
-    
+
 def test_remove_PToken2(sperax, owner_l2):
     (
         spa,
@@ -397,7 +404,7 @@ def test_withdraw(sperax, weth, accounts):
          (amount + 1),
          {'from': vault_proxy.address}
     )
-
+    
 
 def test_withdraw_invalid_assets(sperax, mock_token2, accounts):
     (
