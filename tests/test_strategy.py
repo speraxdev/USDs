@@ -218,6 +218,7 @@ def test_remove_PToken(sperax, owner_l2):
          high_index,
          {'from': owner_l2.address}
     )
+    
 def test_remove_PToken2(sperax, owner_l2):
     (
         spa,
