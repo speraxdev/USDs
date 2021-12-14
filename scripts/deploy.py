@@ -36,7 +36,7 @@ def main():
     #    print("\nEnvironment variable WEB3_INFURA_PROJECT_ID is not set\n")
     #    return
 
-    print("\n**** WARNING: fee vault will be the same as contract owner ****")
+    # print("\n**** WARNING: fee vault will be the same as contract owner ****")
 
     # proxy admin account
     admin = accounts.load(

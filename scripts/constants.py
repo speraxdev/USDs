@@ -39,18 +39,18 @@ testnet_deploy_addresses = DeployAddresses(
 
 ## Note: these change after you deploy the contracts, so deploy first and then put those addresses here.
 testnet_upgrade_addresses = UpgradeAddresses(
-    "0x76b0a2DF3d28122eac792BF3323A853420FC66b3",
-    "0x3230F912d06D544CA7f8916d2b52B955d1412AE6",
-    "0xcf7A2A41e859Fa8a290b1B9BDaaa84e321e4934e",
-    "0x422F8356E2feEe1b4F04c8aea7b719079869E29F",
-    "0x342F611a9DFEbA9BbAa0BC02258604005dd42Fa4"
+    "0x76b0a2DF3d28122eac792BF3323A853420FC66b3", #bancor_formula_address
+    "0x3230F912d06D544CA7f8916d2b52B955d1412AE6", #vault_core_tools_proxy
+    "0xcf7A2A41e859Fa8a290b1B9BDaaa84e321e4934e", #vault_core_proxy
+    "0x422F8356E2feEe1b4F04c8aea7b719079869E29F", #oracle_proxy
+    "0x342F611a9DFEbA9BbAa0BC02258604005dd42Fa4" #USDs_l2_proxy
     )
 
 testnet_third_party_addresses = ThirdPartyAddresses(
-    '0x9b014455AcC2Fe90c52803849d0002aeEC184a06',
-    '0x5f0423B1a6935dc5596e7A24d98532b67A0AeFd8',
-    '0xb47e6a5f8b33b3f17603c83a0535a9dcd7e32681',
-    '0x491B1dDA0A8fa069bbC1125133A975BF4e85a91b'
+    '0x9b014455AcC2Fe90c52803849d0002aeEC184a06', #l2_gateway
+    '0x5f0423B1a6935dc5596e7A24d98532b67A0AeFd8', #chainlink_usdc_price_feed
+    '0xb47e6a5f8b33b3f17603c83a0535a9dcd7e32681', #usdc_arbitrum
+    '0x491B1dDA0A8fa069bbC1125133A975BF4e85a91b'  #chainlink_flags
     )
 
 testnet_collaterals = {
@@ -75,26 +75,26 @@ testnetAddresses = Addresses(
 
 mainnet_deploy_address = DeployAddresses(
     ## Note: these need to be added. here it's  0xdeadbeef in the meantime...
-    "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
-    "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
-    "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
-    "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+    "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef", #L1_wSPA
+    "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef", #L1_USDs
+    "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef", #L1_feeVault
+    "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef" #L2_SPA
     )
 
 mainnet_upgrade_address = UpgradeAddresses(
     ## Note: these need to be added. here it's  0xdeadbeef in the meantime...
-    "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
-    "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
-    "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
-    "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
-    "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+    "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef", #bancor_formula_address
+    "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef", #vault_core_tools_proxy
+    "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef", #vault_core_proxy
+    "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef", #oracle_proxy
+    "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef" #USDs_l2_proxy
     )
 
 mainnet_third_party_address = ThirdPartyAddresses(
-    '0x096760F208390250649E3e8763348E783AEF5562',
-    '0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612',
-    '0x82af49447d8a07e3bd95bd0d56f35241523fbab1',
-    '0x3C14e07Edd0dC67442FA96f1Ec6999c57E810a83'
+    '0x096760F208390250649E3e8763348E783AEF5562', #l2_gateway
+    '0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612', #chainlink_usdc_price_feed
+    '0x82af49447d8a07e3bd95bd0d56f35241523fbab1', #usdc_arbitrum
+    '0x3C14e07Edd0dC67442FA96f1Ec6999c57E810a83' #chainlink_flags
     )
 
 mainnet_collaterals = {
