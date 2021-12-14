@@ -127,7 +127,7 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
         uint256 maxBurnedPTokens = totalPTokens.mul(_amount).div(maxAmount);
 
         // Not enough in this contract or in the Gauge, can't proceed
-        require(totalPTokens > maxBurnedPTokens, "Insufficient 3CRV balance");
+        require(totalPTokens >= maxBurnedPTokens, "Insufficient 3CRV balance");
         // We have enough LP tokens, make sure they are all on this contract
         if (contractPTokens < maxBurnedPTokens) {
             // Not enough of pool token exists on this contract, some must be

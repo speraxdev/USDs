@@ -69,7 +69,6 @@ def main():
 #        publish_source=True,
     )
 
-    print(f"\nDeployed {wSPAL1.address}\n")
     cwd = os.getcwd()
     filepath = cwd + '/supporting_contracts/SperaxTokenABI.json'
     with open(filepath) as f:
@@ -110,3 +109,5 @@ def main():
         mint_amount,
         {'from': owner, 'gas_limit': 10000000}
     )
+    
+    print(f"\nwSPA layer 1 address:  {wSPAL1.address}\n")

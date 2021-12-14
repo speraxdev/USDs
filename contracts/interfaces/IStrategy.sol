@@ -13,12 +13,6 @@ interface IStrategy {
     function deposit(address _collateral, uint256 _amount) external;
 
     /**
-     * @dev Deposit the entire balance of all supported collaterals in the Strategy
-     *      to the platform
-     */
-    function depositAll() external;
-
-    /**
      * @dev Withdraw given collateral from Lending platform
      */
     function withdraw(
@@ -28,9 +22,14 @@ interface IStrategy {
     ) external;
 
     /**
-     * @dev Liquidate all collaterals in strategy and return them to Vault.
+     * @dev Withdraw the interest earned of asset from the platform.
+     * @param _recipient         Address to which the asset should be sent
+     * @param _asset             Address of the asset
      */
-    function withdrawAll() external;
+    function withdrawInterest(
+        address _recipient,
+        address _asset
+    ) external;
 
     /**
      * @dev Returns the current balance of the given collateral.
@@ -59,11 +58,6 @@ interface IStrategy {
      * @dev The address of the reward token for the Strategy.
      */
     function rewardTokenAddress() external pure returns (address);
-
-    /**
-     * @dev The address of the reward token for the Strategy.
-     */
-    function rewardTokenBuybackAddress() external returns (address);
 
     /**
      * @dev The threshold (denominated in the reward token) over which the

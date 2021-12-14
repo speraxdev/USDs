@@ -7,12 +7,12 @@ import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/SafeERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
-
+import "../interfaces/IStrategy.sol";
 /**
  * @title USDs Strategies abstract contract
  * @author Sperax Foundation
  */
-abstract contract InitializableAbstractStrategy is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeable {
+abstract contract InitializableAbstractStrategy is IStrategy, Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeable {
     using SafeERC20Upgradeable for IERC20Upgradeable;
     using SafeMathUpgradeable for uint;
 
@@ -46,9 +46,9 @@ abstract contract InitializableAbstractStrategy is Initializable, OwnableUpgrade
     address[] internal assetsMapped;
 
     // Reward token address
-    address public rewardTokenAddress;
-    uint256 public rewardLiquidationThreshold;
-    uint256 public interestLiquidationThreshold;
+    address public override rewardTokenAddress;
+    uint256 public override rewardLiquidationThreshold;
+    uint256 public override interestLiquidationThreshold;
 
     // Reserved for future expansion
     int256[100] private _reserved;
@@ -186,11 +186,11 @@ abstract contract InitializableAbstractStrategy is Initializable, OwnableUpgrade
     }
 
     /**
-     * @dev Check if an asset is supported.
+     * @dev Check if an asset/collateral is supported.
      * @param _asset    Address of the asset
      * @return bool     Whether asset is supported
      */
-    function supportsAsset(address _asset) external view returns (bool) {
+    function supportsCollateral(address _asset) external view override returns (bool) {
         return assetToPToken[_asset] != address(0);
     }
 
@@ -206,7 +206,7 @@ abstract contract InitializableAbstractStrategy is Initializable, OwnableUpgrade
     function deposit(
         address _asset,
         uint256 _amount
-    ) external virtual;
+    ) external virtual override;
 
     /**
      * @dev Withdraw an amount of asset from the platform.
@@ -218,7 +218,7 @@ abstract contract InitializableAbstractStrategy is Initializable, OwnableUpgrade
         address _recipient,
         address _asset,
         uint256 _amount
-    ) external virtual;
+    ) external virtual override;
 
     /**
      * @dev Withdraw the interest earned of asset from the platform.
@@ -228,12 +228,12 @@ abstract contract InitializableAbstractStrategy is Initializable, OwnableUpgrade
     function withdrawInterest(
         address _recipient,
         address _asset
-    ) external virtual;
+    ) external virtual override;
 
     /**
      * @dev Collect accumulated reward token and send to Vault.
      */
-    function collectRewardToken() external virtual;
+    function collectRewardToken() external virtual override;
 
     /**
      * @dev Withdraw an amount of asset from the platform to vault
@@ -257,6 +257,7 @@ abstract contract InitializableAbstractStrategy is Initializable, OwnableUpgrade
         external
         view
         virtual
+        override
         returns (uint256 balance);
 
     /**
@@ -268,6 +269,7 @@ abstract contract InitializableAbstractStrategy is Initializable, OwnableUpgrade
         external
         view
         virtual
+        override
         returns (uint256 interestEarned);
 
     /**
