@@ -270,7 +270,7 @@ def sperax(
     
 
     amount = 100000
-    create_uniswap_v3_pool(
+    spa_mock_pool =  create_uniswap_v3_pool(
         mock_token2.balanceOf(owner_l2),
         spa, # token1
         amount, # amount1
@@ -591,6 +591,9 @@ def create_uniswap_v3_pool(
         {'from': owner_l2}
     )
     print(txn.return_value)
+    return pool
+
+    
 
 def mintSPA(
     spa,
