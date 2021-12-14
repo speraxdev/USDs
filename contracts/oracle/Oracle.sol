@@ -59,12 +59,12 @@ contract Oracle is Initializable, IOracle, OwnableUpgradeable {
         uint32 timeStamp,
         uint index
     );
-    event periodChanged(
+    event PeriodChanged(
         uint32 updatePeriod,
         uint32 movingAvgShortPeriod,
         uint32 movingAvgLongPeriod
     );
-    event collateralInfoChanged(
+    event CollateralInfoChanged(
         address _collateralAddr,
         bool _supported,
         AggregatorV3Interface _priceFeed,
@@ -150,7 +150,7 @@ contract Oracle is Initializable, IOracle, OwnableUpgradeable {
         updatePeriod = _updatePeriod;
         movingAvgShortPeriod =_movingAvgShortPeriod;
         movingAvgLongPeriod = _movingAvgLongPeriod;
-        emit periodChanged(updatePeriod, movingAvgShortPeriod, movingAvgLongPeriod);
+        emit PeriodChanged(updatePeriod, movingAvgShortPeriod, movingAvgLongPeriod);
     }
 
     function updateCollateralInfo(address _collateralAddr, bool _supported, AggregatorV3Interface _priceFeed, uint _price_prec) external onlyOwner {
@@ -159,7 +159,7 @@ contract Oracle is Initializable, IOracle, OwnableUpgradeable {
         updatedCollateral.supported = _supported;
         updatedCollateral.priceFeed = _priceFeed;
         updatedCollateral.price_prec = _price_prec;
-        emit collateralInfoChanged(_collateralAddr, _supported, _priceFeed, _price_prec);
+        emit CollateralInfoChanged(_collateralAddr, _supported, _priceFeed, _price_prec);
     }
 
     /**
