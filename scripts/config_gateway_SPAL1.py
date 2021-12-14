@@ -72,7 +72,7 @@ def main():
     #     print("\nMissing L2 SPA address\n")
     #     return
     print(f"\nL1 wSPA address: {wspa_l1}")
-    print(f"\nL2 SPA address: {spa_l2}")
+    print(f"L2 SPA address: {spa_l2}")
     print(f"L1 Bridge address: {bridge}")
     print(f"L1 Router address: {router}\n")
     confirm("Are the above addresses correct?")
