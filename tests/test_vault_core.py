@@ -18,7 +18,7 @@ def test_mint_usds(sperax, mock_token4, owner_l2, accounts, mock_token2):
 
 
     deadline = 1637632800 + brownie.chain.time() 
-    amount  = 10000
+    amount  = 1000000
     slippage_collateral = 1000000000000000000000000000000
     slippage_spa = 1000000000000000000000000000000
     spa.approve(accounts[5].address, amount, {'from': owner_l2})
@@ -26,7 +26,6 @@ def test_mint_usds(sperax, mock_token4, owner_l2, accounts, mock_token2):
 
     spa.approve(vault_proxy.address, slippage_spa, {'from': accounts[5] })
     mock_token4.approve(vault_proxy.address, slippage_spa, {'from': accounts[5] })
-
 
     #collateral not addedd
     with reverts():
@@ -82,22 +81,22 @@ def test_mint_spa(sperax, weth, owner_l2, accounts, mock_token4):
     ) = sperax
 
     deadline = 1637632800 + brownie.chain.time() 
-    amount  = 10000
+    amount  = 100000
     slippage_collateral = 1000000000000000000000000000000
-    slippage_spa = 1000000000000000000000000000000
+    slippage_usds = 10
 
-    # spa.approve(accounts[5].address, amount, {'from': owner_l2})
-    # spa.transfer(accounts[5].address, amount, {'from': owner_l2})
+    spa.approve(accounts[5].address, amount, {'from': owner_l2})
+    spa.transfer(accounts[5].address, amount, {'from': owner_l2})
 
-    # spa.approve(vault_proxy.address, slippage_spa, {'from': accounts[5] })
-    # mock_token4.approve(vault_proxy.address, slippage_spa, {'from': accounts[5] })
+    spa.approve(vault_proxy.address, slippage_collateral, {'from': accounts[5] })
+    mock_token4.approve(vault_proxy.address, slippage_collateral, {'from': accounts[5] })
 
     with reverts():
         vault_proxy.mintBySpecifyingSPAamt(
             weth.address,
             int(amount),
+            slippage_usds,
             slippage_collateral,
-            slippage_spa,
             deadline,
             {'from': accounts[5]}
         )
@@ -106,8 +105,8 @@ def test_mint_spa(sperax, weth, owner_l2, accounts, mock_token4):
         vault_proxy.mintBySpecifyingSPAamt(
             mock_token4.address,
             0,
+            slippage_usds,
             slippage_collateral,
-            slippage_spa,
             deadline,
             {'from': accounts[5]}
         )
@@ -115,8 +114,8 @@ def test_mint_spa(sperax, weth, owner_l2, accounts, mock_token4):
     vault_proxy.mintBySpecifyingSPAamt(
         mock_token4.address,
         int(amount),
+        slippage_usds,
         slippage_collateral,
-        slippage_spa,
         deadline,
         {'from': accounts[5]}
     )
@@ -135,15 +134,21 @@ def test_mint_collateral(sperax, weth, owner_l2, accounts, mock_token4):
 
     deadline = 1637632800 + brownie.chain.time() 
     amount  = 10000
-    slippage_collateral = 1000000000000000000000000000000
-    slippage_spa = 1000000000000000000000000000000
+    slippage_collateral = 10
+    slippage_coll = 1000000000000000000000000000000
+
+    spa.approve(accounts[5].address, amount, {'from': owner_l2})
+    spa.transfer(accounts[5].address, amount, {'from': owner_l2})
+
+    spa.approve(vault_proxy.address, slippage_coll, {'from': accounts[5] })
+    mock_token4.approve(vault_proxy.address, slippage_coll, {'from': accounts[5] })
 
     with reverts():
         vault_proxy.mintBySpecifyingCollateralAmt(
             weth.address,
             int(amount),
             slippage_collateral,
-            slippage_spa,
+            slippage_coll,
             deadline,
             {'from': accounts[5]}
         )
@@ -153,7 +158,7 @@ def test_mint_collateral(sperax, weth, owner_l2, accounts, mock_token4):
             mock_token4.address,
             0,
             slippage_collateral,
-            slippage_spa,
+            slippage_coll,
             deadline,
             {'from': accounts[5]}
         )
@@ -162,7 +167,7 @@ def test_mint_collateral(sperax, weth, owner_l2, accounts, mock_token4):
         mock_token4.address,
         int(amount),
         slippage_collateral,
-        slippage_spa,
+        slippage_coll,
         deadline,
         {'from': accounts[5]}
     )
@@ -229,11 +234,35 @@ def test_reedem(sperax, accounts, mock_token4, owner_l2, weth):
         buyback_multihop
     ) = sperax
 
-
     deadline = 1637632800 + brownie.chain.time() 
-    amount  = 10000
-    slippage_collateral = 1000000000000000000000000000000
-    slippage_spa = 1000000000000000000000000000000
+    amount  = 1000000
+    slippage_collateral = 10
+    slippage_spa = 10
+
+
+    slippage_collateral_mint = 1000000000000000000000000000000
+    slippage_spa_mint = 1000000000000000000000000000000
+
+    spa.approve(accounts[5].address, amount, {'from': owner_l2})
+    spa.transfer(accounts[5].address, amount, {'from': owner_l2})
+
+    spa.approve(vault_proxy.address, slippage_collateral_mint, {'from': accounts[5] })
+    mock_token4.approve(vault_proxy.address, slippage_collateral_mint, {'from': accounts[5] })
+
+    txn = spa.setMintable(
+        accounts[5],
+        True,
+        {'from': owner_l2}
+    )
+
+    vault_proxy.mintBySpecifyingUSDsAmt(
+        mock_token4.address,
+        int(amount),
+        slippage_collateral_mint,
+        slippage_spa_mint,
+        deadline,
+        {'from': accounts[5]}
+    )
 
     with reverts('Amount needs to be greater than 0'):
         vault_proxy.redeem(mock_token4.address, 0, slippage_collateral, slippage_spa, deadline, {'from': accounts[5]})
