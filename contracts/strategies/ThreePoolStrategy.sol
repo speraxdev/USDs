@@ -22,6 +22,7 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
     address internal crvGaugeAddress;
     address internal crvMinterAddress;
     uint256 internal constant maxSlippage = 1e16; // 1%, same as the Curve UI
+    uint256 internal supportedAssetIndex;
 
     receive() external payable {}
     fallback() external payable {}
@@ -45,9 +46,11 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
         address _rewardTokenAddress, // CRV
         address[] calldata _assets,
         address[] calldata _pTokens,
-        address _crvGaugeAddress
+        address _crvGaugeAddress,
+        uint256 _supportedAssetIndex
     ) external initializer {
         require(_assets.length == 3, "Must have exactly three assets");
+        require(_supportedAssetIndex < 3, "_supportedAssetIndex exceeds 2");
         // Should be set prior to abstract initialize call otherwise
         // abstractSetPToken calls will fail
         crvGaugeAddress = _crvGaugeAddress;
@@ -58,6 +61,24 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
             _assets,
             _pTokens
         );
+        supportedAssetIndex = _supportedAssetIndex;
+    }
+
+    /**
+     * @dev Check if an asset/collateral is supported.
+     * @param _asset    Address of the asset
+     * @return bool     Whether asset is supported
+     */
+    function supportsCollateral(
+        address _asset
+    ) public view override returns (bool) {
+        if (assetToPToken[_asset] != address(0) &&
+            _getPoolCoinIndex(_asset) == supportedAssetIndex) {
+                return true;
+            }
+        else {
+            return false;
+        }
     }
 
     /**
@@ -71,8 +92,8 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
         onlyVault
         nonReentrant
     {
+        require(supportsCollateral(_asset), "Unsupported collateral");
         require(_amount > 0, "Must deposit something");
-
         // 3Pool requires passing deposit amounts for all 3 assets, set to 0 for
         // all
         uint256[3] memory _amounts;
@@ -163,7 +184,7 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
         address _asset
     ) external override onlyVault nonReentrant {
         require(_recipient != address(0), "Invalid recipient");
-
+        require(supportsCollateral(_asset), "Unsupported collateral");
         ICurvePool curvePool = ICurvePool(platformAddress);
         uint256 poolCoinIndex = _getPoolCoinIndex(_asset);
         uint256 _amount = checkInterestEarned(_asset);
@@ -197,8 +218,8 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
         address _asset,
         uint256 _amount
     ) external override onlyOwner nonReentrant {
+        require(supportsCollateral(_asset), "Unsupported collateral");
         require(_amount > 0, "Invalid amount");
-
         (uint256 contractPTokens, , uint256 totalPTokens) = _getTotalPTokens();
 
         uint256 poolCoinIndex = _getPoolCoinIndex(_asset);
@@ -262,7 +283,7 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
         view
         returns (uint256 balance)
     {
-        require(assetToPToken[_asset] != address(0), "Unsupported asset");
+        require(supportsCollateral(_asset), "Unsupported collateral");
         // LP tokens in this contract. This should generally be nothing as we
         // should always stake the full balance in the Gauge, but include for
         // safety
@@ -291,6 +312,7 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
         override
         returns (uint256 interestEarned)
     {
+        require(supportsCollateral(_asset), "Unsupported collateral");
         // Calculate how many platform tokens we need to withdraw the asset
         // amount in the worst case (i.e withdrawing all LP tokens)
         (uint256 contractPTokens, , uint256 totalPTokens) = _getTotalPTokens();

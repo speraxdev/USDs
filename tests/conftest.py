@@ -262,15 +262,14 @@ def sperax(
         usdt,
         wbtc,
         mock_token4,
+        mock_token2,
         owner_l2
     )
 
     mintSPA(spa,  mock_token2.balanceOf(owner_l2) , owner_l2, vault_proxy)
 
-    
-
     amount = 100000
-    create_uniswap_v3_pool(
+    spa_mock_pool =  create_uniswap_v3_pool(
         mock_token2.balanceOf(owner_l2),
         spa, # token1
         amount, # amount1
@@ -289,6 +288,7 @@ def sperax(
         owner_l2,
         vault_proxy
     )
+
 
 
 
@@ -405,9 +405,6 @@ def deploy_usds(
     )
     return usds_proxy
 
-
-
-
 def deploy_strategy(
     TransparentUpgradeableProxy,
     ThreePoolStrategy,
@@ -430,21 +427,18 @@ def deploy_strategy(
         wbtc,
         weth,
     ]
-    assets_2 = [
-
+    assets_2 = [ # intended to fail
         weth,
     ]
-
 
     lp_tokens = [
         '0x8e0B8c8BB9db49a46697F3a5Bb8A308e744821D2',
         '0x8e0B8c8BB9db49a46697F3a5Bb8A308e744821D2',
         '0x8e0B8c8BB9db49a46697F3a5Bb8A308e744821D2',
     ]
-    lp_tokens_2 = [
+    lp_tokens_2 = [ # intended to fail
         '0x8e0B8c8BB9db49a46697F3a5Bb8A308e744821D2',
         '0x8e0B8c8BB9db49a46697F3a5Bb8A308e744821D2',
-       
     ]
 
     # THREE POOL strategy
@@ -461,7 +455,6 @@ def deploy_strategy(
         "ThreePoolStrategy",
         proxy.address,
         ThreePoolStrategy.abi
-    
     )
     with brownie.reverts("Invalid input arrays"):
          strategy_proxy.initialize(
@@ -471,11 +464,11 @@ def deploy_strategy(
          assets,
          lp_tokens_2,
          crv_gauge_address,
+         2,
          {'from': owner_l2}
     )
 
     with brownie.reverts("Must have exactly three assets"):
-
         strategy_proxy.initialize(
         platform_address,
         vault_proxy,
@@ -483,6 +476,7 @@ def deploy_strategy(
         assets_2,
         lp_tokens_2,
         crv_gauge_address,
+        2,
         {'from': owner_l2}
     )
     strategy_proxy.initialize(
@@ -492,6 +486,7 @@ def deploy_strategy(
         assets,
         lp_tokens,
         crv_gauge_address,
+        2,
         {'from': owner_l2}
     )
     return strategy_proxy
@@ -525,6 +520,7 @@ def configure_collaterals(
     usdt,
     wbtc,
     mock_token4,
+    mock_token2,
     owner_l2
 ):
     # Arbitrum mainnet collaterals: token address, chainlink
@@ -537,6 +533,7 @@ def configure_collaterals(
         '0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1': '0xc5C8E77B397E531B8EC06BFb0048328B30E9eCfB',
         # WBTC
         wbtc: '0x6ce185860a4963106506C203335A2910413708e9',
+        mock_token2: '0x3f3f5dF88dC9F13eac63DF89EC16ef6e7E25DdE7',
     }
 
     precision = 10**8
@@ -623,6 +620,9 @@ def create_uniswap_v3_pool(
         {'from': owner_l2}
     )
     print(txn.return_value)
+    return pool
+
+
 
 def mintSPA(
     spa,

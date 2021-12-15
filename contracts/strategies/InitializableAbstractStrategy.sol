@@ -22,7 +22,6 @@ abstract contract InitializableAbstractStrategy is IStrategy, Initializable, Own
     event Withdrawal(address indexed _asset, address _pToken, uint256 _amount);
     event RewardTokenCollected(address recipient, uint256 amount);
     event RewardTokenAddressUpdated(address _oldAddress, address _newAddress);
-    event Validation (uint256 value);
     event RewardLiquidationThresholdUpdated(
         uint256 _oldThreshold,
         uint256 _newThreshold
@@ -190,9 +189,9 @@ abstract contract InitializableAbstractStrategy is IStrategy, Initializable, Own
      * @param _asset    Address of the asset
      * @return bool     Whether asset is supported
      */
-    function supportsCollateral(address _asset) external view override returns (bool) {
-        return assetToPToken[_asset] != address(0);
-    }
+    function supportsCollateral(
+        address _asset
+    ) external view virtual override returns (bool);
 
     /***************************************
                  Abstract
