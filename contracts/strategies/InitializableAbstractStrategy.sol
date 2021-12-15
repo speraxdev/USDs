@@ -189,9 +189,9 @@ abstract contract InitializableAbstractStrategy is IStrategy, Initializable, Own
      * @param _asset    Address of the asset
      * @return bool     Whether asset is supported
      */
-    function supportsCollateral(address _asset) external view override returns (bool) {
-        return assetToPToken[_asset] != address(0);
-    }
+    function supportsCollateral(
+        address _asset
+    ) external view virtual override returns (bool);
 
     /***************************************
                  Abstract

@@ -268,8 +268,6 @@ def sperax(
 
     mintSPA(spa,  mock_token2.balanceOf(owner_l2) , owner_l2, vault_proxy)
 
-    
-
     amount = 100000
     spa_mock_pool =  create_uniswap_v3_pool(
         mock_token2.balanceOf(owner_l2),
@@ -291,13 +289,8 @@ def sperax(
         vault_proxy
     )
 
-    update_oracle_uni_pool(
-        oracle_proxy,
-        mock_token2,
-        usds_proxy,
-        spa_mock_pool,
-        owner_l2
-    )
+
+
 
     return (
         spa,
@@ -412,9 +405,6 @@ def deploy_usds(
     )
     return usds_proxy
 
-
-
-
 def deploy_strategy(
     TransparentUpgradeableProxy,
     ThreePoolStrategy,
@@ -437,21 +427,18 @@ def deploy_strategy(
         wbtc,
         weth,
     ]
-    assets_2 = [
-
+    assets_2 = [ # intended to fail
         weth,
     ]
-
 
     lp_tokens = [
         '0x8e0B8c8BB9db49a46697F3a5Bb8A308e744821D2',
         '0x8e0B8c8BB9db49a46697F3a5Bb8A308e744821D2',
         '0x8e0B8c8BB9db49a46697F3a5Bb8A308e744821D2',
     ]
-    lp_tokens_2 = [
+    lp_tokens_2 = [ # intended to fail
         '0x8e0B8c8BB9db49a46697F3a5Bb8A308e744821D2',
         '0x8e0B8c8BB9db49a46697F3a5Bb8A308e744821D2',
-       
     ]
 
     # THREE POOL strategy
@@ -468,7 +455,6 @@ def deploy_strategy(
         "ThreePoolStrategy",
         proxy.address,
         ThreePoolStrategy.abi
-    
     )
     with brownie.reverts("Invalid input arrays"):
          strategy_proxy.initialize(
@@ -478,11 +464,11 @@ def deploy_strategy(
          assets,
          lp_tokens_2,
          crv_gauge_address,
+         2,
          {'from': owner_l2}
     )
 
     with brownie.reverts("Must have exactly three assets"):
-
         strategy_proxy.initialize(
         platform_address,
         vault_proxy,
@@ -490,6 +476,7 @@ def deploy_strategy(
         assets_2,
         lp_tokens_2,
         crv_gauge_address,
+        2,
         {'from': owner_l2}
     )
     strategy_proxy.initialize(
@@ -499,6 +486,7 @@ def deploy_strategy(
         assets,
         lp_tokens,
         crv_gauge_address,
+        2,
         {'from': owner_l2}
     )
     return strategy_proxy
@@ -636,7 +624,7 @@ def create_uniswap_v3_pool(
     print(txn.return_value)
     return pool
 
-    
+
 
 def mintSPA(
     spa,
@@ -659,23 +647,6 @@ def mintSPA(
     )
     assert txn.events['Transfer']['to'] == owner_l2
     assert txn.events['Transfer']['value'] == amount
-
-def update_oracle_uni_pool(
-    oracle_proxy,
-    spa,
-    usds,
-    spa_pool_address,
-    owner_l2
-):
-
-    usds_pool_address = '0x0000000000000000000000000000000000000000'
-    txn = oracle_proxy.updateOraclePoolsAddress(
-        spa,
-        usds,
-        usds_pool_address,
-        spa_pool_address,
-        {'from': owner_l2, 'gas_limit': 10000000, 'allow_revert' : True}
-    )
 
 
 def lower_tick():
