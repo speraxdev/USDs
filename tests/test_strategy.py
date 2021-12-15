@@ -3,8 +3,100 @@ import json
 import time
 import brownie
 
+
 def user(accounts):
     return accounts[9]
+def test_withdraw(sperax, weth,usdt,wbtc,owner_l2, accounts):
+    (
+        spa,
+        usds_proxy,
+        vault_core_tools,
+        vault_proxy,
+        oracle_proxy,
+        strategy_proxy,
+        buyback,
+        buyback_multihop
+    ) = sperax
+    amount = int(1000000000)
+        ### usdt deposit-------------------------------------------------------
+    usdt_amount =int(1000000)
+    txn = weth.deposit(
+        {'from': accounts[9].address, 'amount': usdt_amount}
+    )
+    with brownie.reverts("ERC20: transfer amount exceeds balance"): 
+        weth_erc20 = brownie.interface.IERC20(weth.address)
+        txn = weth_erc20.transfer(strategy_proxy.address,
+                              amount, {'from': accounts[9]})
+    
+    # testing the validity of recipient.
+    zero_address = "0x0000000000000000000000000000000000000000"
+    with brownie.reverts("Invalid recipient"):
+        txn = strategy_proxy.withdraw(
+            zero_address,
+            weth.address,
+            (amount),
+            {'from': vault_proxy.address}
+        )
+    #weth deposit--------------------------------------------------------------------------
+    txn = weth.deposit(
+        {'from': accounts[9].address, 'amount': amount}
+    )
+
+    weth_erc20 = brownie.interface.IERC20(weth.address)
+    txn = weth_erc20.transfer(strategy_proxy.address,
+                              amount, {'from': accounts[9]})
+    
+    assert txn.return_value == True
+    txn = strategy_proxy.deposit(
+        weth.address,
+        amount,
+        {'from': vault_proxy.address}
+    )
+    assert txn.events['Deposit']['_asset'] == weth.address
+    assert txn.events['Deposit']['_amount'] == amount
+
+    #usdt withdraw-----------------------------------------------------------------------
+    with brownie.reverts("SafeMath: division by zero"):
+         txn = strategy_proxy.withdraw(
+         accounts[9],
+         wbtc.address,
+         (usdt_amount-1),
+         {'from': vault_proxy.address}
+    )
+
+    # withdraw 1/10 of the previous deposit
+    
+    txn = strategy_proxy.withdraw(
+        accounts[9],
+        weth.address,
+        (amount/10),
+        {'from': vault_proxy.address}
+    )
+    amount_1=int(1)
+    txn = strategy_proxy.withdraw(
+        accounts[9],
+        weth.address,
+        (amount_1),
+        {'from': vault_proxy.address}
+    )
+    with brownie.reverts("Caller is not the Vault"):
+          strategy_proxy.withdraw(
+         accounts[9],
+         weth.address,
+         (amount/10),
+         {'from': owner_l2.address}
+    )
+    # assert txn.events['Withdrawal']['_asset'] == weth.address
+    # assert txn.events['Withdrawal']['_amount']==amount/10
+    with brownie.reverts("Insufficient 3CRV balance"):
+         strategy_proxy.withdraw(
+         accounts[9],
+         weth.address,
+         (amount + 1),
+         {'from': vault_proxy.address}
+    )
+    
+
 
 def test_check_balance(sperax, weth,usdt):
     (
@@ -364,70 +456,8 @@ def test_deposit_invalid_assets(sperax, weth, accounts, mock_token2):
         )
 
 
-def test_withdraw(sperax, weth,owner_l2, accounts):
-    (
-        spa,
-        usds_proxy,
-        vault_core_tools,
-        vault_proxy,
-        oracle_proxy,
-        strategy_proxy,
-        buyback,
-        buyback_multihop
-    ) = sperax
-    amount = int(1000000000)
-    # testing the validity of recipient.
-    zero_address = "0x0000000000000000000000000000000000000000"
-    with brownie.reverts("Invalid recipient"):
-        txn = strategy_proxy.withdraw(
-            zero_address,
-            weth.address,
-            (amount),
-            {'from': vault_proxy.address}
-        )
 
-    txn = weth.deposit(
-        {'from': accounts[9].address, 'amount': amount}
-    )
-
-    weth_erc20 = brownie.interface.IERC20(weth.address)
-    txn = weth_erc20.transfer(strategy_proxy.address,
-                              amount, {'from': accounts[9]})
-    assert txn.return_value == True
-    txn = strategy_proxy.deposit(
-        weth.address,
-        amount,
-        {'from': vault_proxy.address}
-    )
-    assert txn.events['Deposit']['_asset'] == weth.address
-    assert txn.events['Deposit']['_amount'] == amount
-
-    # withdraw 1/10 of the previous deposit
-    txn = strategy_proxy.withdraw(
-        accounts[9],
-        weth.address,
-        (amount/10),
-        {'from': vault_proxy.address}
-    )
-    with brownie.reverts("Caller is not the Vault"):
-          strategy_proxy.withdraw(
-         accounts[9],
-         weth.address,
-         (amount/10),
-         {'from': owner_l2.address}
-    )
-    # assert txn.events['Withdrawal']['_asset'] == weth.address
-    # assert txn.events['Withdrawal']['_amount']==amount/10
-    with brownie.reverts("Insufficient 3CRV balance"):
-         strategy_proxy.withdraw(
-         accounts[9],
-         weth.address,
-         (amount + 1),
-         {'from': vault_proxy.address}
-    )
-    
-
-def test_withdraw_invalid_assets(sperax, mock_token2, accounts):
+def test_withdraw_invalid_assets(sperax, mock_token3, accounts):
     (
         spa,
         usds_proxy,
@@ -444,7 +474,7 @@ def test_withdraw_invalid_assets(sperax, mock_token2, accounts):
     with brownie.reverts("Invalid 3pool asset"):
         txn = strategy_proxy.withdraw(
             accounts[8],
-            mock_token2.address,
+            mock_token3.address,
             (amount/10),
             {'from': vault_proxy.address})
 
