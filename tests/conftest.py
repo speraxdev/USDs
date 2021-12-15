@@ -496,8 +496,6 @@ def deploy_strategy(
     )
     return strategy_proxy
 
-
-
 def deploy_buyback(
     BuybackSingle,
     vault_proxy,

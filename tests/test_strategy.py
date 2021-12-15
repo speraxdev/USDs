@@ -3,16 +3,29 @@ import json
 import time
 import brownie
 
-
-
 def user(accounts):
     return accounts[9]
 
+def test_check_balance(sperax, weth,usdt):
+    (
+        spa,
+        usds_proxy,
+        vault_core_tools,
+        vault_proxy,
+        oracle_proxy,
+        strategy_proxy,
+        buyback,
+        buyback_multihop
+    ) = sperax
+    zero_address = "0x0000000000000000000000000000000000000000"
+    balance = strategy_proxy.checkBalance(weth, {'from': vault_proxy.address})
+    balance = strategy_proxy.checkBalance(usdt, {'from': vault_proxy.address})
+    print ("balance :",balance)
+    assert balance == 0
+    with brownie.reverts("Unsupported asset"):
+         strategy_proxy.checkBalance(
+         zero_address, {'from': vault_proxy.address})
 
-# def test__init(vault_proxy, owner_l2):
-#     deploy_strategy2(
-#         {'from': owner_l2.address}
-#     )
 
 def test__safe_approve_all_tokens(sperax, owner_l2):
     (
@@ -350,7 +363,7 @@ def test_deposit_invalid_assets(sperax, weth, accounts, mock_token2):
         )
 
 
-def test_withdraw(sperax, weth, accounts):
+def test_withdraw(sperax, weth,owner_l2, accounts):
     (
         spa,
         usds_proxy,
@@ -394,6 +407,13 @@ def test_withdraw(sperax, weth, accounts):
         weth.address,
         (amount/10),
         {'from': vault_proxy.address}
+    )
+    with brownie.reverts("Caller is not the Vault"):
+          strategy_proxy.withdraw(
+         accounts[9],
+         weth.address,
+         (amount/10),
+         {'from': owner_l2.address}
     )
     # assert txn.events['Withdrawal']['_asset'] == weth.address
     # assert txn.events['Withdrawal']['_amount']==amount/10
@@ -517,26 +537,6 @@ def test_withdraw_interest(sperax, weth, accounts):
             weth.address,
             {'from': vault_proxy.address}
         )      
-
-
-def test_check_balance(sperax, weth):
-    (
-        spa,
-        usds_proxy,
-        vault_core_tools,
-        vault_proxy,
-        oracle_proxy,
-        strategy_proxy,
-        buyback,
-        buyback_multihop
-    ) = sperax
-    zero_address = "0x0000000000000000000000000000000000000000"
-    balance = strategy_proxy.checkBalance(weth, {'from': vault_proxy.address})
-
-    assert balance == 0
-    with brownie.reverts("Unsupported asset"):
-         strategy_proxy.checkBalance(
-         zero_address, {'from': vault_proxy.address})
 
 
 def test_withdraw_to_vault_invalid_amount(sperax, weth, owner_l2):
