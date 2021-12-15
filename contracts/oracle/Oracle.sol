@@ -7,6 +7,7 @@ import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@chainlink/contracts/src/v0.6/interfaces/AggregatorV3Interface.sol";
 import "@chainlink/contracts/src/v0.6/interfaces/FlagsInterface.sol";
+import '@uniswap/v3-core/contracts/interfaces/IUniswapV3Factory.sol';
 
 import "../vault/VaultCore.sol";
 import "../interfaces/IOracle.sol";
@@ -41,12 +42,13 @@ contract Oracle is Initializable, IOracle, OwnableUpgradeable {
     address public USDCaddr;
     address public VaultAddr;
     address public USDsAddr;
-    address public USDsOraclePool;
-    address public SPAoraclePool;
     address public SPAoracleQuoteTokenAddr;
     address public USDsOracleQuoteTokenAddr;
     address constant private FLAG_ARBITRUM_SEQ_OFFLINE = address(bytes20(bytes32(uint256(keccak256("chainlink.flags.arbitrum-seq-offline")) - 1)));
     FlagsInterface internal chainlinkFlags;
+    address public constant UNISWAP_FACTORY= 0x1F98431c8aD98523631AE4a59f267346ea31F984;
+    uint24 SPAoraclePoolFee;
+    uint24 USDsOraclePoolFee;
 
     event USDsInOutRatioUpdated(
         uint USDsInOutRatio,
@@ -55,12 +57,12 @@ contract Oracle is Initializable, IOracle, OwnableUpgradeable {
         uint32 timeStamp,
         uint index
     );
-    event periodChanged(
+    event PeriodChanged(
         uint32 updatePeriod,
         uint32 movingAvgShortPeriod,
         uint32 movingAvgLongPeriod
     );
-    event collateralInfoChanged(
+    event CollateralInfoChanged(
         address _collateralAddr,
         bool _supported,
         AggregatorV3Interface _priceFeed,
@@ -68,11 +70,11 @@ contract Oracle is Initializable, IOracle, OwnableUpgradeable {
     );
     event USDsAddressUpdated(address oldAddr, address newAddr);
     event VaultAddressUpdated(address oldAddr, address newAddr);
-    event poolAddressesUpdated(
+    event UniPoolsSettingUpdated(
         address SPAoracleQuoteTokenAddr,
         address USDsOracleQuoteTokenAddr,
-        address USDsOraclePool,
-        address SPAoraclePool
+        uint24 SPAoraclePoolFee,
+        uint24 USDsOraclePoolFee
     );
 
     uint[FREQUENCY+1] public USDsInflow;
@@ -100,6 +102,10 @@ contract Oracle is Initializable, IOracle, OwnableUpgradeable {
         movingAvgShortPeriod = 600;
         movingAvgLongPeriod = 3600;
         chainlinkFlags = FlagsInterface(_chainlinkFlags);
+        SPAoracleQuoteTokenAddr = _USDCaddr;
+        USDsOracleQuoteTokenAddr = _USDCaddr;
+        SPAoraclePoolFee = 10000;
+        USDsOraclePoolFee = 500;
     }
 
     function updateUSDsAddress(address _USDsAddr) external onlyOwner {
@@ -113,12 +119,22 @@ contract Oracle is Initializable, IOracle, OwnableUpgradeable {
         emit VaultAddressUpdated(VaultAddr, _VaultAddr);
     }
 
-    function updateOraclePoolsAddress(address _SPAoracleQuoteTokenAddr, address _USDsOracleQuoteTokenAddr, address _USDsOraclePool, address _SPAoraclePool) external onlyOwner {
+    function updateUniPoolsSetting(
+        address _SPAoracleQuoteTokenAddr,
+        address _USDsOracleQuoteTokenAddr,
+        uint24 _SPAoraclePoolFee,
+        uint24 _USDsOraclePoolFee
+    ) external onlyOwner {
         SPAoracleQuoteTokenAddr = _SPAoracleQuoteTokenAddr;
         USDsOracleQuoteTokenAddr = _USDsOracleQuoteTokenAddr;
-        USDsOraclePool = _USDsOraclePool;
-        SPAoraclePool = _SPAoraclePool;
-        emit poolAddressesUpdated(SPAoracleQuoteTokenAddr, USDsOracleQuoteTokenAddr, USDsOraclePool, SPAoraclePool);
+        SPAoraclePoolFee = _SPAoraclePoolFee;
+        USDsOraclePoolFee = _USDsOraclePoolFee;
+        emit UniPoolsSettingUpdated(
+            SPAoracleQuoteTokenAddr,
+            USDsOracleQuoteTokenAddr,
+            SPAoraclePoolFee,
+            USDsOraclePoolFee
+        );
     }
 
     /**
@@ -132,7 +148,7 @@ contract Oracle is Initializable, IOracle, OwnableUpgradeable {
         updatePeriod = _updatePeriod;
         movingAvgShortPeriod =_movingAvgShortPeriod;
         movingAvgLongPeriod = _movingAvgLongPeriod;
-        emit periodChanged(updatePeriod, movingAvgShortPeriod, movingAvgLongPeriod);
+        emit PeriodChanged(updatePeriod, movingAvgShortPeriod, movingAvgLongPeriod);
     }
 
     function updateCollateralInfo(address _collateralAddr, bool _supported, AggregatorV3Interface _priceFeed, uint _price_prec) external onlyOwner {
@@ -141,7 +157,7 @@ contract Oracle is Initializable, IOracle, OwnableUpgradeable {
         updatedCollateral.supported = _supported;
         updatedCollateral.priceFeed = _priceFeed;
         updatedCollateral.price_prec = _price_prec;
-        emit collateralInfoChanged(_collateralAddr, _supported, _priceFeed, _price_prec);
+        emit CollateralInfoChanged(_collateralAddr, _supported, _priceFeed, _price_prec);
     }
 
     /**
@@ -181,6 +197,10 @@ contract Oracle is Initializable, IOracle, OwnableUpgradeable {
 	}
 
     function getSPAprice() external view override returns (uint) {
+        address SPAoraclePool = IUniswapV3Factory(UNISWAP_FACTORY).getPool(
+            SPAaddr, SPAoracleQuoteTokenAddr, SPAoraclePoolFee
+        );
+        require(SPAoraclePool != address(0), 'SPA oracle pool does not exist.');
         uint128 SPAoracleQuoteToken_prec =
             uint128(10)**ERC20(SPAoracleQuoteTokenAddr).decimals();
         uint quoteTokenAmtPerSPA = _getUniMAPrice(
@@ -191,7 +211,7 @@ contract Oracle is Initializable, IOracle, OwnableUpgradeable {
             SPAoracleQuoteToken_prec,
             movingAvgShortPeriod
         );
-        return _getUSDCprice()
+        return _getCollateralPrice(SPAoracleQuoteTokenAddr)
             .mul(quoteTokenAmtPerSPA)
             .mul(SPAprice_prec)
             .div(SPAoracleQuoteToken_prec)
@@ -199,6 +219,9 @@ contract Oracle is Initializable, IOracle, OwnableUpgradeable {
     }
 
     function getUSDsPrice() external view override returns (uint) {
+        address USDsOraclePool = IUniswapV3Factory(UNISWAP_FACTORY).getPool(
+            USDsAddr, USDsOracleQuoteTokenAddr, USDsOraclePoolFee
+        );
         if (USDsOraclePool == address(0)) {
             return USDsPrice_prec;
         }
@@ -220,6 +243,9 @@ contract Oracle is Initializable, IOracle, OwnableUpgradeable {
     }
 
     function getUSDsPrice_average() external view override returns (uint) {
+        address USDsOraclePool = IUniswapV3Factory(UNISWAP_FACTORY).getPool(
+            USDsAddr, USDsOracleQuoteTokenAddr, USDsOraclePoolFee
+        );
         if (USDsOraclePool == address(0)) {
             return USDsPrice_prec;
         }
