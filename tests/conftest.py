@@ -456,6 +456,19 @@ def deploy_strategy(
         proxy.address,
         ThreePoolStrategy.abi
     )
+
+    with brownie.reverts("_supportedAssetIndex exceeds 2"):
+         strategy_proxy.initialize(
+         platform_address,
+         vault_proxy,
+         reward_token_address,
+         assets,
+         lp_tokens_2,
+         crv_gauge_address,
+         3,
+         {'from': owner_l2}
+    )
+
     with brownie.reverts("Invalid input arrays"):
          strategy_proxy.initialize(
          platform_address,
