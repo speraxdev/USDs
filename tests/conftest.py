@@ -230,7 +230,7 @@ def sperax(
     oracle_proxy.initialize(
         chainlink_usdc_price_feed,
         spa.address,
-        usdc.address,
+        mock_token2.address,
         chainlink_flags,
         {'from': owner_l2}
     )
@@ -263,12 +263,13 @@ def sperax(
         wbtc,
         mock_token4,
         mock_token2,
+        strategy_proxy,
         owner_l2
     )
 
     mintSPA(spa,  mock_token2.balanceOf(owner_l2) , owner_l2, vault_proxy)
 
-    amount = 100000
+    amount = 1000000
     spa_mock_pool =  create_uniswap_v3_pool(
         mock_token2.balanceOf(owner_l2),
         spa, # token1
@@ -289,7 +290,7 @@ def sperax(
         vault_proxy
     )
 
-
+    update_oracle_setting(oracle_proxy, owner_l2, mock_token2, usds_proxy)
 
 
     return (
@@ -534,6 +535,7 @@ def configure_collaterals(
     wbtc,
     mock_token4,
     mock_token2,
+    strategy_proxy,
     owner_l2
 ):
     # Arbitrum mainnet collaterals: token address, chainlink
@@ -556,7 +558,7 @@ def configure_collaterals(
         # authorize a new collateral
         vault_proxy.addCollateral(
             collateral, # address of: USDC, USDT, DAI or WBTC
-            zero_address, # _defaultStrategyAddr: CURVE, AAVE, etc
+            strategy_proxy, # _defaultStrategyAddr: CURVE, AAVE, etc
             False, # _allocationAllowed
             0, # _allocatePercentage
             buyback, # _buyBackAddr
@@ -658,6 +660,15 @@ def mintSPA(
     )
     assert txn.events['Transfer']['to'] == owner_l2
     assert txn.events['Transfer']['value'] == amount
+
+def update_oracle_setting(oracle_proxy, owner_l2, spa, usds_proxy):
+    oracle_proxy.updateUniPoolsSetting(
+        spa.address,
+        usds_proxy.address,
+        3000,
+        3000,
+    {'from': owner_l2} )
+
 
 
 def lower_tick():

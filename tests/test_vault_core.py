@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 import pytest
 import brownie
-from brownie import  Wei, Contract, reverts
+from brownie import  Wei, Contract, reverts, SperaxTokenL2
 
 
 def test_mint_usds(sperax, mock_token4, owner_l2, accounts, mock_token2):
@@ -249,13 +249,9 @@ def test_reedem(sperax, accounts, mock_token4, owner_l2, weth):
     spa.approve(vault_proxy.address, slippage_collateral_mint, {'from': accounts[5] })
     mock_token4.approve(vault_proxy.address, slippage_collateral_mint, {'from': accounts[5] })
 
-    txn = spa.setMintable(
-        accounts[5],
-        True,
-        {'from': owner_l2}
-    )
 
-    vault_proxy.mintBySpecifyingUSDsAmt(
+
+    txn = vault_proxy.mintBySpecifyingUSDsAmt(
         mock_token4.address,
         int(amount),
         slippage_collateral_mint,
@@ -269,9 +265,15 @@ def test_reedem(sperax, accounts, mock_token4, owner_l2, weth):
     
     with reverts():
         vault_proxy.redeem(weth.address, amount, slippage_collateral, slippage_spa, deadline, {'from': accounts[5]})
+    
 
+    txn = spa.setMintable(
+        vault_proxy,
+        True,
+        {'from': owner_l2}
+    )
 
-    vault_proxy.redeem(mock_token4.address, amount, slippage_collateral, slippage_spa, deadline, {'from': accounts[5]})
+    txn = vault_proxy.redeem(mock_token4.address, amount, slippage_collateral, slippage_spa, deadline, {'from': accounts[5]})
 
 
 
@@ -372,30 +374,6 @@ def test_add_strategy(sperax, mock_token4, accounts, owner_l2, weth):
         vault_proxy.addStrategy(strategy_proxy, {'from': owner_l2})
 
 
-
-def test_rebase(sperax, owner_l2):
-    (   spa,
-        usds_proxy,
-        core_proxy,
-        vault_proxy,
-        oracle_proxy,
-        strategy_proxy,
-        buyback,
-        buyback_multihop
-    ) = sperax
-
-    with reverts('Rebase paused'):
-        txn = vault_proxy.rebase({'from': owner_l2})
-
-    vault_proxy.updateRebasePermission(True, {'from': owner_l2})
-
-    with reverts('Caller is not a rebaser'):
-        vault_proxy.rebase({'from': owner_l2})
-
-    vault_proxy.grantRole(vault_proxy.REBASER_ROLE(), owner_l2, {'from': owner_l2})
-    vault_proxy.rebase({'from': owner_l2})
-
-
 def test_update_strategy_rwd_buyback_addr(sperax, owner_l2):
     (   spa,
         usds_proxy,
@@ -421,6 +399,30 @@ def test_update_strategy_rwd_buyback_addr(sperax, owner_l2):
 
     assert txn.events["StrategyRwdBuyBackUpdateded"]["strategyAddr"]  == strategy_proxy.address
     assert txn.events["StrategyRwdBuyBackUpdateded"]["buybackAddr"]  == buyback.address
+
+
+def test_rebase(sperax, owner_l2):
+    (   spa,
+        usds_proxy,
+        core_proxy,
+        vault_proxy,
+        oracle_proxy,
+        strategy_proxy,
+        buyback,
+        buyback_multihop
+    ) = sperax
+
+    with reverts('Rebase paused'):
+        txn = vault_proxy.rebase({'from': owner_l2})
+
+    vault_proxy.updateRebasePermission(True, {'from': owner_l2})
+
+    with reverts('Caller is not a rebaser'):
+        vault_proxy.rebase({'from': owner_l2})
+
+    vault_proxy.grantRole(vault_proxy.REBASER_ROLE(), owner_l2, {'from': owner_l2})
+    txn = vault_proxy.rebase({'from': owner_l2})
+
 
 
 
