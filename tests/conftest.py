@@ -195,7 +195,7 @@ def sperax(
     Contract,
     admin,
     vault_fee,
-    owner_l2
+    owner_l2,
 ):
     # Arbitrum-one (mainnet):
     chainlink_usdc_price_feed = '0x50834F3163758fcC1Df9973b6e91f0F0F0434aD3'
@@ -628,25 +628,55 @@ def configure_collaterals(
             False, # _rebaseAllowed
             {'from': owner_l2}
         )
-    else:
-        # Ethereum mainnet
-        bridge = '0xcEe284F754E854890e311e3280b767F80797180d'
-        router = '0x72Ce9c846789fdB6fC1f34aC4AD25Dd9ef7031ef'
-        # deploy SPA contract
-        spa = SperaxToken.deploy(
-            'Sperax L1',
-            'SPAL1',
-            1000000000, # initial supply
-            {'from': owner_l1}
-        )
 
-    wspa = SperaxTokenL1.deploy(
-        'Wrapped Sperax L1',
-        'wSPAL1',
-        spa.address,
-        bridge,
-        router,
-        {'from': owner_l1}
+
+def create_uniswap_v3_pool(
+    mint_amount,
+    spa,
+    amount1,
+    token2,
+    amount2,
+    owner_l2,
+    vault_proxy
+):
+    position_mgr_address = '0xC36442b4a4522E871399CD717aBDD847Ab11FE88'
+    position_mgr = brownie.interface.INonfungiblePositionManager(position_mgr_address)
+
+    # approve uniswap's non fungible position manager to transfer our tokens
+    spa.approve(position_mgr.address, amount1, {'from': owner_l2})
+    token2.approve(position_mgr.address, amount2, {'from': owner_l2})
+
+    # create a transaction pool
+    fee = 3000
+    txn = position_mgr.createAndInitializePoolIfNecessary(
+        spa,
+        token2,
+        fee,
+        encode_price(amount1, amount2),
+        {'from': owner_l2}
+    )
+    # newly created pool address
+    pool = txn.return_value
+    print(f"uniswap v3 pool address (spa-token2 pair): {pool}")
+
+    # provide initial liquidity
+    deadline = 1637632800 + brownie.chain.time() # deadline: 2 hours
+    params = [
+        spa,
+        token2,
+        fee,
+        lower_tick(), # tickLower
+        upper_tick(), # tickUpper
+        amount1,
+        amount2,
+        0, # minimum amount of spa expected
+        0, # minimum amount of token2 expected
+        owner_l2,
+        deadline
+    ]
+    txn = position_mgr.mint(
+        params,
+        {'from': owner_l2}
     )
     print(txn.return_value)
     return pool
@@ -663,7 +693,15 @@ def mintSPA(
     txn = spa.setMintable(
         owner_l2.address,
         True,
-        {'from': owner_l1}
+        {'from': owner_l2}
+    )
+
+    assert txn.events['Mintable']['account'] == owner_l2.address
+
+    txn = spa.mintForUSDs(
+        owner_l2,
+        amount,
+        {'from': owner_l2}
     )
     assert txn.events['Transfer']['to'] == owner_l2
     assert txn.events['Transfer']['value'] == amount
