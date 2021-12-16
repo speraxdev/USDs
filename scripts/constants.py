@@ -149,3 +149,31 @@ mainnet_L1_addresses = L1DeployAddresses(
     "0xcEe284F754E854890e311e3280b767F80797180d", # Bridge
     "0x72Ce9c846789fdB6fC1f34aC4AD25Dd9ef7031ef" # Router
     )
+
+class StrategyVars:
+    def __init__(self, platform_address, vault_proxy_address, reward_token_address, assets, lp_tokens, crv_gauge_address, index):
+        self.platform_address = platform_address
+        self.vault_proxy_address = vault_proxy_address
+        self.reward_token_address = reward_token_address
+        self.assets = assets
+        self.lp_tokens = lp_tokens
+        self.crv_gauge_address = crv_gauge_address
+        self.index = index
+
+strategy_vars_base = StrategyVars(
+    '0x960ea3e3C7FB317332d990873d354E18d7645590', # platform address
+    "", # vault address NEED TO INITIALIZE IN SCRIPT
+    '0x11cdb42b0eb46d95f990bedd4695a6e3fa034978', # reward token address
+    [
+            '0x82af49447d8a07e3bd95bd0d56f35241523fbab1',
+            '0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9',
+            '0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f',
+    ], # assets 
+    [
+            '0x8e0B8c8BB9db49a46697F3a5Bb8A308e744821D2',
+            '0x8e0B8c8BB9db49a46697F3a5Bb8A308e744821D2',
+            '0x8e0B8c8BB9db49a46697F3a5Bb8A308e744821D2',
+    ], # LP tokens
+    '0x97E2768e8E73511cA874545DC5Ff8067eB19B787', # crv gauge address
+    0, # index NEED TO INITIALIZE IN SCRIPT
+    )
