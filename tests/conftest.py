@@ -3,7 +3,12 @@ import pytest
 import eth_utils
 import math
 import os
+import json
 import brownie
+from dotenv import load_dotenv
+
+# load environment variables defined in .env
+load_dotenv()
 
 @pytest.fixture(scope="module", autouse=True)
 def admin(accounts):
@@ -11,17 +16,70 @@ def admin(accounts):
 
 @pytest.fixture(scope="module", autouse=True)
 def owner_l1(accounts):
+    if brownie.network.show_active() == 'rinkeby':
+        return accounts.add(os.getenv('LOCAL_ACCOUNT_PRIVATE_KEY')) # minter
     return accounts[1]
 
 @pytest.fixture(scope="module", autouse=True)
-def usds1(USDsL1, owner_l1):
+def gatewayL1():
+    # rinkeby
+    if brownie.network.show_active() == 'rinkeby':
+        gateway = '0x917dc9a69f65dc3082d518192cd3725e1fa96ca2'
+    else: # Ethereum mainnet
+        gateway = '0xcEe284F754E854890e311e3280b767F80797180d'
+    return gateway
+
+@pytest.fixture(scope="module", autouse=True)
+def spa_l1(SperaxToken, SperaxTokenL1, gatewayL1, owner_l1):
+    # rinkeby:
+    if brownie.network.show_active() == 'rinkeby':
+        spa_l1_address = '0x7776B097f723eBbc8cd1a17f1fe253D11235cCE1'
+        router = '0x70c143928ecffaf9f5b406f7f4fc28dc43d68380'
+        cwd = os.getcwd()
+        filepath = cwd + '/supporting_contracts/SperaxTokenABI.json'
+        with open(filepath) as f:
+            abi = json.load(f)
+        # retrieve existing SPA contract
+        spa = brownie.Contract.from_abi(
+            'SperaxToken',
+            spa_l1_address,
+            abi
+        )
+    else:
+        # Ethereum mainnet
+        router = '0x72Ce9c846789fdB6fC1f34aC4AD25Dd9ef7031ef'
+        # deploy SPA contract
+        spa = SperaxToken.deploy(
+            'Sperax L1',
+            'SPAL1',
+            1000000000, # initial supply
+            {'from': owner_l1}
+        )
+
+    wspa = SperaxTokenL1.deploy(
+        'Wrapped Sperax L1',
+        'wSPAL1',
+        spa.address,
+        gatewayL1,
+        router,
+        {'from': owner_l1}
+    )
+    spa.setMintable(
+        wspa.address,
+        True,
+        {'from': owner_l1}
+    )
+    return (wspa, spa)
+
+@pytest.fixture(scope="module", autouse=True)
+def usds1(USDsL1, gatewayL1, owner_l1):
     usds1 = USDsL1.deploy(
         {'from': owner_l1}
     )
     usds1.initialize(
         'USDs Layer 1',
         'USDs1',
-        '0xcEe284F754E854890e311e3280b767F80797180d', # L1 bridge
+        gatewayL1, # L1 bridge/gateway
         '0x72Ce9c846789fdB6fC1f34aC4AD25Dd9ef7031ef', # L1 router
         {'from': owner_l1}
     )
@@ -30,6 +88,14 @@ def usds1(USDsL1, owner_l1):
 @pytest.fixture(scope="module", autouse=True)
 def owner_l2(accounts):
     return accounts[2]
+
+@pytest.fixture(scope="module", autouse=True)
+def vault_fee(accounts):
+    return accounts[3]
+
+@pytest.fixture(scope="module", autouse=True)
+def user_account(accounts):
+    return accounts[4]
 
 @pytest.fixture(scope="module", autouse=True)
 def mock_token2(MockToken, owner_l2):
@@ -49,14 +115,6 @@ def mock_token3(MockToken, owner_l1, owner_l2):
 
 
 @pytest.fixture(scope="module", autouse=True)
-def vault_fee(accounts):
-    return accounts[3]
-
-@pytest.fixture(scope="module", autouse=True)
-def user_account(accounts):
-    return accounts[4]
-
-@pytest.fixture(scope="module", autouse=True)
 def chainlink_flags():
     # Arbitrum-rinkeby testnet:
     #return '0x491B1dDA0A8fa069bbC1125133A975BF4e85a91b'
@@ -69,13 +127,42 @@ def weth():
     weth_address = '0x82af49447d8a07e3bd95bd0d56f35241523fbab1'
     # Arbitrum-rinkeby testnet:
     #weth_address = '0xB47e6A5f8b33b3F17603C83a0535A9dcD7E32681'
+    # Ethereum mainnet fork
+    if  brownie.network.show_active() == 'mainnet-fork' or brownie.network.show_active() == 'rinkeby':
+        weth_address = '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2'
     return brownie.interface.IWETH9(weth_address)
 
 @pytest.fixture(scope="module", autouse=True)
 def usdt():
     # Arbitrum-one mainnet:
     usdt_address = '0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9'
+    # Ethereum mainnet fork
+    if  brownie.network.show_active() == 'mainnet-fork' or brownie.network.show_active() == 'rinkeby':
+        usdt_address = '0xdac17f958d2ee523a2206206994597c13d831ec7'
     return brownie.interface.IERC20(usdt_address)
+
+@pytest.fixture(scope="module", autouse=True)
+def wbtc():
+    # Arbitrum-one mainnet:
+    wbtc_address = '0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f'
+    # Ethereum mainnet fork
+    if  brownie.network.show_active() == 'mainnet-fork' or brownie.network.show_active() == 'rinkeby':
+        wbtc_address = '0x2260fac5e5542a773aa44fbcfedf7c193bc2c599'
+    return brownie.interface.IERC20(wbtc_address)
+
+@pytest.fixture(scope="module", autouse=True)
+def usdc():
+    # Arbitrum-one mainnet:
+    usdc_address = '0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8'
+
+    # Arbitrum-rinkeby testnet:
+    #usdc_address = '0x09b98f8b2395d076514037ff7d39a091a536206c'
+
+    # Ethereum mainnet fork
+    if  brownie.network.show_active() == 'mainnet-fork' or brownie.network.show_active() == 'rinkeby':
+        usdc_address = '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48'
+            
+    return brownie.interface.IERC20(usdc_address)
 
 @pytest.fixture(scope="module", autouse=True)
 def mock_token4(MockToken, accounts):
@@ -84,20 +171,6 @@ def mock_token4(MockToken, accounts):
     )
     usdt_address = mock_token.address
     return brownie.interface.IERC20(usdt_address)
-
-@pytest.fixture(scope="module", autouse=True)
-def wbtc():
-    # Arbitrum-one mainnet:
-    wbtc_address = '0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f'
-    return brownie.interface.IERC20(wbtc_address)
-
-@pytest.fixture(scope="module", autouse=True)
-def usdc():
-    # Arbitrum-one mainnet:
-    usdc_address = '0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8'
-    # Arbitrum-rinkeby testnet:
-    #usdc_address = '0x09b98f8b2395d076514037ff7d39a091a536206c'
-    return brownie.interface.IERC20(usdc_address)
 
 @pytest.fixture(scope="module", autouse=True)
 def proxy_admin(
@@ -122,7 +195,7 @@ def sperax(
     usds1,
     ThreePoolStrategy,
     BuybackSingle,
-    BuybackMultihop,
+    BuybackTwoHops,
     chainlink_flags,
     usdt,
     wbtc,
@@ -134,8 +207,12 @@ def sperax(
     Contract,
     admin,
     vault_fee,
-    owner_l2
+    owner_l2,
 ):
+    if brownie.network.show_active() == 'rinkeby' or brownie.network.show_active() == 'mainnet-fork':
+        print("NOTE: skip deploying contracts for Arbitrum (L2)")
+        return
+
     # Arbitrum-one (mainnet):
     chainlink_usdc_price_feed = '0x50834F3163758fcC1Df9973b6e91f0F0F0434aD3'
     l2_gateway = '0x096760F208390250649E3e8763348E783AEF5562'
@@ -214,7 +291,7 @@ def sperax(
         owner_l2
     )
 
-    buyback_multihop  =  BuybackMultihop.deploy(
+    buyback_multihop  =  BuybackTwoHops.deploy(
         mock_token3.address, # token1
         vault_proxy.address,
         {'from': owner_l2}
@@ -425,6 +502,10 @@ def deploy_strategy(
     admin,
     owner_l2,
 ):
+    if brownie.network.show_active() == 'rinkeby' or brownie.network.show_active() == 'mainnet-fork':
+        print("NOTE: skip deploying contracts for Arbitrum (L2)")
+        return
+
     # Arbitrum-one (mainnet):
     platform_address = '0x960ea3e3C7FB317332d990873d354E18d7645590'
     reward_token_address = '0x11cdb42b0eb46d95f990bedd4695a6e3fa034978'
@@ -520,6 +601,10 @@ def deploy_buyback(
     pool_fee,
     owner_l2
 ):
+    if brownie.network.show_active() == 'rinkeby' or brownie.network.show_active() == 'mainnet-fork':
+        print("NOTE: skip deploying contracts for Arbitrum (L2)")
+        return
+
     buyback = BuybackSingle.deploy(
         usds_proxy.address, # token1
         vault_proxy.address,
@@ -545,6 +630,10 @@ def configure_collaterals(
     strategy_proxy,
     owner_l2
 ):
+    if brownie.network.show_active() == 'rinkeby' or brownie.network.show_active() == 'mainnet-fork':
+        print("NOTE: skip deploying contracts for Arbitrum (L2)")
+        return
+
     # Arbitrum mainnet collaterals: token address, chainlink
     collaterals = {
         # USDC
@@ -558,8 +647,6 @@ def configure_collaterals(
         mock_token2: '0x3f3f5dF88dC9F13eac63DF89EC16ef6e7E25DdE7',
     }
 
-    precision = 10**8
-    zero_address = brownie.convert.to_address('0x0000000000000000000000000000000000000000')
     for collateral, chainlink in collaterals.items():
         print("collaternal", collateral)
         # authorize a new collateral
@@ -572,25 +659,6 @@ def configure_collaterals(
             False, # _rebaseAllowed
             {'from': owner_l2}
         )
-        # wire up price feed for the added collateral
-        oracle_proxy.updateCollateralInfo(
-            collateral, # ERC20 address
-            True, # supported
-            chainlink, # chainlink price feed address
-            precision, # chainlink price feed precision
-            {'from': owner_l2}
-        )
-
-# create pool for pair tokens (input parameters) on Arbitrum-one
-# To obtain the interface to INonfungiblePositionManager required
-# copying the following files from @uniswap-v3-periphery@1.3.0:
-#
-# - contracts/interface/IERC721Permit.sol
-# - contracts/interface/INonfungiblePositionManager.sol
-# - contracts/interface/IPeripheryImmutableState.sol
-# - contracts/interface/IPeripheryPayments.sol
-# - contracts/interface/IPoolInitializer.sol
-# - contracts/libraries/PoolAddress.sol
 
 
 def create_uniswap_v3_pool(
@@ -602,6 +670,10 @@ def create_uniswap_v3_pool(
     owner_l2,
     vault_proxy
 ):
+    if brownie.network.show_active() == 'rinkeby' or brownie.network.show_active() == 'mainnet-fork':
+        print("NOTE: skip deploying contracts for Arbitrum (L2)")
+        return
+
     position_mgr_address = '0xC36442b4a4522E871399CD717aBDD847Ab11FE88'
     position_mgr = brownie.interface.INonfungiblePositionManager(position_mgr_address)
 
@@ -652,12 +724,17 @@ def mintSPA(
     owner_l2,
     vault_proxy
 ):
+    if brownie.network.show_active() == 'rinkeby' or brownie.network.show_active() == 'mainnet-fork':
+        print("NOTE: skip deploying contracts for Arbitrum (L2)")
+        return
+
     # make owner allowed to mint SPA tokens
     txn = spa.setMintable(
         owner_l2.address,
         True,
         {'from': owner_l2}
     )
+
     assert txn.events['Mintable']['account'] == owner_l2.address
 
     txn = spa.mintForUSDs(
@@ -669,6 +746,10 @@ def mintSPA(
     assert txn.events['Transfer']['value'] == amount
 
 def update_oracle_setting(oracle_proxy, owner_l2, spa, usds_proxy):
+    if brownie.network.show_active() == 'rinkeby' or brownie.network.show_active() == 'mainnet-fork':
+        print("NOTE: skip deploying contracts for Arbitrum (L2)")
+        return
+
     oracle_proxy.updateUniPoolsSetting(
         spa.address,
         usds_proxy.address,

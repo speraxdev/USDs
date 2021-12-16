@@ -9,6 +9,9 @@ from brownie import (
     SperaxTokenL2,
     USDsL2,
     VaultCore,
+    ThreePoolStrategy,
+    BuybackTwoHops,
+    BuybackThreeHops,
     accounts,
     network,
     Contract,
@@ -18,7 +21,8 @@ import eth_utils
 from .constants import (
     mainnetAddresses,
     testnetAddresses,
-    USDs_token_details
+    USDs_token_details,
+    strategy_vars_base
 )
 from .utils import (
     confirm,
@@ -26,11 +30,11 @@ from .utils import (
     signal_handler
 )
 
-
-
 def main():
     # handle ctrl-C event
     signal.signal(signal.SIGINT, signal_handler)
+
+    print("\n**** WARNING: this script would only work on arbitrum mainnet or arbitrum mainnet fork ****")
 
     #if not os.environ.get('WEB3_INFURA_PROJECT_ID'):
     #    print("\nEnvironment variable WEB3_INFURA_PROJECT_ID is not set\n")
@@ -110,66 +114,65 @@ def main():
 
     # admin contract
     proxy_admin = ProxyAdmin.deploy(
-        {'from': admin, 'gas_limit': 1000000000}
-#        publish_source=True,
+        {'from': admin}
     )
 
     # deploy smart contracts
     bancor = BancorFormula.deploy(
-        {'from': owner, 'gas_limit': 1000000000}
+        {'from': owner }
 #        publish_source=True,
     )
     txn = bancor.init()
 
     core = VaultCoreTools.deploy(
-        {'from': owner, 'gas_limit': 1000000000}
+        {'from': owner }
 #        publish_source=True,
     )
     proxy = TransparentUpgradeableProxy.deploy(
         core.address,
         proxy_admin.address,
         eth_utils.to_bytes(hexstr="0x"),
-        {'from': admin, 'gas_limit': 1000000000}
+        {'from': admin }
 #        publish_source=True,
     )
     core_proxy = Contract.from_abi("VaultCoreTools", proxy.address, VaultCoreTools.abi)
     txn = core_proxy.initialize(bancor.address, {'from': owner})
 
     vault = VaultCore.deploy(
-        {'from': owner, 'gas_limit': 1000000000}
+        {'from': owner }
 #        publish_source=True,
     )
     proxy = TransparentUpgradeableProxy.deploy(
         vault.address,
         proxy_admin.address,
         eth_utils.to_bytes(hexstr="0x"),
-        {'from': admin, 'gas_limit': 1000000000},
+        {'from': admin },
 #        publish_source=True,
     )
     vault_proxy = Contract.from_abi("VaultCore", proxy.address, VaultCore.abi)
 
     oracle = Oracle.deploy(
-        {'from': owner, 'gas_limit': 1000000000},
+        {'from': owner },
 #        publish_source=True,
     )
     proxy = TransparentUpgradeableProxy.deploy(
         oracle.address,
         proxy_admin.address,
         eth_utils.to_bytes(hexstr="0x"),
-        {'from': admin, 'gas_limit': 1000000000},
+        {'from': admin },
 #        publish_source=True,
     )
     oracle_proxy = Contract.from_abi("Oracle", proxy.address, Oracle.abi)
 
     usds = USDsL2.deploy(
-        {'from': owner, 'gas_limit': 1000000000},
+        {'from': owner },
 #        publish_source=True,
     )
     proxy = TransparentUpgradeableProxy.deploy(
         usds.address,
         proxy_admin.address,
         eth_utils.to_bytes(hexstr="0x"),
-        {'from': admin, 'gas_limit': 1000000000},
+        {'from': admin },
 #        publish_source=True,
     )
     usds_proxy = Contract.from_abi("USDsL2", proxy.address, USDsL2.abi)
@@ -180,7 +183,7 @@ def main():
         vault_proxy.address,
         l2_gateway,
         usds_l1_address,
-        {'from': owner, 'gas_limit': 1000000000},
+        {'from': owner },
 #        publish_source=True,
     )
 
@@ -190,42 +193,44 @@ def main():
         spa_l2_address,
         usdc_arbitrum,
         chainlink_flags,
-        {'from': owner, 'gas_limit': 1000000000}
+        {'from': owner }
     )
 
     oracle_proxy.updateVaultAddress(
         vault_proxy.address,
-        {'from': owner, 'gas_limit': 1000000000}
+        {'from': owner }
     )
 
     txn = vault_proxy.initialize(
         spa_l2_address,
         core_proxy.address,
         fee_vault,
-        {'from': owner, 'gas_limit': 1000000000}
+        {'from': owner }
     )
 
     # configure VaultCore contract with USDs contract address
     txn = vault_proxy.updateUSDsAddress(
         usds_proxy,
-        {'from': owner, 'gas_limit': 1000000000}
+        {'from': owner }
     )
     # configure VaultCore contract with Oracle contract address
     txn = vault_proxy.updateOracleAddress(
         oracle_proxy.address,
-        {'from': owner, 'gas_limit': 1000000000}
+        {'from': owner }
     )
 
     spa = Contract.from_abi("SperaxTokenL2", spa_l2_address, SperaxTokenL2.abi)
-    
-    txn = spa.setMintable(
-        vault_proxy.address,
-        True,
-        {'from': owner, 'gas_limit': 1000000000}
-    )
+
+    if network.show_active() != 'arbitrum-main-fork':
+        txn = spa.setMintable(
+            vault_proxy.address,
+            True,
+            {'from': owner }
+        )
 
     # configure stablecoin collaterals in vault and oracle
     configure_collaterals(vault_proxy, oracle_proxy, owner, convert)
+    deploy_strategy(usds_proxy, vault_proxy, admin, owner)
 
     print(f"\n{network.show_active()}:\n")
     print(f"Bancor Formula address: {bancor.address}")
@@ -275,7 +280,7 @@ def configure_collaterals(
             0, # _allocatePercentage
             zero_address, # _buyBackAddr
             False, # _rebaseAllowed
-            {'from': owner, 'gas_limit': 1000000000}
+            {'from': owner }
         )
         # wire up price feed for the added collateral
         oracle_proxy.updateCollateralInfo(
@@ -283,5 +288,160 @@ def configure_collaterals(
             True, # supported
             chainlink, # chainlink price feed address
             precision, # chainlink price feed precision
-            {'from': owner, 'gas_limit': 1000000000}
+            {'from': owner }
         )
+
+def deploy_strategy(
+    usds_proxy,
+    vault_proxy,
+    admin,
+    owner
+):
+    usdt_address = '0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9'
+    wbtc_address = '0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f'
+    weth_address = '0x82af49447d8a07e3bd95bd0d56f35241523fbab1'
+    usdc_address = '0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8'
+    crv_address = '0x11cdb42b0eb46d95f990bedd4695a6e3fa034978'
+    # deploy strategy contracts for usdt, wbtc and weth
+    strategy_proxy_addr_usdt = deploy_one_strategy(0, admin, owner, vault_proxy)
+    strategy_proxy_addr_wbtc = deploy_one_strategy(1, admin, owner, vault_proxy)
+    strategy_proxy_addr_weth = deploy_one_strategy(2, admin, owner, vault_proxy)
+    # deploy buyback contract supporting swapping usdt, wbtc and weth back to usds
+    buybackTwoHops = BuybackTwoHops.deploy(
+        usds_proxy.address,
+        vault_proxy.address,
+        {'from': owner},
+    )
+    buybackTwoHops.updateInputTokenInfo(
+        usdt_address, True, usdc_address, 500, 500,
+        {'from': owner},
+    )
+    buybackTwoHops.updateInputTokenInfo(
+        wbtc_address, True, usdc_address, 3000, 500,
+        {'from': owner},
+    )
+    buybackTwoHops.updateInputTokenInfo(
+        weth_address, True, usdc_address, 10000, 500,
+        {'from': owner},
+    )
+    # deploy buyback contract supporting swapping crv back to usds
+    buybackThreeHops = BuybackThreeHops.deploy(
+        usds_proxy.address,
+        vault_proxy.address,
+        {'from': owner},
+    )
+    buybackThreeHops.updateInputTokenInfo(
+        crv_address,
+        True,
+        weth_address,
+        usdc_address,
+        3000,
+        500,
+        500,
+        {'from': owner},
+    )
+    vault_proxy = Contract.from_abi(
+        "VaultCore",
+        vault_proxy.address,
+        VaultCore.abi
+    )
+    # on VaultCore, add strategy contracts
+    vault_proxy.addStrategy(
+        strategy_proxy_addr_usdt,
+        {'from': owner},
+    )
+    vault_proxy.addStrategy(
+        strategy_proxy_addr_wbtc,
+        {'from': owner},
+    )
+    vault_proxy.addStrategy(
+        strategy_proxy_addr_weth,
+        {'from': owner},
+    )
+    # on VaultCore, configure buyBackAddr of each strategy
+    vault_proxy.updateStrategyRwdBuybackAddr(
+        strategy_proxy_addr_usdt,
+        buybackThreeHops.address,
+        {'from': owner},
+    )
+    vault_proxy.updateStrategyRwdBuybackAddr(
+        strategy_proxy_addr_usdt,
+        buybackThreeHops.address,
+        {'from': owner},
+    )
+    vault_proxy.updateStrategyRwdBuybackAddr(
+        strategy_proxy_addr_usdt,
+        buybackThreeHops.address,
+        {'from': owner},
+    )
+    # on VaultCore, configure collateral's strategy address and buyback addresses
+    # assuming usdt, wbtc and weth has been added to VaultCore
+    vault_proxy.updateCollateralInfo(
+        usdt_address,
+        strategy_proxy_addr_usdt,
+        True,
+        80,
+        buybackTwoHops.address,
+        True,
+        {'from': owner},
+    )
+    vault_proxy.updateCollateralInfo(
+        wbtc_address,
+        strategy_proxy_addr_wbtc,
+        True,
+        80,
+        buybackTwoHops.address,
+        True,
+        {'from': owner},
+    )
+    vault_proxy.updateCollateralInfo(
+        weth_address,
+        strategy_proxy_addr_weth,
+        True,
+        80,
+        buybackTwoHops.address,
+        True,
+        {'from': owner},
+    ).wait(1)
+
+    print(f"\nThreePoolStrategy for USDT deployed at address: {strategy_proxy_addr_usdt}")
+    print(f"ThreePoolStrategy for WBTC deployed at address: {strategy_proxy_addr_wbtc}")
+    print(f"ThreePoolStrategy for WETH deployed at address: {strategy_proxy_addr_weth}")
+    print(f"\nBuybackTwoHops (usdt, wbtc, weth) deployed at address: {buybackTwoHops.address}")
+    print(f"BuybackThreeHops (crv) deployed at address: {buybackThreeHops.address}")
+
+
+def deploy_one_strategy(index, admin, owner, vault_proxy):
+    if network.show_active() == 'mainnet' or 'arbitrum-main-fork':
+        strategy = ThreePoolStrategy.deploy(
+            {'from': owner},
+        )
+        proxy_admin = ProxyAdmin.deploy(
+            {'from': admin},
+        )
+        proxy = TransparentUpgradeableProxy.deploy(
+            strategy.address,
+            proxy_admin.address,
+            eth_utils.to_bytes(hexstr="0x"),
+            {'from': admin},
+    #        publish_source=True,
+        )
+        strategy_proxy = Contract.from_abi(
+            "ThreePoolStrategy",
+            proxy.address,
+            ThreePoolStrategy.abi
+        )
+
+        strategy_vars_base.vault_proxy_address = vault_proxy.address
+        strategy_vars_base.index = index
+        strategy_proxy.initialize(
+            strategy_vars_base.platform_address,
+            strategy_vars_base.vault_proxy_address,
+            strategy_vars_base.reward_token_address,
+            strategy_vars_base.assets,
+            strategy_vars_base.lp_tokens,
+            strategy_vars_base.crv_gauge_address,
+            strategy_vars_base.index,
+            {'from': owner},
+        )
+        return strategy_proxy.address

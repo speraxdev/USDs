@@ -96,9 +96,9 @@ contract Oracle is Initializable, IOracle, OwnableUpgradeable {
         lastUpdateTime = uint32(now % 2**32);
         priceFeedUSDC = AggregatorV3Interface(_priceFeedUSDC);
         SPAaddr = _SPAaddr;
-        SPA_prec = uint128(10)**ERC20(SPAaddr).decimals();
+        SPA_prec = uint128(10)**18;
         USDCaddr = _USDCaddr;
-        USDC_prec = uint128(10)**ERC20(USDCaddr).decimals();
+        USDC_prec = uint128(10)**6;
         movingAvgShortPeriod = 600;
         movingAvgLongPeriod = 3600;
         chainlinkFlags = FlagsInterface(_chainlinkFlags);

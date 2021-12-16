@@ -18,7 +18,7 @@ import '../interfaces/IOracle.sol';
  * @dev reference: https://docs.uniswap.org/protocol/guides/swaps/multihop-swaps
  * @author Sperax Foundation
  */
-contract BuybackMultihop is IBuyback, Ownable {
+contract BuybackThreeHops is IBuyback, Ownable {
     using SafeERC20 for IERC20;
 
     ISwapRouter public constant swapRouter = ISwapRouter(0xE592427A0AEce92De3Edee1F18E0157C05861564);
@@ -26,7 +26,15 @@ contract BuybackMultihop is IBuyback, Ownable {
     address public immutable vaultAddr;
 
     event Swap(address indexed inputToken, uint256 amountIn, uint256 amountOut);
-    event InputTokenUpdated(address _inputTokenAddr, bool _supported, address _intermediateToken, uint24 _poolFee1, uint24 _poolFee2);
+    event InputTokenUpdated(
+        address _inputTokenAddr,
+         bool _supported,
+         address _intermediateToken1,
+         address _intermediateToken2,
+         uint24 _poolFee1,
+         uint24 _poolFee2,
+         uint24 _poolFee3
+     );
 
     /**
      * @dev Verifies that the caller is the Vault.
@@ -39,9 +47,11 @@ contract BuybackMultihop is IBuyback, Ownable {
     struct inputTokenStruct {
 		address inputTokenAddr;
 		bool supported;
-        address intermediateToken;
+        address intermediateToken1;
+        address intermediateToken2;
 		uint24 poolFee1;
         uint24 poolFee2;
+        uint24 poolFee3;
 	}
 
     mapping(address => inputTokenStruct) public inputTokensInfo;
@@ -56,18 +66,37 @@ contract BuybackMultihop is IBuyback, Ownable {
      * @dev call this function with _supported set to true when adding an inputToken for the first time
      * @param _inputTokenAddr inputToken used to swap back USDs
      * @param _supported if this contract supports using inputToken used to swap back USDs
-     * @param _intermediateToken the intermediateToken used for inputToken to USDs swapping
-     * @param _poolFee1 poolFee of inputToken-intermediateToken
-     * @param _poolFee2 poolFee of intermediateToken-USDs
+     * @param _intermediateToken1 the intermediateToken used for inputToken to USDs swapping
+     * @param _poolFee1 poolFee of inputToken-intermediateToken1
+     * @param _poolFee2 poolFee of intermediateToken1-intermediateToken2
+     * @param _poolFee3 poolFee of intermediateToken2-USDs
      */
-    function updateInputTokenInfo(address _inputTokenAddr, bool _supported, address _intermediateToken, uint24 _poolFee1, uint24 _poolFee2) external onlyOwner {
+    function updateInputTokenInfo(
+        address _inputTokenAddr,
+        bool _supported,
+        address _intermediateToken1,
+        address _intermediateToken2,
+        uint24 _poolFee1,
+        uint24 _poolFee2,
+        uint24 _poolFee3
+    ) external onlyOwner {
         inputTokenStruct storage addinginputToken = inputTokensInfo[_inputTokenAddr];
         addinginputToken.inputTokenAddr = _inputTokenAddr;
         addinginputToken.supported = _supported;
-        addinginputToken.intermediateToken = _intermediateToken;
+        addinginputToken.intermediateToken1 = _intermediateToken1;
+        addinginputToken.intermediateToken2 = _intermediateToken2;
         addinginputToken.poolFee1 = _poolFee1;
         addinginputToken.poolFee2 = _poolFee2;
-        emit InputTokenUpdated(_inputTokenAddr, _supported, _intermediateToken, _poolFee1, _poolFee2);
+        addinginputToken.poolFee3 = _poolFee3;
+        emit InputTokenUpdated(
+            _inputTokenAddr,
+            _supported,
+            _intermediateToken1,
+            _intermediateToken2,
+            _poolFee1,
+            _poolFee2,
+            _poolFee3
+        );
     }
 
     /**
@@ -78,16 +107,25 @@ contract BuybackMultihop is IBuyback, Ownable {
      */
     function swap(address inputToken, uint256 amountIn) external onlyVault override returns (uint256 amountOut) {
         require(inputTokensInfo[inputToken].supported, "inputToken not supported");
-        address intermediateToken = inputTokensInfo[inputToken].intermediateToken;
+        address intermediateToken1 = inputTokensInfo[inputToken].intermediateToken1;
+        address intermediateToken2 = inputTokensInfo[inputToken].intermediateToken2;
         uint24 poolFee1 = inputTokensInfo[inputToken].poolFee1;
         uint24 poolFee2 = inputTokensInfo[inputToken].poolFee2;
+        uint24 poolFee3 = inputTokensInfo[inputToken].poolFee3;
         TransferHelper.safeApprove(inputToken, address(swapRouter), amountIn);
         // Multiple pool swaps are encoded through bytes called a `path`. A path is a sequence of token addresses and poolFees that define the pools used in the swaps.
         // The format for pool encoding is (tokenIn, fee, tokenOut/tokenIn, fee, tokenOut) where tokenIn/tokenOut parameter is the shared token across the pools.
-        // Since we are swapping inputToken to intermediateToken and then intermediateToken to USDs the path encoding is (inputToken, poolFee1, intermediateToken, poolFee2, USDs).
         ISwapRouter.ExactInputParams memory params =
             ISwapRouter.ExactInputParams({
-                path: abi.encodePacked(inputToken, poolFee1, intermediateToken, poolFee2, USDs),
+                path: abi.encodePacked(
+                    inputToken,
+                    poolFee1,
+                    intermediateToken1,
+                    poolFee2,
+                    intermediateToken2,
+                    poolFee3,
+                    USDs
+                ),
                 recipient: msg.sender,
                 deadline: block.timestamp,
                 amountIn: amountIn,
@@ -95,6 +133,8 @@ contract BuybackMultihop is IBuyback, Ownable {
             });
         // Executes the swap.
         amountOut = swapRouter.exactInput(params);
+        TransferHelper.safeApprove(inputToken, address(swapRouter), amountOut);
+
         emit Swap(inputToken, amountIn, amountOut);
     }
 

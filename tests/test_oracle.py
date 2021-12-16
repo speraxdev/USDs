@@ -9,10 +9,34 @@ def user(accounts):
 
 def test_update_USDs_Address(sperax,owner_l2):
     (   
-         oracle_proxy,
-         usds_proxy
+        spa,
+        usds_proxy,
+        core_proxy,
+        vault_proxy,
+        oracle_proxy,
+        strategy_proxy,
+        buyback,
+        buyback_multihop
     ) = sperax
-    oracle_proxy.updateUSDsAddress(
+    tx=oracle_proxy.updateUSDsAddress(
         usds_proxy.address,
         {'from': owner_l2}
         )
+    print(tx.events)
+
+def test_get_SPA_price(sperax,owner_l2):
+    (   
+        spa,
+        usds_proxy,
+        core_proxy,
+        vault_proxy,
+        oracle_proxy,
+        strategy_proxy,
+        buyback,
+        buyback_multihop
+    ) = sperax
+    tx=oracle_proxy.getSPAprice(
+        {'from': owner_l2}
+        )
+    print(tx.events)
+    
