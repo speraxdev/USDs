@@ -95,6 +95,8 @@ def wbtc():
 def usdc():
     # Arbitrum-one mainnet:
     usdc_address = '0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8'
+    # Arbitrum-rinkeby testnet:
+    #usdc_address = '0x09b98f8b2395d076514037ff7d39a091a536206c'
     return brownie.interface.IERC20(usdc_address)
 
 @pytest.fixture(scope="module", autouse=True)
@@ -161,6 +163,7 @@ def sperax(
     oracle_proxy = deploy_oracle(
         Oracle,
         TransparentUpgradeableProxy,
+        usdc,
         Contract,
         proxy_admin,
         admin,
@@ -230,7 +233,7 @@ def sperax(
     oracle_proxy.initialize(
         chainlink_usdc_price_feed,
         spa.address,
-        mock_token2.address,
+        usdc.address,
         chainlink_flags,
         {'from': owner_l2}
     )
@@ -357,6 +360,7 @@ def deploy_vault(
 def deploy_oracle(
     Oracle,
     TransparentUpgradeableProxy,
+    usdc,
     Contract,
     proxy_admin,
     admin,
@@ -372,6 +376,9 @@ def deploy_oracle(
         {'from': admin}
     )
     oracle_proxy = Contract.from_abi("Oracle", proxy.address, Oracle.abi)
+
+
+
     return oracle_proxy
 
 

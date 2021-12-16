@@ -364,7 +364,7 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 		require(USDsAmt >= slippageUSDs, "USDs amount is lower than the maximum slippage");
 		require(collateralDepAmt <= slippageCollat, "Collateral amount is more than the maximum slippage");
 		require(SPABurnAmt <= slippageSPA, "SPA amount is more than the maximum slippage");
-		require(block.timestamp <= deadline, "Deadline expired");
+		require(now <= deadline, "Deadline expired");
 		// burn SPA tokens
 		ISperaxToken(SPAaddr).burnFrom(msg.sender, SPABurnAmt);
 		SPAburnt = SPAburnt.add(SPABurnAmt);
@@ -423,7 +423,7 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 		// slippageSPA is the minimum value of the minted spa
 		require(collateralUnlockedAmt >= slippageCollat, "Collateral amount is lower than the maximum slippage");
 		require(SPAMintAmt >= slippageSPA, "SPA amount is lower than the maximum slippage");
-		require(block.timestamp <= deadline, "Deadline expired");
+		require(now <= deadline, "Deadline expired");
 		collateralStruct memory collateral = collateralsInfo[collateralAddr];
 
 		ISperaxToken(SPAaddr).mintForUSDs(msg.sender, SPAMintAmt);
