@@ -1,16 +1,20 @@
-// SPDX-License-Identifier: MIT
-pragma solidity >=0.6.12;
+/**
+ *Submitted for verification at Etherscan.io on 2020-12-24
+*/
 
-import "@openzeppelin/contracts/access/Ownable.sol";
+// SPDX-License-Identifier: MIT
+
+pragma solidity 0.6.12;
+
 import "@openzeppelin/contracts/token/ERC20/ERC20Pausable.sol";
-import "arb-bridge-peripherals/contracts/tokenbridge/arbitrum/IArbToken.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 import "../utils/MintPausable.sol";
 
 /**
- * @title SPA Token Contract on Arbitrum (L2)
+ * @title SPA Token Contract on Ethereum (L1)
  * @author Sperax Foundation
  */
-contract SperaxTokenL2 is ERC20Pausable, MintPausable, Ownable, IArbToken {
+contract SperaxToken is ERC20Pausable, MintPausable, Ownable {
     event BlockTransfer(address indexed account);
     event AllowTransfer(address indexed account);
     /**
@@ -21,7 +25,6 @@ contract SperaxTokenL2 is ERC20Pausable, MintPausable, Ownable, IArbToken {
      * @dev Emitted when an account is set unmintable
      */
     event Unmintable(address account);
-    event ArbitrumGatewayL1TokenChanged(address gateway, address l1token);
 
 
     modifier onlyMintableGroup() {
@@ -40,19 +43,12 @@ contract SperaxTokenL2 is ERC20Pausable, MintPausable, Ownable, IArbToken {
     // @dev record mintable accounts
     address [] public mintableAccounts;
 
-    // Arbitrum Bridge
-    address public l2Gateway;
-    address public override l1Address;
-
     /**
      * @dev Initialize the contract give all tokens to the deployer
-     * @param _l2Gateway address of Arbitrum custom L2 Gateway
-     * @param _l2Gateway address of SperaxTokenL1 on L1
      */
-    constructor(string memory _name, string memory _symbol, address _l2Gateway, address _l1Address)
-        ERC20(_name, _symbol) public {
-        l2Gateway = _l2Gateway;
-        l1Address = _l1Address;
+    constructor(string memory _name, string memory _symbol, uint256 _initialSupply) 
+    ERC20(_name, _symbol) public {
+        _mint(_msgSender(), _initialSupply * (10 ** 18));
     }
 
     /**
@@ -219,39 +215,12 @@ contract SperaxTokenL2 is ERC20Pausable, MintPausable, Ownable, IArbToken {
             require(block.timestamp >= timelock.releaseTime, "SperaxToken: current time is before from account release time");
 
             // Update the locked `amount` if the current time reaches the release time
-            timelock.amount = 0;
+            timelock.amount = balanceOf(from).sub(amount);
             if(timelock.amount == 0) {
                 timelock.releaseTime = 0;
             }
         }
 
         super._beforeTokenTransfer(from, to, amount);
-    }
-
-    // Arbitrum Bridge
-
-    /**
-     * @notice change the arbitrum bridge address and corresponding L1 token address
-     * @dev normally this function should not be called
-     * @param newL2Gateway the new bridge address
-     * @param newL1Address the new router address
-     */
-    function changeArbToken(address newL2Gateway, address newL1Address) external onlyOwner {
-        l2Gateway = newL2Gateway;
-        l1Address = newL1Address;
-        emit ArbitrumGatewayL1TokenChanged(l2Gateway, l1Address);
-    }
-
-    modifier onlyGateway() {
-        require(msg.sender == l2Gateway, "ONLY_l2GATEWAY");
-        _;
-    }
-
-    function bridgeMint(address account, uint256 amount) external override onlyGateway {
-        _mint(account, amount);
-    }
-
-    function bridgeBurn(address account, uint256 amount) external override onlyGateway {
-        _burn(account, amount);
     }
 }

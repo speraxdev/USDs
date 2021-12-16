@@ -3,7 +3,12 @@ import pytest
 import eth_utils
 import math
 import os
+import json
 import brownie
+from dotenv import load_dotenv
+
+# load environment variables defined in .env
+load_dotenv()
 
 @pytest.fixture(scope="module", autouse=True)
 def admin(accounts):
@@ -11,7 +16,53 @@ def admin(accounts):
 
 @pytest.fixture(scope="module", autouse=True)
 def owner_l1(accounts):
+    if brownie.network.show_active() == 'rinkeby':
+        return accounts.add(os.getenv('LOCAL_ACCOUNT_PRIVATE_KEY')) # minter
     return accounts[1]
+
+@pytest.fixture(scope="module", autouse=True)
+def spa_l1(SperaxToken, SperaxTokenL1, owner_l1):
+    # rinkeby:
+    if brownie.network.show_active() == 'rinkeby':
+        spa_l1_address = '0x7776B097f723eBbc8cd1a17f1fe253D11235cCE1'
+        bridge = '0x917dc9a69f65dc3082d518192cd3725e1fa96ca2'
+        router = '0x70c143928ecffaf9f5b406f7f4fc28dc43d68380'
+        cwd = os.getcwd()
+        filepath = cwd + '/supporting_contracts/SperaxTokenABI.json'
+        with open(filepath) as f:
+            abi = json.load(f)
+        # retrieve existing SPA contract
+        spa = brownie.Contract.from_abi(
+            'SperaxToken',
+            spa_l1_address,
+            abi
+        )
+    else:
+        # Ethereum mainnet
+        bridge = '0xcEe284F754E854890e311e3280b767F80797180d'
+        router = '0x72Ce9c846789fdB6fC1f34aC4AD25Dd9ef7031ef'
+        # deploy SPA contract
+        spa = SperaxToken.deploy(
+            'Sperax L1',
+            'SPAL1',
+            1000000000, # initial supply
+            {'from': owner_l1}
+        )
+
+    wspa = SperaxTokenL1.deploy(
+        'Wrapped Sperax L1',
+        'wSPAL1',
+        spa.address,
+        bridge,
+        router,
+        {'from': owner_l1}
+    )
+    spa.setMintable(
+        wspa.address,
+        True,
+        {'from': owner_l1}
+    )
+    return (wspa, spa)
 
 @pytest.fixture(scope="module", autouse=True)
 def usds1(USDsL1, owner_l1):
@@ -69,13 +120,37 @@ def weth():
     weth_address = '0x82af49447d8a07e3bd95bd0d56f35241523fbab1'
     # Arbitrum-rinkeby testnet:
     #weth_address = '0xB47e6A5f8b33b3F17603C83a0535A9dcD7E32681'
+    # Ethereum mainnet fork
+    if  brownie.network.show_active() == 'mainnet-fork' or brownie.network.show_active() == 'rinkeby':
+        weth_address = '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2'
     return brownie.interface.IWETH9(weth_address)
 
 @pytest.fixture(scope="module", autouse=True)
 def usdt():
     # Arbitrum-one mainnet:
     usdt_address = '0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9'
+    # Ethereum mainnet fork
+    if  brownie.network.show_active() == 'mainnet-fork' or brownie.network.show_active() == 'rinkeby':
+        usdt_address = '0xdac17f958d2ee523a2206206994597c13d831ec7'
     return brownie.interface.IERC20(usdt_address)
+
+@pytest.fixture(scope="module", autouse=True)
+def wbtc():
+    # Arbitrum-one mainnet:
+    wbtc_address = '0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f'
+    # Ethereum mainnet fork
+    if  brownie.network.show_active() == 'mainnet-fork' or brownie.network.show_active() == 'rinkeby':
+        wbtc_address = '0x2260fac5e5542a773aa44fbcfedf7c193bc2c599'
+    return brownie.interface.IERC20(wbtc_address)
+
+@pytest.fixture(scope="module", autouse=True)
+def usdc():
+    # Arbitrum-one mainnet:
+    usdc_address = '0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8'
+    # Ethereum mainnet fork
+    if  brownie.network.show_active() == 'mainnet-fork' or brownie.network.show_active() == 'rinkeby':
+        usdc_address = '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48'
+    return brownie.interface.IERC20(usdc_address)
 
 @pytest.fixture(scope="module", autouse=True)
 def mock_token4(MockToken, accounts):
@@ -84,18 +159,6 @@ def mock_token4(MockToken, accounts):
     )
     usdt_address = mock_token.address
     return brownie.interface.IERC20(usdt_address)
-
-@pytest.fixture(scope="module", autouse=True)
-def wbtc():
-    # Arbitrum-one mainnet:
-    wbtc_address = '0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f'
-    return brownie.interface.IERC20(wbtc_address)
-
-@pytest.fixture(scope="module", autouse=True)
-def usdc():
-    # Arbitrum-one mainnet:
-    usdc_address = '0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8'
-    return brownie.interface.IERC20(usdc_address)
 
 @pytest.fixture(scope="module", autouse=True)
 def proxy_admin(
@@ -565,74 +628,25 @@ def configure_collaterals(
             False, # _rebaseAllowed
             {'from': owner_l2}
         )
-        # wire up price feed for the added collateral
-        oracle_proxy.updateCollateralInfo(
-            collateral, # ERC20 address
-            True, # supported
-            chainlink, # chainlink price feed address
-            precision, # chainlink price feed precision
-            {'from': owner_l2}
+    else:
+        # Ethereum mainnet
+        bridge = '0xcEe284F754E854890e311e3280b767F80797180d'
+        router = '0x72Ce9c846789fdB6fC1f34aC4AD25Dd9ef7031ef'
+        # deploy SPA contract
+        spa = SperaxToken.deploy(
+            'Sperax L1',
+            'SPAL1',
+            1000000000, # initial supply
+            {'from': owner_l1}
         )
 
-# create pool for pair tokens (input parameters) on Arbitrum-one
-# To obtain the interface to INonfungiblePositionManager required
-# copying the following files from @uniswap-v3-periphery@1.3.0:
-#
-# - contracts/interface/IERC721Permit.sol
-# - contracts/interface/INonfungiblePositionManager.sol
-# - contracts/interface/IPeripheryImmutableState.sol
-# - contracts/interface/IPeripheryPayments.sol
-# - contracts/interface/IPoolInitializer.sol
-# - contracts/libraries/PoolAddress.sol
-
-
-def create_uniswap_v3_pool(
-    mint_amount,
-    spa,
-    amount1,
-    token2,
-    amount2,
-    owner_l2,
-    vault_proxy
-):
-    position_mgr_address = '0xC36442b4a4522E871399CD717aBDD847Ab11FE88'
-    position_mgr = brownie.interface.INonfungiblePositionManager(position_mgr_address)
-
-    # approve uniswap's non fungible position manager to transfer our tokens
-    spa.approve(position_mgr.address, amount1, {'from': owner_l2})
-    token2.approve(position_mgr.address, amount2, {'from': owner_l2})
-
-    # create a transaction pool
-    fee = 3000
-    txn = position_mgr.createAndInitializePoolIfNecessary(
-        spa,
-        token2,
-        fee,
-        encode_price(amount1, amount2),
-        {'from': owner_l2}
-    )
-    # newly created pool address
-    pool = txn.return_value
-    print(f"uniswap v3 pool address (spa-token2 pair): {pool}")
-
-    # provide initial liquidity
-    deadline = 1637632800 + brownie.chain.time() # deadline: 2 hours
-    params = [
-        spa,
-        token2,
-        fee,
-        lower_tick(), # tickLower
-        upper_tick(), # tickUpper
-        amount1,
-        amount2,
-        0, # minimum amount of spa expected
-        0, # minimum amount of token2 expected
-        owner_l2,
-        deadline
-    ]
-    txn = position_mgr.mint(
-        params,
-        {'from': owner_l2}
+    wspa = SperaxTokenL1.deploy(
+        'Wrapped Sperax L1',
+        'wSPAL1',
+        spa.address,
+        bridge,
+        router,
+        {'from': owner_l1}
     )
     print(txn.return_value)
     return pool
@@ -649,14 +663,7 @@ def mintSPA(
     txn = spa.setMintable(
         owner_l2.address,
         True,
-        {'from': owner_l2}
-    )
-    assert txn.events['Mintable']['account'] == owner_l2.address
-
-    txn = spa.mintForUSDs(
-        owner_l2,
-        amount,
-        {'from': owner_l2}
+        {'from': owner_l1}
     )
     assert txn.events['Transfer']['to'] == owner_l2
     assert txn.events['Transfer']['value'] == amount
