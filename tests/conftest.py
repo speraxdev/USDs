@@ -120,7 +120,7 @@ def sperax(
     usds1,
     ThreePoolStrategy,
     BuybackSingle,
-    BuybackMultihop,
+    BuybackTwoHops,
     chainlink_flags,
     usdt,
     wbtc,
@@ -211,7 +211,7 @@ def sperax(
         owner_l2
     )
 
-    buyback_multihop  =  BuybackMultihop.deploy(
+    buyback_multihop  =  BuybackTwoHops.deploy(
         mock_token3.address, # token1
         vault_proxy.address,
         {'from': owner_l2}

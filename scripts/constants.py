@@ -49,7 +49,7 @@ testnet_upgrade_addresses = UpgradeAddresses(
 testnet_third_party_addresses = ThirdPartyAddresses(
     '0x9b014455AcC2Fe90c52803849d0002aeEC184a06', #l2_gateway
     '0x5f0423B1a6935dc5596e7A24d98532b67A0AeFd8', #chainlink_usdc_price_feed
-    '0xb47e6a5f8b33b3f17603c83a0535a9dcd7e32681', #usdc_arbitrum
+    '0x09b98f8b2395d076514037ff7d39a091a536206c', #usdc_arbitrum
     '0x491B1dDA0A8fa069bbC1125133A975BF4e85a91b'  #chainlink_flags
     )
 
@@ -75,10 +75,10 @@ testnetAddresses = Addresses(
 
 mainnet_deploy_address = DeployAddresses(
     ## Note: these need to be added. here it's  0xdeadbeef in the meantime...
-    "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef", #L1_wSPA
-    "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef", #L1_USDs
-    "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef", #L1_feeVault
-    "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef" #L2_SPA
+    "0xB4A3B0Faf0Ab53df58001804DdA5Bfc6a3D59008", #L1_wSPA NOTE: this is a wrong address. only here for testing purpose
+    "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef", #L1_USDs NOTE: this is a wrong address. only here for testing purpose
+    "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef", #L1_feeVault NOTE: this is a wrong address. only here for testing purpose
+    "0xe5a5Efe7ec8cdFA5F031D5159839A3b5E11B2e0F" #L2_SPA. NOTE: this is a wrong address. only here for testing purpose
     )
 
 mainnet_upgrade_address = UpgradeAddresses(
@@ -93,7 +93,7 @@ mainnet_upgrade_address = UpgradeAddresses(
 mainnet_third_party_address = ThirdPartyAddresses(
     '0x096760F208390250649E3e8763348E783AEF5562', #l2_gateway
     '0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612', #chainlink_usdc_price_feed
-    '0x82af49447d8a07e3bd95bd0d56f35241523fbab1', #usdc_arbitrum
+    '0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8', #usdc_arbitrum
     '0x3C14e07Edd0dC67442FA96f1Ec6999c57E810a83' #chainlink_flags
     )
 
