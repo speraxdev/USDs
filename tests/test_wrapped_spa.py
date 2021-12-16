@@ -104,23 +104,14 @@ def test_burn(spa_l1, owner_l1):
             {'from': owner_l1}
         )
 
-def test_bridge_mint(spa_l1, owner_l1, accounts):
+def test_bridge_mint(spa_l1, owner_l1, gatewayL1, accounts):
     wspa, spa = spa_l1
     amount = 928383
-    l2_gateway = '0x096760F208390250649E3e8763348E783AEF5562'
     txn = wspa.bridgeMint(
         accounts[6],
         amount,
-        {'from': l2_gateway}
+        {'from': gatewayL1}
     )
-
-    # call should fail because of invalid amount
-    with reverts():
-        txn = wspa.bridgeMint(
-            accounts[6],
-            0,
-            {'from': l2_gateway}
-        )
 
     # call should fail because of invalid caller
     with reverts():
@@ -176,10 +167,13 @@ def test_change_spa(spa_l1, owner_l1, accounts):
 def test_register_token(spa_l1, owner_l1, accounts):
     wspa, spa = spa_l1
     l2_token_address = accounts[6]
-    submission_cost_for_bridge = 100000
-    submission_cost_for_router = 100000
-    max_gas = 98237
+
+    submission_cost_for_bridge = 1000000000000
+    submission_cost_for_router = 1000000000000
+    max_gas = 1000000
     gas_price_bid = 9827373
+    value = submission_cost_for_bridge + submission_cost_for_router + 2 * (max_gas * gas_price_bid) + 100
+
     gateway_value = 1
     router_value = 2
     credit_back_address = accounts[7]
@@ -193,7 +187,7 @@ def test_register_token(spa_l1, owner_l1, accounts):
         gateway_value,
         router_value,
         credit_back_address,
-        {'from': owner_l1}
+        {'from': owner_l1, 'amount': value}
     )
 
     not_owner = accounts[8]
@@ -207,5 +201,5 @@ def test_register_token(spa_l1, owner_l1, accounts):
             gateway_value,
             router_value,
             credit_back_address,
-            {'from': not_owner}
+            {'from': not_owner, 'amount': value}
         )
