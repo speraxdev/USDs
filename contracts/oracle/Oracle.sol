@@ -93,7 +93,7 @@ contract Oracle is Initializable, IOracle, OwnableUpgradeable {
     function initialize(address _priceFeedUSDC, address _SPAaddr, address _USDCaddr, address _chainlinkFlags) public initializer {
         OwnableUpgradeable.__Ownable_init();
         updatePeriod = 12 hours;
-        lastUpdateTime = uint32(now % 2**32);
+       lastUpdateTime = uint32(now % 2**32);
         priceFeedUSDC = AggregatorV3Interface(_priceFeedUSDC);
         SPAaddr = _SPAaddr;
         SPA_prec = uint128(10)**18;
@@ -296,7 +296,7 @@ contract Oracle is Initializable, IOracle, OwnableUpgradeable {
         uint128 tokenA_prec,
         uint128 tokenB_prec,
         uint32 movingAvgPeriod
-    ) internal view returns(uint) {
+    ) public view returns(uint) {
         // get MA tick
         uint32 oldestObservationSecondsAgo =
             OracleLibrary.getOldestObservationSecondsAgo(tokenAtokenBPool);

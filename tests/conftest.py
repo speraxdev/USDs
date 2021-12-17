@@ -316,8 +316,9 @@ def sperax(
         usds_proxy.address,
         {'from': owner_l2}
     )
+  
     oracle_proxy.updateCollateralInfo(
-            usdc.address, # ERC20 address
+            mock_token2.address, # ERC20 address
             True, # supported
             chainlink_usdc_price_feed, # chainlink price feed address
             10**8, # chainlink price feed precision
@@ -345,7 +346,6 @@ def sperax(
         buyback,
         usdt,
         wbtc,
-        usdc,
         mock_token4,
         mock_token2,
         strategy_proxy,
@@ -370,15 +370,6 @@ def sperax(
         mock_token2, # token1
         amount, # amount1
         mock_token3, # token2
-        amount, # amount2
-        owner_l2,
-        vault_proxy
-    )
-    create_uniswap_v3_pool(
-        usdc.balanceOf(owner_l2),
-        spa, # token1
-        amount, # amount1
-        usdc, # token2
         amount, # amount2
         owner_l2,
         vault_proxy
