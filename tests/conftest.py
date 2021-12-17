@@ -154,10 +154,8 @@ def wbtc():
 def usdc():
     # Arbitrum-one mainnet:
     usdc_address = '0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8'
-
     # Arbitrum-rinkeby testnet:
     #usdc_address = '0x09b98f8b2395d076514037ff7d39a091a536206c'
-
     # Ethereum mainnet fork
     if  brownie.network.show_active() == 'mainnet-fork' or brownie.network.show_active() == 'rinkeby':
         usdc_address = '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48'
@@ -318,7 +316,13 @@ def sperax(
         usds_proxy.address,
         {'from': owner_l2}
     )
-
+    oracle_proxy.updateCollateralInfo(
+            usdc.address, # ERC20 address
+            True, # supported
+            chainlink_usdc_price_feed, # chainlink price feed address
+            10**8, # chainlink price feed precision
+            {'from': owner_l2 }
+    )
     vault_proxy.initialize(
         spa.address,
         core_proxy.address,
@@ -341,6 +345,7 @@ def sperax(
         buyback,
         usdt,
         wbtc,
+        usdc,
         mock_token4,
         mock_token2,
         strategy_proxy,
@@ -365,6 +370,15 @@ def sperax(
         mock_token2, # token1
         amount, # amount1
         mock_token3, # token2
+        amount, # amount2
+        owner_l2,
+        vault_proxy
+    )
+    create_uniswap_v3_pool(
+        usdc.balanceOf(owner_l2),
+        spa, # token1
+        amount, # amount1
+        usdc, # token2
         amount, # amount2
         owner_l2,
         vault_proxy
@@ -454,7 +468,7 @@ def deploy_oracle(
     )
     oracle_proxy = Contract.from_abi("Oracle", proxy.address, Oracle.abi)
 
-
+    
 
     return oracle_proxy
 
@@ -648,7 +662,7 @@ def configure_collaterals(
     }
 
     for collateral, chainlink in collaterals.items():
-        print("collaternal", collateral)
+        print("collateral", collateral)
         # authorize a new collateral
         vault_proxy.addCollateral(
             collateral, # address of: USDC, USDT, DAI or WBTC

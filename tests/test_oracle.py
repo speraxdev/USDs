@@ -35,8 +35,10 @@ def test_get_SPA_price(sperax,owner_l2):
         buyback,
         buyback_multihop
     ) = sperax
+
+
     tx=oracle_proxy.getSPAprice(
-        {'from': owner_l2}
+        {'from': owner_l2.address}
         )
     print(tx.events)
     
