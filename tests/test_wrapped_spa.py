@@ -1,11 +1,19 @@
 import pytest
 from brownie import (
     reverts,
-    convert
+    convert,
+    network
 )
 
+def network_not_ethereum():
+    if  network.show_active() == 'mainnet-fork' or network.show_active() == 'rinkeby':
+        return False
+    return True
+
 def test_mint(spa_l1, owner_l1):
-    wspa, spa = spa_l1
+    if network_not_ethereum(): pytest.skip('NOTE: skip wrapped SPA test cases')
+
+    (wspa, spa) = spa_l1
     amount = int(1000)
     # approve the mint transaction first
     txn = spa.approve(
@@ -30,7 +38,9 @@ def test_mint(spa_l1, owner_l1):
     assert txn == amount
 
 def test_transfer(spa_l1, owner_l1, accounts):
-    wspa, spa = spa_l1
+    if network_not_ethereum(): pytest.skip('NOTE: skip wrapped SPA test cases')
+
+    (wspa, spa) = spa_l1
     recipient = accounts[6]
     amount = 1000
     # approve the mint transaction first
@@ -75,7 +85,9 @@ def test_transfer(spa_l1, owner_l1, accounts):
         )
 
 def test_burn(spa_l1, owner_l1):
-    wspa, spa = spa_l1
+    if network_not_ethereum(): pytest.skip('NOTE: skip wrapped SPA test cases')
+    
+    (wspa, spa) = spa_l1
     amount = 1000
     # approve the mint transaction first
     txn = spa.approve(
@@ -105,7 +117,9 @@ def test_burn(spa_l1, owner_l1):
         )
 
 def test_bridge_mint(spa_l1, owner_l1, gatewayL1, accounts):
-    wspa, spa = spa_l1
+    if network_not_ethereum(): pytest.skip('NOTE: skip wrapped SPA test cases')
+    
+    (wspa, spa) = spa_l1
     amount = 928383
     txn = wspa.bridgeMint(
         accounts[6],
@@ -122,12 +136,16 @@ def test_bridge_mint(spa_l1, owner_l1, gatewayL1, accounts):
         )
 
 def test_arbitrum_enabled(spa_l1):
-    wspa, spa = spa_l1
+    if network_not_ethereum(): pytest.skip('NOTE: skip wrapped SPA test cases')
+    
+    (wspa, spa) = spa_l1
     txn = wspa.isArbitrumEnabled()
     assert txn == '0xa4b1'
 
 def test_change_arbitrum_token(spa_l1, owner_l1, accounts):
-    wspa, spa = spa_l1
+    if network_not_ethereum(): pytest.skip('NOTE: skip wrapped SPA test cases')
+    
+    (wspa, spa) = spa_l1
     new_bridge = accounts[6]
     new_router = accounts[7]
     txn = wspa.changeArbToken(
@@ -148,7 +166,9 @@ def test_change_arbitrum_token(spa_l1, owner_l1, accounts):
         )
 
 def test_change_spa(spa_l1, owner_l1, accounts):
-    wspa, spa = spa_l1
+    if network_not_ethereum(): pytest.skip('NOTE: skip wrapped SPA test cases')
+    
+    (wspa, spa) = spa_l1
     new_spa = accounts[6]
     txn = wspa.changeSpaAddress(
         new_spa,
@@ -165,7 +185,9 @@ def test_change_spa(spa_l1, owner_l1, accounts):
         )
 
 def test_register_token(spa_l1, owner_l1, accounts):
-    wspa, spa = spa_l1
+    if network_not_ethereum(): pytest.skip('NOTE: skip wrapped SPA test cases')
+    
+    (wspa, spa) = spa_l1
     l2_token_address = accounts[6]
 
     submission_cost_for_bridge = 1000000000000
