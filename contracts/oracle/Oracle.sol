@@ -289,6 +289,7 @@ contract Oracle is Initializable, IOracle, OwnableUpgradeable {
      *      e.g. for USDsPerSPA, tokenA = SPA and tokenB = USDs
      * @dev tokenBPertokenA has the same precision as tokenB
      */
+    // changed: internal to public for testing purposes. 
     function _getUniMAPrice(
         address tokenAtokenBPool,
         address tokenA,
