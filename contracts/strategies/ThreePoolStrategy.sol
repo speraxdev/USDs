@@ -109,6 +109,7 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
             uint256(1e18).sub(maxSlippage)
         );
         // Do the deposit to 3pool
+        //triger to deposit LP tokens
         curvePool.add_liquidity(_amounts, minMintAmount);
         allocatedAmt[_asset] = allocatedAmt[_asset].add(_amount);
         // Deposit into Gauge

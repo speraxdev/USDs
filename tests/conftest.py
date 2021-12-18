@@ -154,9 +154,12 @@ def wbtc():
 def usdc():
     # Arbitrum-one mainnet:
     usdc_address = '0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8'
+    # Arbitrum-rinkeby testnet:
+    #usdc_address = '0x09b98f8b2395d076514037ff7d39a091a536206c'
     # Ethereum mainnet fork
     if  brownie.network.show_active() == 'mainnet-fork' or brownie.network.show_active() == 'rinkeby':
         usdc_address = '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48'
+            
     return brownie.interface.IERC20(usdc_address)
 
 @pytest.fixture(scope="module", autouse=True)
@@ -236,6 +239,7 @@ def sperax(
     oracle_proxy = deploy_oracle(
         Oracle,
         TransparentUpgradeableProxy,
+        usdc,
         Contract,
         proxy_admin,
         admin,
@@ -305,7 +309,7 @@ def sperax(
     oracle_proxy.initialize(
         chainlink_usdc_price_feed,
         spa.address,
-        mock_token2.address,
+        usdc.address,
         chainlink_flags,
         {'from': owner_l2}
     )
@@ -313,7 +317,14 @@ def sperax(
         usds_proxy.address,
         {'from': owner_l2}
     )
-
+  
+    oracle_proxy.updateCollateralInfo(
+            mock_token2.address, # ERC20 address
+            True, # supported
+            chainlink_usdc_price_feed, # chainlink price feed address
+            10**8, # chainlink price feed precision
+            {'from': owner_l2 }
+    )
     vault_proxy.initialize(
         spa.address,
         core_proxy.address,
@@ -447,6 +458,7 @@ def deploy_vault(
 def deploy_oracle(
     Oracle,
     TransparentUpgradeableProxy,
+    usdc,
     Contract,
     proxy_admin,
     admin,
@@ -462,6 +474,9 @@ def deploy_oracle(
         {'from': admin}
     )
     oracle_proxy = Contract.from_abi("Oracle", proxy.address, Oracle.abi)
+
+    
+
     return oracle_proxy
 
 
@@ -655,7 +670,7 @@ def configure_collaterals(
 
     precision = 10**8
     for collateral, chainlink in collaterals.items():
-        print("collaternal", collateral)
+        print("collateral", collateral)
         # authorize a new collateral
         vault_proxy.addCollateral(
             collateral, # address of: USDC, USDT, DAI or WBTC
