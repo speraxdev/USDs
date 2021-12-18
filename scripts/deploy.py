@@ -34,7 +34,8 @@ def main():
     # handle ctrl-C event
     signal.signal(signal.SIGINT, signal_handler)
 
-    print("\n**** WARNING: this script would only work on arbitrum mainnet or arbitrum mainnet fork ****")
+    print("\nDeploying essential components of USDs")
+    print("On testnet, excluding ThreePoolStrategy and Buyback")
 
     #if not os.environ.get('WEB3_INFURA_PROJECT_ID'):
     #    print("\nEnvironment variable WEB3_INFURA_PROJECT_ID is not set\n")
@@ -230,7 +231,8 @@ def main():
 
     # configure stablecoin collaterals in vault and oracle
     configure_collaterals(vault_proxy, oracle_proxy, owner, convert)
-    deploy_strategy(usds_proxy, vault_proxy, admin, owner)
+    if network.show_active() == 'arbitrum-main-fork' or 'arbitrum-one':
+        deploy_strategy(usds_proxy, vault_proxy, admin, owner)
 
     print(f"\n{network.show_active()}:\n")
     print(f"Bancor Formula address: {bancor.address}")
