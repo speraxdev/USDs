@@ -203,6 +203,7 @@ def sperax(
     admin,
     vault_fee,
     owner_l2,
+    accounts,
 ):
     if brownie.network.show_active() == 'rinkeby' or brownie.network.show_active() == 'mainnet-fork':
         print("NOTE: skip deploying contracts for Arbitrum (L2)")
@@ -336,7 +337,7 @@ def sperax(
         usdt,
         wbtc,
         mock_token4,
-        mock_token2,
+        weth,
         strategy_proxy,
         owner_l2
     )
@@ -364,7 +365,22 @@ def sperax(
         vault_proxy
     )
 
-    update_oracle_setting(oracle_proxy, owner_l2, mock_token2, usds_proxy)
+    deposit_weth(weth, owner_l2, accounts, amount)
+
+    weth_erc20 = brownie.interface.IERC20(weth.address)
+
+    spa_mock_pool =  create_uniswap_v3_pool(
+        mock_token2.balanceOf(owner_l2),
+        spa, # token1
+        amount, # amount1
+        weth_erc20, # token2
+        amount, # amount2
+        owner_l2,
+        vault_proxy
+    )
+
+
+    update_oracle_setting(oracle_proxy, owner_l2, weth, usds_proxy)
 
 
     return (
@@ -637,16 +653,25 @@ def configure_collaterals(
         mock_token2: '0x3f3f5dF88dC9F13eac63DF89EC16ef6e7E25DdE7',
     }
 
+    precision = 10**8
     for collateral, chainlink in collaterals.items():
         print("collaternal", collateral)
         # authorize a new collateral
         vault_proxy.addCollateral(
             collateral, # address of: USDC, USDT, DAI or WBTC
             strategy_proxy, # _defaultStrategyAddr: CURVE, AAVE, etc
-            False, # _allocationAllowed
-            0, # _allocatePercentage
+            True, # _allocationAllowed
+            80, # _allocatePercentage
             buyback, # _buyBackAddr
             False, # _rebaseAllowed
+            {'from': owner_l2}
+        )
+                # wire up price feed for the added collateral
+        oracle_proxy.updateCollateralInfo(
+            collateral, # ERC20 address
+            True, # supported
+            chainlink, # chainlink price feed address
+            precision, # chainlink price feed precision
             {'from': owner_l2}
         )
 
@@ -748,6 +773,12 @@ def update_oracle_setting(oracle_proxy, owner_l2, spa, usds_proxy):
     {'from': owner_l2} )
 
 
+def deposit_weth(weth, owner_l2, accounts, amount):
+    txn = weth.deposit({'from': owner_l2, 'amount': 100000000000000000})
+    weth_erc20 = brownie.interface.IERC20(weth.address)
+    # transfer weth to strategy_proxy contract
+    txn = weth_erc20.transfer(accounts[5],
+                            amount, {'from': owner_l2})
 
 def lower_tick():
     return math.ceil(-887272 / 60) * 60
