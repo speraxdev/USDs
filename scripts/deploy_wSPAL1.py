@@ -1,5 +1,6 @@
 import signal
 import click
+from click.termui import edit
 from brownie import (
     SperaxTokenL1,
     accounts,
@@ -10,14 +11,16 @@ import os
 from .constants import (
     testnet_L1_addresses,
     mainnet_L1_addresses,
-    wSPAL1_token_details
+    wSPAL1_token_details,
+    wSPAL1_file
 )
 from .utils import (
     confirm,
     choice,
     getAddressFromNetwork,
     getNumber,
-    signal_handler
+    signal_handler,
+    editAddressFile
 )
 import json
 
@@ -72,7 +75,7 @@ def main():
     cwd = os.getcwd()
     filepath = cwd + '/supporting_contracts/SperaxTokenABI.json'
     with open(filepath) as f:
-        abi = json.load(f)
+        abi = json.load(f) 
 
     sperax_token = Contract.from_abi(
         'SperaxToken',
@@ -110,4 +113,8 @@ def main():
         {'from': owner, 'gas_limit': 10000000}
     )
     
+    editAddressFile(wSPAL1_file, wSPAL1.address)
     print(f"\nwSPA layer 1 address:  {wSPAL1.address}\n")
+
+
+    

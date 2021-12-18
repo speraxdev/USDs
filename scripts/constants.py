@@ -1,3 +1,19 @@
+import json
+import os
+
+cwd = os.getcwd()
+wSPAL1_file = cwd + '/scripts/constants/wSPAL1.json'
+SPAL2_file = cwd + '/scripts/constants/SPAL2.json'
+USDs_file = cwd + '/scripts/constants/USDs.json'
+with open(wSPAL1_file) as f:
+    wSPAL1 = json.load(f)
+with open(SPAL2_file) as f:
+    SPAL2 = json.load(f)
+with open(USDs_file) as f:
+    USDs = json.load(f) 
+
+
+
 class DeployAddresses:
     def __init__(self, L1_wSPA, L1_USDs, fee_vault, L2_SPA):
         self.L1_wSPA = L1_wSPA
@@ -30,20 +46,20 @@ class Addresses:
 # testnet
 ## Note: the feeVault can be anything in testnet. here it's 0xdeadbeef...
 testnet_deploy_addresses = DeployAddresses(
-    "0x5642B9bEB0031d640A80463385fdE9d6d2Bd2549", #L1_wSPA
+    wSPAL1['testnet'], #L1_wSPA
     "0x0000000000000000000000000000000000000000", #L1_USDs
     ## Note: the feeVault can be anything in testnet. here it's 0xdeadbeef...
     "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef", #L1_feeVault
-    "0xCE4a1fe0F21686E1D655c649B8EB3A4f92Df5259" #L2_SPA
+    SPAL2['testnet'] #L2_SPA
     )
 
 ## Note: these change after you deploy the contracts, so deploy first and then put those addresses here.
 testnet_upgrade_addresses = UpgradeAddresses(
-    "0x76b0a2DF3d28122eac792BF3323A853420FC66b3", #bancor_formula_address
-    "0x3230F912d06D544CA7f8916d2b52B955d1412AE6", #vault_core_tools_proxy
-    "0xcf7A2A41e859Fa8a290b1B9BDaaa84e321e4934e", #vault_core_proxy
-    "0x422F8356E2feEe1b4F04c8aea7b719079869E29F", #oracle_proxy
-    "0x342F611a9DFEbA9BbAa0BC02258604005dd42Fa4" #USDs_l2_proxy
+    USDs['testnet']['bancor_formula'], #bancor_formula_address
+    USDs['testnet']['vault_core_tools_proxy'], #vault_core_tools_proxy
+    USDs['testnet']['vault_core_proxy'], #vault_core_proxy
+    USDs['testnet']['oracle_proxy'], #oracle_proxy
+    USDs['testnet']['USDs_l2_proxy'] #USDs_l2_proxy
     )
 
 testnet_third_party_addresses = ThirdPartyAddresses(
@@ -75,19 +91,19 @@ testnetAddresses = Addresses(
 
 mainnet_deploy_address = DeployAddresses(
     ## Note: these need to be added. here it's  0xdeadbeef in the meantime...
-    "0xB4A3B0Faf0Ab53df58001804DdA5Bfc6a3D59008", #L1_wSPA NOTE: this is a wrong address. only here for testing purpose
+    wSPAL1['mainnet'], #L1_wSPA NOTE: this is a wrong address. only here for testing purpose
     "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef", #L1_USDs NOTE: this is a wrong address. only here for testing purpose
     "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef", #L1_feeVault NOTE: this is a wrong address. only here for testing purpose
-    "0xe5a5Efe7ec8cdFA5F031D5159839A3b5E11B2e0F" #L2_SPA. NOTE: this is a wrong address. only here for testing purpose
+    SPAL2['mainnet'] #L2_SPA. NOTE: this is a wrong address. only here for testing purpose
     )
 
 mainnet_upgrade_address = UpgradeAddresses(
     ## Note: these need to be added. here it's  0xdeadbeef in the meantime...
-    "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef", #bancor_formula_address
-    "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef", #vault_core_tools_proxy
-    "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef", #vault_core_proxy
-    "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef", #oracle_proxy
-    "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef" #USDs_l2_proxy
+    USDs['mainnet']['bancor_formula'], #bancor_formula_address
+    USDs['mainnet']['vault_core_tools_proxy'], #vault_core_tools_proxy
+    USDs['mainnet']['vault_core_proxy'], #vault_core_proxy
+    USDs['mainnet']['oracle_proxy'], #oracle_proxy
+    USDs['mainnet']['USDs_l2_proxy'] #USDs_l2_proxy
     )
 
 mainnet_third_party_address = ThirdPartyAddresses(
@@ -162,7 +178,7 @@ class StrategyVars:
 
 strategy_vars_base = StrategyVars(
     '0x960ea3e3C7FB317332d990873d354E18d7645590', # platform address
-    "", # vault address NEED TO INITIALIZE IN SCRIPT
+    USDs['mainnet']['vault_core_proxy'], # vault address NEED TO INITIALIZE IN SCRIPT
     '0x11cdb42b0eb46d95f990bedd4695a6e3fa034978', # reward token address
     [
             '0x82af49447d8a07e3bd95bd0d56f35241523fbab1',
@@ -177,3 +193,4 @@ strategy_vars_base = StrategyVars(
     '0x97E2768e8E73511cA874545DC5Ff8067eB19B787', # crv gauge address
     0, # index NEED TO INITIALIZE IN SCRIPT
     )
+

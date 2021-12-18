@@ -50,6 +50,10 @@ contract OracleV2 is Initializable, IOracle, OwnableUpgradeable {
     uint24 SPAoraclePoolFee;
     uint24 USDsOraclePoolFee;
 
+    function version() public pure returns (uint) {
+		return 2;
+	}
+
     event USDsInOutRatioUpdated(
         uint USDsInOutRatio,
         uint USDsOutflow_average,

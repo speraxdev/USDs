@@ -1,7 +1,12 @@
 from brownie import *
 import sys
 import signal
-
+from .constants import (
+    wSPAL1_file,
+    SPAL2_file,
+    USDs_file
+)
+import json
 # network = brownie.network
 
 def signal_handler(signal, frame):
@@ -97,6 +102,27 @@ def _getContract(contract, version):
     """
     contract_name = _getContractVersionedName(contract, version)
     return globals()[contract_name]
+
+def editAddressFile(path, address, property=""):
+    """
+    Edits the address file.
+    """
+    with open(path, "r") as file:
+        data = json.load(file)
+    testnets = [
+        'arbitrum-rinkeby', 
+        'rinkeby'
+    ]
+    if network.show_active() in testnets:
+        net = "testnet"
+    else:
+        net = "mainnet"
+    if (len(property) > 0):
+        data[net][property] = address
+    else:
+        data[net] = address
+    with open(path, "w") as file:
+        json.dump(data, file)
 
 
     
