@@ -9,12 +9,14 @@ import eth_utils
 from .constants import (
     mainnetAddresses,
     testnetAddresses,
-    SPAL2_token_details
+    SPAL2_token_details,
+    SPAL2_file
 )
 from .utils import (
     confirm,
     getAddressFromNetwork,
-    signal_handler
+    signal_handler,
+    editAddressFile
 )
 
 def main():
@@ -58,4 +60,5 @@ def main():
 #        publish_source=True,
     )
 
+    editAddressFile(SPAL2_file, spa.address)
     print(f"SPA layer 2 address: {spa.address}")

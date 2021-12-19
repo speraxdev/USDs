@@ -23,6 +23,10 @@ contract VaultCoreV2 is Initializable, OwnableUpgradeable, AccessControlUpgradea
 	using SafeMathUpgradeable for uint;
 	using StableMath for uint;
 
+	function version() public pure returns (uint) {
+		return 2;
+	}
+
 	bytes32 public constant REBASER_ROLE = keccak256("REBASER_ROLE");
 
 	bool public override mintRedeemAllowed;

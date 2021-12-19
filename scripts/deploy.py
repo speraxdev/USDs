@@ -22,12 +22,14 @@ from .constants import (
     mainnetAddresses,
     testnetAddresses,
     USDs_token_details,
-    strategy_vars_base
+    strategy_vars_base,
+    USDs_file
 )
 from .utils import (
     confirm,
     getAddressFromNetwork,
-    signal_handler
+    signal_handler,
+    editAddressFile
 )
 
 def main():
@@ -140,7 +142,7 @@ def main():
     txn = core_proxy.initialize(bancor.address, {'from': owner})
 
     vault = VaultCore.deploy(
-        {'from': owner }
+        {'from': owner, 'gas_limit': 100000000 }
 #        publish_source=True,
     )
     proxy = TransparentUpgradeableProxy.deploy(
@@ -153,7 +155,7 @@ def main():
     vault_proxy = Contract.from_abi("VaultCore", proxy.address, VaultCore.abi)
 
     oracle = Oracle.deploy(
-        {'from': owner },
+        {'from': owner, 'gas_limit': 100000000 },
 #        publish_source=True,
     )
     proxy = TransparentUpgradeableProxy.deploy(
@@ -166,7 +168,7 @@ def main():
     oracle_proxy = Contract.from_abi("Oracle", proxy.address, Oracle.abi)
 
     usds = USDsL2.deploy(
-        {'from': owner },
+        {'from': owner, 'gas_limit': 100000000 },
 #        publish_source=True,
     )
     proxy = TransparentUpgradeableProxy.deploy(
@@ -231,10 +233,15 @@ def main():
 
     # configure stablecoin collaterals in vault and oracle
     configure_collaterals(vault_proxy, oracle_proxy, owner, convert)
-    if network.show_active() == 'arbitrum-main-fork' or 'arbitrum-one':
+    if network.show_active() in ['arbitrum-main-fork', 'arbitrum-one']:
         deploy_strategy(usds_proxy, vault_proxy, admin, owner)
 
     print(f"\n{network.show_active()}:\n")
+    editAddressFile(USDs_file, bancor.address, "bancor_formula")
+    editAddressFile(USDs_file, core_proxy.address, "vault_core_tools_proxy")
+    editAddressFile(USDs_file, vault_proxy.address, "vault_core_proxy")
+    editAddressFile(USDs_file, oracle_proxy.address, "oracle_proxy")
+    editAddressFile(USDs_file, usds_proxy.address, "USDs__l2_proxy")
     print(f"Bancor Formula address: {bancor.address}")
 
     print(f"Vault Core Tools:")
@@ -416,7 +423,7 @@ def deploy_strategy(
 def deploy_one_strategy(index, admin, owner, vault_proxy):
     if network.show_active() == 'mainnet' or 'arbitrum-main-fork':
         strategy = ThreePoolStrategy.deploy(
-            {'from': owner},
+            {'from': owner, 'gas_limit': 100000000},
         )
         proxy_admin = ProxyAdmin.deploy(
             {'from': admin},
@@ -444,6 +451,6 @@ def deploy_one_strategy(index, admin, owner, vault_proxy):
             strategy_vars_base.lp_tokens,
             strategy_vars_base.crv_gauge_address,
             strategy_vars_base.index,
-            {'from': owner},
+            {'from': owner, 'gas_limit': 100000000},
         )
         return strategy_proxy.address
