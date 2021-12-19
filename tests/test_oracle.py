@@ -239,7 +239,6 @@ def test_get_USDs_price(sperax,weth,accounts, owner_l2):
         {'from': owner_l2.address}
     )
 
-    print(tx.events)
 
 def test_get_USDS_price_average(sperax, owner_l2):
     (
