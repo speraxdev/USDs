@@ -142,7 +142,7 @@ def main():
     txn = core_proxy.initialize(bancor.address, {'from': owner})
 
     vault = VaultCore.deploy(
-        {'from': owner, 'gas_limit': 1000000000 }
+        {'from': owner, 'gas_limit': 100000000 }
 #        publish_source=True,
     )
     proxy = TransparentUpgradeableProxy.deploy(
@@ -155,7 +155,7 @@ def main():
     vault_proxy = Contract.from_abi("VaultCore", proxy.address, VaultCore.abi)
 
     oracle = Oracle.deploy(
-        {'from': owner, 'gas_limit': 1000000000 },
+        {'from': owner, 'gas_limit': 100000000 },
 #        publish_source=True,
     )
     proxy = TransparentUpgradeableProxy.deploy(
@@ -168,7 +168,7 @@ def main():
     oracle_proxy = Contract.from_abi("Oracle", proxy.address, Oracle.abi)
 
     usds = USDsL2.deploy(
-        {'from': owner, 'gas_limit': 1000000000 },
+        {'from': owner, 'gas_limit': 100000000 },
 #        publish_source=True,
     )
     proxy = TransparentUpgradeableProxy.deploy(
@@ -423,7 +423,7 @@ def deploy_strategy(
 def deploy_one_strategy(index, admin, owner, vault_proxy):
     if network.show_active() == 'mainnet' or 'arbitrum-main-fork':
         strategy = ThreePoolStrategy.deploy(
-            {'from': owner, 'gas_limit': 1000000000},
+            {'from': owner, 'gas_limit': 100000000},
         )
         proxy_admin = ProxyAdmin.deploy(
             {'from': admin},
@@ -451,6 +451,6 @@ def deploy_one_strategy(index, admin, owner, vault_proxy):
             strategy_vars_base.lp_tokens,
             strategy_vars_base.crv_gauge_address,
             strategy_vars_base.index,
-            {'from': owner, 'gas_limit': 1000000000},
+            {'from': owner, 'gas_limit': 100000000},
         )
         return strategy_proxy.address
