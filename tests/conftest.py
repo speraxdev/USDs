@@ -308,7 +308,7 @@ def sperax(
     oracle_proxy.initialize(
         chainlink_usdc_price_feed,
         spa.address,
-        usdc.address,
+        mock_token2.address,
         chainlink_flags,
         {'from': owner_l2}
     )
