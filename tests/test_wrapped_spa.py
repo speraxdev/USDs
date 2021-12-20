@@ -139,8 +139,8 @@ def test_arbitrum_enabled(spa_l1):
     if network_not_ethereum(): pytest.skip('NOTE: skip wrapped SPA test cases')
     
     (wspa, spa) = spa_l1
-    txn = wspa.isArbitrumEnabled()
-    assert txn == '0xa4b1'
+    with reverts():
+        txn = wspa.isArbitrumEnabled()
 
 def test_change_arbitrum_token(spa_l1, owner_l1, accounts):
     if network_not_ethereum(): pytest.skip('NOTE: skip wrapped SPA test cases')
