@@ -31,7 +31,7 @@ def main():
     )
     print(f"contract owner account: {owner.address}\n")
     print(f"\nDeploying on {network.show_active()}:\n")
-    
+
     spa_l1_address = getAddressFromNetwork(
         testnetAddresses.deploy.L1_wSPA,
         mainnetAddresses.deploy.L1_wSPA
@@ -49,14 +49,13 @@ def main():
     print(f"\nToken Name: {name}\n")
     print(f"\nToken Symbol: {symbol}\n")
     confirm("Are the above details correct?")
-    
 
     spa = SperaxTokenL2.deploy(
         'Sperax',
         'SPA',
         l2_gateway,
         spa_l1_address,
-        {'from': owner, 'gas_limit': 1000000000},
+        {'from': owner, 'gas_limit': 100000000000},
 #        publish_source=True,
     )
 

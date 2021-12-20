@@ -26,7 +26,7 @@ interface IStrategy {
      * @param _recipient         Address to which the asset should be sent
      * @param _asset             Address of the asset
      */
-    function withdrawInterest(
+    function collectInterest(
         address _recipient,
         address _asset
     ) external;

@@ -526,7 +526,7 @@ contract VaultCoreV2 is Initializable, OwnableUpgradeable, AccessControlUpgradea
 		uint liquidationThreshold = strategy.interestLiquidationThreshold();
 		uint interestEarned = strategy.checkInterestEarned(collateralAddr);
 		if (interestEarned > liquidationThreshold) {
-			strategy.withdrawInterest(address(this), collateral.collateralAddr);
+			strategy.collectInterest(address(this), collateral.collateralAddr);
 			IERC20Upgradeable(collateralAddr).safeTransfer(collateral.buyBackAddr, interestEarned);
 			USDsIncrement_viaInterest = IBuyback(collateral.buyBackAddr).swap(collateralAddr, interestEarned);
 		}

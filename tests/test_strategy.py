@@ -23,11 +23,11 @@ def test_withdraw(sperax, weth,usdt,wbtc,owner_l2, accounts):
     txn = weth.deposit(
         {'from': accounts[9].address, 'amount': usdt_amount}
     )
-    with brownie.reverts("ERC20: transfer amount exceeds balance"): 
+    with brownie.reverts("ERC20: transfer amount exceeds balance"):
         weth_erc20 = brownie.interface.IERC20(weth.address)
         txn = weth_erc20.transfer(strategy_proxy.address,
                               amount, {'from': accounts[9]})
-    
+
     # testing the validity of recipient.
     zero_address = "0x0000000000000000000000000000000000000000"
     with brownie.reverts("Invalid recipient"):
@@ -45,7 +45,7 @@ def test_withdraw(sperax, weth,usdt,wbtc,owner_l2, accounts):
     weth_erc20 = brownie.interface.IERC20(weth.address)
     txn = weth_erc20.transfer(strategy_proxy.address,
                               amount, {'from': accounts[9]})
-    
+
     assert txn.return_value == True
     txn = strategy_proxy.deposit(
         weth.address,
@@ -65,7 +65,7 @@ def test_withdraw(sperax, weth,usdt,wbtc,owner_l2, accounts):
     )
 
     # withdraw 1/10 of the previous deposit
-    
+
     txn = strategy_proxy.withdraw(
         accounts[9],
         weth.address,
@@ -95,7 +95,7 @@ def test_withdraw(sperax, weth,usdt,wbtc,owner_l2, accounts):
          (amount + 1),
          {'from': vault_proxy.address}
     )
-    
+
 
 
 def test_check_balance(sperax, weth,usdt):
@@ -113,7 +113,7 @@ def test_check_balance(sperax, weth,usdt):
     balance = strategy_proxy.checkBalance(weth, {'from': vault_proxy.address})
     with brownie.reverts("Unsupported collateral"):
          balance = strategy_proxy.checkBalance(usdt, {'from': vault_proxy.address})
-         
+
     assert balance == 0
     with brownie.reverts("Unsupported collateral"):
          strategy_proxy.checkBalance(
@@ -135,7 +135,7 @@ def test__safe_approve_all_tokens(sperax, owner_l2):
     strategy_proxy.safeApproveAllTokens(
         {'from': owner_l2.address}
     )
- 
+
 
 def test_collect_reward_token(sperax):
     (
@@ -324,7 +324,7 @@ def test_remove_PToken(sperax, owner_l2):
     )
     print("removed PToken:", txn.events['PTokenRemoved']['_pToken'])
     print("removed asset:", txn.events['PTokenRemoved']['_asset'])
-    
+
     high_index = int(9999999999)
     with brownie.reverts("Invalid index"):
          strategy_proxy.removePToken(
@@ -349,7 +349,7 @@ def test_remove_PToken2(sperax, owner_l2):
         low_index,
         {'from': owner_l2.address}
     )
- 
+
 
 def test_remove_PToken_assets(sperax, owner_l2, accounts):
     (
@@ -519,14 +519,14 @@ def test_withdraw_interest(sperax, weth,mock_token2, accounts):
     zero_address = "0x0000000000000000000000000000000000000000"
 
     with brownie.reverts("Unsupported collateral"):
-        txn = strategy_proxy.withdrawInterest(
+        txn = strategy_proxy.collectInterest(
             accounts[8],
             mock_token2.address,
             {'from': vault_proxy.address}
-        )  
+        )
 
     with brownie.reverts("Invalid recipient"):
-        txn = strategy_proxy.withdrawInterest(
+        txn = strategy_proxy.collectInterest(
             zero_address,
             weth.address,
             {'from': vault_proxy.address}
@@ -560,7 +560,7 @@ def test_withdraw_interest(sperax, weth,mock_token2, accounts):
     with brownie.reverts("Unsupported collateral"):
         strategy_proxy.checkInterestEarned(
         mock_token2.address, {'from': vault_proxy.address})
-  
+
     interest = strategy_proxy.checkInterestEarned(
         weth.address, {'from': vault_proxy.address})
 
@@ -568,17 +568,17 @@ def test_withdraw_interest(sperax, weth,mock_token2, accounts):
     assert txn.events['Withdrawal']['_asset'] == weth.address
     assert txn.events['Withdrawal']['_amount'] != 0
     with brownie.reverts("No interest earned"):
-         strategy_proxy.withdrawInterest(
+         strategy_proxy.collectInterest(
             accounts[8],
             weth.address,
             {'from': vault_proxy.address}
         )
     if(interest > 0):
-        txn = strategy_proxy.withdrawInterest(
+        txn = strategy_proxy.collectInterest(
             accounts[8],
             weth.address,
             {'from': vault_proxy.address}
-        )      
+        )
 
 
 def test_withdraw_to_vault_invalid_amount(sperax, weth, owner_l2):

@@ -20,6 +20,11 @@ abstract contract InitializableAbstractStrategy is IStrategy, Initializable, Own
     event PTokenRemoved(address indexed _asset, address _pToken);
     event Deposit(address indexed _asset, address _pToken, uint256 _amount);
     event Withdrawal(address indexed _asset, address _pToken, uint256 _amount);
+    event InterestCollected(
+        address indexed _asset,
+        address _pToken,
+        uint256 _amount
+    );
     event RewardTokenCollected(address recipient, uint256 amount);
     event RewardTokenAddressUpdated(address _oldAddress, address _newAddress);
     event RewardLiquidationThresholdUpdated(
@@ -224,7 +229,7 @@ abstract contract InitializableAbstractStrategy is IStrategy, Initializable, Own
      * @param _recipient         Address to which the asset should be sent
      * @param _asset             Address of the asset
      */
-    function withdrawInterest(
+    function collectInterest(
         address _recipient,
         address _asset
     ) external virtual override;

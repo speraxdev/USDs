@@ -159,7 +159,7 @@ def usdc():
     # Ethereum mainnet fork
     if brownie.network.show_active() in ['mainnet-fork', 'rinkeby']:
         usdc_address = '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48'
-            
+
     return brownie.interface.IERC20(usdc_address)
 
 @pytest.fixture(scope="module", autouse=True)
@@ -268,10 +268,43 @@ def sperax(
         {'from': owner_l2},
     )
 
+
+    oracle_proxy.initialize(
+        chainlink_usdc_price_feed,
+        spa.address,
+        mock_token2.address,
+        chainlink_flags,
+        {'from': owner_l2}
+    )
+
+    vault_proxy.initialize(
+        spa.address,
+        core_proxy.address,
+        vault_fee,
+        {'from': owner_l2}
+    )
+
+    vault_proxy.updateUSDsAddress(
+        usds_proxy.address,
+        {'from': owner_l2}
+    )
+
+    vault_proxy.updateOracleAddress(
+        oracle_proxy.address,
+        {'from': owner_l2}
+    )
+
+    oracle_proxy.updateUSDsAddress(
+        usds_proxy.address,
+        {'from': owner_l2}
+    )
+
+    # need to be fixed to align with deploy.py
     strategy_proxy = deploy_strategy(
         TransparentUpgradeableProxy,
         ThreePoolStrategy,
         vault_proxy,
+        oracle_proxy,
         usdt,
         wbtc,
         weth,
@@ -306,40 +339,6 @@ def sperax(
         pool_fee2
     )
 
-    oracle_proxy.initialize(
-        chainlink_usdc_price_feed,
-        spa.address,
-        mock_token2.address,
-        chainlink_flags,
-        {'from': owner_l2}
-    )
-    oracle_proxy.updateUSDsAddress(
-        usds_proxy.address,
-        {'from': owner_l2}
-    )
-  
-    oracle_proxy.updateCollateralInfo(
-            mock_token2.address, # ERC20 address
-            True, # supported
-            chainlink_usdc_price_feed, # chainlink price feed address
-            10**8, # chainlink price feed precision
-            {'from': owner_l2 }
-    )
-    vault_proxy.initialize(
-        spa.address,
-        core_proxy.address,
-        vault_fee,
-        {'from': owner_l2}
-    )
-    vault_proxy.updateUSDsAddress(
-        usds_proxy.address,
-        {'from': owner_l2}
-    )
-    vault_proxy.updateOracleAddress(
-        oracle_proxy.address,
-        {'from': owner_l2}
-    )
-
     # configure stablecoin collaterals in vault and oracle
     configure_collaterals(
         vault_proxy,
@@ -353,6 +352,8 @@ def sperax(
         owner_l2
     )
 
+    # here it's temporarily change Oralce for SPA from SPA-USDC to SPA-ETH
+    # would suggest to use a mock token to mock USDC instead
     mintSPA(spa,  mock_token2.balanceOf(owner_l2) , owner_l2, vault_proxy)
 
     amount = 1000000
@@ -389,7 +390,6 @@ def sperax(
         owner_l2,
         vault_proxy
     )
-
 
     update_oracle_setting(oracle_proxy, owner_l2, weth, usds_proxy)
 
@@ -475,7 +475,7 @@ def deploy_oracle(
     )
     oracle_proxy = Contract.from_abi("Oracle", proxy.address, Oracle.abi)
 
-    
+
 
     return oracle_proxy
 
@@ -515,6 +515,7 @@ def deploy_strategy(
     TransparentUpgradeableProxy,
     ThreePoolStrategy,
     vault_proxy,
+    oracle_proxy,
     usdt,
     wbtc,
     weth,
@@ -576,6 +577,7 @@ def deploy_strategy(
          lp_tokens_2,
          crv_gauge_address,
          3,
+         oracle_proxy,
          {'from': owner_l2}
     )
 
@@ -588,6 +590,7 @@ def deploy_strategy(
          lp_tokens_2,
          crv_gauge_address,
          2,
+         oracle_proxy,
          {'from': owner_l2}
     )
 
@@ -600,6 +603,7 @@ def deploy_strategy(
         lp_tokens_2,
         crv_gauge_address,
         2,
+        oracle_proxy,
         {'from': owner_l2}
     )
     strategy_proxy.initialize(
@@ -610,6 +614,7 @@ def deploy_strategy(
         lp_tokens,
         crv_gauge_address,
         2,
+        oracle_proxy,
         {'from': owner_l2}
     )
     return strategy_proxy
