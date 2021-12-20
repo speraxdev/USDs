@@ -128,7 +128,7 @@ def weth():
     # Arbitrum-rinkeby testnet:
     #weth_address = '0xB47e6A5f8b33b3F17603C83a0535A9dcD7E32681'
     # Ethereum mainnet fork
-    if  brownie.network.show_active() == 'mainnet-fork' or brownie.network.show_active() == 'rinkeby':
+    if brownie.network.show_active() in ['mainnet-fork', 'rinkeby']:
         weth_address = '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2'
     return brownie.interface.IWETH9(weth_address)
 
@@ -137,7 +137,7 @@ def usdt():
     # Arbitrum-one mainnet:
     usdt_address = '0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9'
     # Ethereum mainnet fork
-    if  brownie.network.show_active() == 'mainnet-fork' or brownie.network.show_active() == 'rinkeby':
+    if brownie.network.show_active() in ['mainnet-fork', 'rinkeby']:
         usdt_address = '0xdac17f958d2ee523a2206206994597c13d831ec7'
     return brownie.interface.IERC20(usdt_address)
 
@@ -146,7 +146,7 @@ def wbtc():
     # Arbitrum-one mainnet:
     wbtc_address = '0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f'
     # Ethereum mainnet fork
-    if  brownie.network.show_active() == 'mainnet-fork' or brownie.network.show_active() == 'rinkeby':
+    if brownie.network.show_active() in ['mainnet-fork', 'rinkeby']:
         wbtc_address = '0x2260fac5e5542a773aa44fbcfedf7c193bc2c599'
     return brownie.interface.IERC20(wbtc_address)
 
@@ -157,7 +157,7 @@ def usdc():
     # Arbitrum-rinkeby testnet:
     #usdc_address = '0x09b98f8b2395d076514037ff7d39a091a536206c'
     # Ethereum mainnet fork
-    if  brownie.network.show_active() == 'mainnet-fork' or brownie.network.show_active() == 'rinkeby':
+    if brownie.network.show_active() in ['mainnet-fork', 'rinkeby']:
         usdc_address = '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48'
             
     return brownie.interface.IERC20(usdc_address)
@@ -208,7 +208,7 @@ def sperax(
     owner_l2,
     accounts,
 ):
-    if brownie.network.show_active() == 'rinkeby' or brownie.network.show_active() == 'mainnet-fork':
+    if brownie.network.show_active() in ['mainnet-fork', 'rinkeby']:
         print("NOTE: skip deploying contracts for Arbitrum (L2)")
         return
 
@@ -523,7 +523,7 @@ def deploy_strategy(
     admin,
     owner_l2,
 ):
-    if brownie.network.show_active() == 'rinkeby' or brownie.network.show_active() == 'mainnet-fork':
+    if brownie.network.show_active() in ['mainnet-fork', 'rinkeby']:
         print("NOTE: skip deploying contracts for Arbitrum (L2)")
         return
 
@@ -622,7 +622,7 @@ def deploy_buyback(
     pool_fee,
     owner_l2
 ):
-    if brownie.network.show_active() == 'rinkeby' or brownie.network.show_active() == 'mainnet-fork':
+    if brownie.network.show_active() in ['mainnet-fork', 'rinkeby']:
         print("NOTE: skip deploying contracts for Arbitrum (L2)")
         return
 
@@ -651,7 +651,7 @@ def configure_collaterals(
     strategy_proxy,
     owner_l2
 ):
-    if brownie.network.show_active() == 'rinkeby' or brownie.network.show_active() == 'mainnet-fork':
+    if brownie.network.show_active() in ['mainnet-fork', 'rinkeby']:
         print("NOTE: skip deploying contracts for Arbitrum (L2)")
         return
 
@@ -700,7 +700,7 @@ def create_uniswap_v3_pool(
     owner_l2,
     vault_proxy
 ):
-    if brownie.network.show_active() == 'rinkeby' or brownie.network.show_active() == 'mainnet-fork':
+    if brownie.network.show_active() in ['mainnet-fork', 'rinkeby']:
         print("NOTE: skip deploying contracts for Arbitrum (L2)")
         return
 
@@ -754,7 +754,7 @@ def mintSPA(
     owner_l2,
     vault_proxy
 ):
-    if brownie.network.show_active() == 'rinkeby' or brownie.network.show_active() == 'mainnet-fork':
+    if brownie.network.show_active() in ['mainnet-fork', 'rinkeby']:
         print("NOTE: skip deploying contracts for Arbitrum (L2)")
         return
 
@@ -776,7 +776,7 @@ def mintSPA(
     assert txn.events['Transfer']['value'] == amount
 
 def update_oracle_setting(oracle_proxy, owner_l2, spa, usds_proxy):
-    if brownie.network.show_active() == 'rinkeby' or brownie.network.show_active() == 'mainnet-fork':
+    if brownie.network.show_active() in ['mainnet-fork', 'rinkeby']:
         print("NOTE: skip deploying contracts for Arbitrum (L2)")
         return
 

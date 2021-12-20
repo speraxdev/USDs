@@ -6,7 +6,7 @@ from brownie import (
 )
 
 def network_not_ethereum():
-    if  network.show_active() == 'mainnet-fork' or network.show_active() == 'rinkeby':
+    if network.show_active() in ['mainnet-fork', 'rinkeby']:
         return False
     return True
 
