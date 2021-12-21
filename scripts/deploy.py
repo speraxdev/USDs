@@ -225,12 +225,12 @@ def main():
 
     # configure stablecoin collaterals in vault and oracle
     configure_collaterals(vault_proxy, oracle_proxy, owner, convert)
-    if network.show_active() == 'arbitrum-main-fork' or 'arbitrum-one':
+    if network.show_active() in ['arbitrum-main-fork', 'arbitrum-one']:
         deploy_strategy(usds_proxy, vault_proxy, oracle_proxy, admin, owner)
 
     print(f"\n{network.show_active()}:\n")
     editAddressFile(USDs_file, bancor.address, "bancor_formula")
-    editAddressFile(USDs_file, core_proxy.address, "vault_core_tools_proxy")
+    editAddressFile(USDs_file, vault_tools_proxy.address, "vault_core_tools_proxy")
     editAddressFile(USDs_file, vault_proxy.address, "vault_core_proxy")
     editAddressFile(USDs_file, oracle_proxy.address, "oracle_proxy")
     editAddressFile(USDs_file, usds_proxy.address, "USDs__l2_proxy")
