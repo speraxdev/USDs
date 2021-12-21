@@ -125,6 +125,8 @@ def test_mint_usds(sperax, mock_token4, owner_l2, accounts, weth, mock_token2):
 
     vault_proxy.renounceRole(vault_proxy.REBASER_ROLE(), owner_l2, {'from': owner_l2})
 
+    core_proxy.chiRedeem(vault_proxy, {'from': owner_l2})
+
     #emit TotalValueLocked(totalValueLocked(), totalValueInVault(), totalValueInStrategies());
 
 
@@ -397,64 +399,6 @@ def test_update_strategy_rwd_buyback_addr(sperax, owner_l2):
     assert txn.events["StrategyRwdBuyBackUpdateded"]["buybackAddr"]  == buyback.address
 
 
-# def test_rebase(sperax, owner_l2, accounts, weth):
-#     (   spa,
-#         usds_proxy,
-#         core_proxy,
-#         vault_proxy,
-#         oracle_proxy,
-#         strategy_proxy,
-#         buyback,
-#         buyback_multihop
-#     ) = sperax
-
-#     with reverts('Rebase paused'):
-#         txn = vault_proxy.rebase({'from': owner_l2})
-
-#     vault_proxy.updateRebasePermission(True, {'from': owner_l2})
-
-#     with reverts('Caller is not a rebaser'):
-#         vault_proxy.rebase({'from': owner_l2})
-
-
-#     deadline = brownie.chain.time() + 2000
-#     amount  = 1000000
- 
-#     slippage_collateral_mint = 1000000000000000000000000000000
-#     slippage_spa_mint = 1000000000000000000000000000000
-
-#     spa.approve(accounts[5].address, amount, {'from': owner_l2})
-#     spa.transfer(accounts[5].address, amount, {'from': owner_l2})
-
-#     spa.approve(vault_proxy.address, slippage_collateral_mint, {'from': accounts[5] })
-#     weth_erc20 = brownie.interface.IERC20(weth.address)
-#     weth_erc20.approve(vault_proxy.address, slippage_collateral_mint, {'from': accounts[5]})
-   
-
-#     txn = vault_proxy.mintBySpecifyingUSDsAmt(
-#         weth.address,
-#         int(amount),
-#         slippage_collateral_mint,
-#         slippage_spa_mint,
-#         deadline,
-#         {'from': accounts[5]}
-#     )
-
-#     vault_proxy.grantRole(vault_proxy.REBASER_ROLE(), owner_l2, {'from': owner_l2})
-#     txn = vault_proxy.rebase({'from': owner_l2})
-
-#     vault_proxy.revokeRole(vault_proxy.REBASER_ROLE(), owner_l2, {'from': owner_l2})
-
-
-#     vault_proxy.renounceRole(vault_proxy.REBASER_ROLE(), owner_l2, {'from': owner_l2})
-
-#     # assert txn.events["SPAprice"]["SPAprice"] > 0
-#     # assert txn.events["USDsPrice"]["USDsPrice"] > 0
-
-#     # assert txn.events["Rebase"]["oldSupply"]  > 0
-#    # assert txn.events["Rebase"]["newSupply"] == 0
-
-
 def test_reedem(sperax, accounts, mock_token4, owner_l2, weth):
     (   spa,
         usds_proxy,
@@ -677,12 +621,8 @@ def test_vault_core_tools_spa_amount_calculator(sperax, owner_l2):
 
     #assert txn.return_value > 0
 
-
     txn = core_proxy.SPAAmountCalculator(0, 10000, vault_proxy, 0,{'from': owner_l2})
 
-    # function USDsAmountCalculator(
-	# 	uint valueType, uint valueAmt, address _VaultCoreContract, address collaAddr, uint swapFee
-	# )
 
 def test_usds_amount_calculator(sperax, owner_l2, weth):
     (   spa,
@@ -705,9 +645,6 @@ def test_usds_amount_calculator(sperax, owner_l2, weth):
 
     txn = core_proxy.USDsAmountCalculator(1, 10000, vault_proxy, weth, 3000,{'from': owner_l2})
 
-	# function collaDeptAmountCalculator(
-	# 	uint valueType, uint USDsAmt, address _VaultCoreContract, address collaAddr, uint swapFee
-	# )
 
 def test_colla_dept_amount_calculator(sperax, owner_l2, weth):
     (   spa,
@@ -731,20 +668,6 @@ def test_colla_dept_amount_calculator(sperax, owner_l2, weth):
     txn = core_proxy.collaDeptAmountCalculator(1, 10000, vault_proxy, weth, 3000,{'from': owner_l2})
 
 
-#updateSwapInOutFeePermission(bool _swapfeeInAllowed, bool _swapfeeOutAllowed)
-def test_calculate_swapfeein(sperax, owner_l2):
-    (   spa,
-        usds_proxy,
-        core_proxy,
-        vault_proxy,
-        oracle_proxy,
-        strategy_proxy,
-        buyback,
-        buyback_multihop
-    ) = sperax
-
-    txn = vault_proxy.updateSwapInOutFeePermission(True, False, {'from': owner_l2})
-    txn = core_proxy.calculateSwapFeeIn(vault_proxy, {'from': owner_l2})
 
 def test_calculate_swapfeein(sperax, owner_l2):
     (   spa,
@@ -758,8 +681,9 @@ def test_calculate_swapfeein(sperax, owner_l2):
     ) = sperax
 
     txn = vault_proxy.updateSwapInOutFeePermission(True, False, {'from': owner_l2})
-    txn = core_proxy.calculateSwapFeeIn(vault_proxy, {'from': owner_l2})
-
+    fee = core_proxy.calculateSwapFeeIn.call(vault_proxy, {'from': owner_l2})
+ 
+    assert fee > 0
 
 
 def test_calculate_swapfeeout(sperax, owner_l2):
@@ -774,18 +698,54 @@ def test_calculate_swapfeeout(sperax, owner_l2):
     ) = sperax
 
     txn = vault_proxy.updateSwapInOutFeePermission(False, True, {'from': owner_l2})
-    txn = core_proxy.calculateSwapFeeOut(vault_proxy, {'from': owner_l2})
+    fee = core_proxy.calculateSwapFeeOut.call(vault_proxy, {'from': owner_l2})
+    fee > 0
+
+def test_chi_redeem(sperax, owner_l2):
+    (   spa,
+        usds_proxy,
+        core_proxy,
+        vault_proxy,
+        oracle_proxy,
+        strategy_proxy,
+        buyback,
+        buyback_multihop
+    ) = sperax
 
 
+    core_proxy.chiRedeem(vault_proxy, {'from': owner_l2})
+
+def test_chi_redeem(sperax, owner_l2):
+    (   spa,
+        usds_proxy,
+        core_proxy,
+        vault_proxy,
+        oracle_proxy,
+        strategy_proxy,
+        buyback,
+        buyback_multihop
+    ) = sperax
 
 
+    core_proxy.chiRedeem(vault_proxy, {'from': owner_l2})
+
+def test_chi_target(sperax, owner_l2):
+    (   spa,
+        usds_proxy,
+        core_proxy,
+        vault_proxy,
+        oracle_proxy,
+        strategy_proxy,
+        buyback,
+        buyback_multihop
+    ) = sperax
 
 
+    core_proxy.chiTarget(10, 1000, 1000000, vault_proxy, {'from':owner_l2 }) 
 
-
-
- 
-
+    core_proxy.chiTarget(10, 100000, 10000, vault_proxy, {'from':owner_l2 }) 
+			
+		
 
 
 
