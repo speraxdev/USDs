@@ -17,7 +17,8 @@ def test_valid_mint(sperax, accounts, amount):
         oracle_proxy,
         strategy_proxy,
         buyback,
-        buyback_multihop
+        buyback_multihop,
+        bancor
     ) = sperax
 
     print('amount: ', amount)
