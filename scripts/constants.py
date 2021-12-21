@@ -10,7 +10,7 @@ with open(wSPAL1_file) as f:
 with open(SPAL2_file) as f:
     SPAL2 = json.load(f)
 with open(USDs_file) as f:
-    USDs = json.load(f) 
+    USDs = json.load(f)
 
 
 
@@ -92,7 +92,7 @@ testnetAddresses = Addresses(
 mainnet_deploy_address = DeployAddresses(
     ## Note: these need to be added. here it's  0xdeadbeef in the meantime...
     wSPAL1['mainnet'], #L1_wSPA NOTE: this is a wrong address. only here for testing purpose
-    "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef", #L1_USDs NOTE: this is a wrong address. only here for testing purpose
+    "0x0000000000000000000000000000000000000000", #L1_USDs NOTE: this is a wrong address. only here for testing purpose
     "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef", #L1_feeVault NOTE: this is a wrong address. only here for testing purpose
     SPAL2['mainnet'] #L2_SPA. NOTE: this is a wrong address. only here for testing purpose
     )
@@ -129,7 +129,7 @@ mainnet_collaterals = {
 mainnetAddresses = Addresses(
     mainnet_deploy_address,
     mainnet_upgrade_address,
-    testnet_third_party_addresses,
+    mainnet_third_party_address,
     mainnet_collaterals
     )
 
@@ -167,7 +167,7 @@ mainnet_L1_addresses = L1DeployAddresses(
     )
 
 class StrategyVars:
-    def __init__(self, platform_address, vault_proxy_address, reward_token_address, assets, lp_tokens, crv_gauge_address, index):
+    def __init__(self, platform_address, vault_proxy_address, reward_token_address, assets, lp_tokens, crv_gauge_address, index, oracle_proxy_address):
         self.platform_address = platform_address
         self.vault_proxy_address = vault_proxy_address
         self.reward_token_address = reward_token_address
@@ -175,6 +175,7 @@ class StrategyVars:
         self.lp_tokens = lp_tokens
         self.crv_gauge_address = crv_gauge_address
         self.index = index
+        self.oracle_proxy_address = oracle_proxy_address
 
 strategy_vars_base = StrategyVars(
     '0x960ea3e3C7FB317332d990873d354E18d7645590', # platform address
@@ -184,7 +185,7 @@ strategy_vars_base = StrategyVars(
             '0x82af49447d8a07e3bd95bd0d56f35241523fbab1',
             '0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9',
             '0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f',
-    ], # assets 
+    ], # assets
     [
             '0x8e0B8c8BB9db49a46697F3a5Bb8A308e744821D2',
             '0x8e0B8c8BB9db49a46697F3a5Bb8A308e744821D2',
@@ -192,5 +193,5 @@ strategy_vars_base = StrategyVars(
     ], # LP tokens
     '0x97E2768e8E73511cA874545DC5Ff8067eB19B787', # crv gauge address
     0, # index NEED TO INITIALIZE IN SCRIPT
+    "", # oracle address NEED TO INITIALIZE IN SCRIPT
     )
-

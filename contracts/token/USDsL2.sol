@@ -534,7 +534,7 @@ contract USDsL2 is aeERC20, OwnableUpgradeable, IArbToken, IUSDs, ReentrancyGuar
     // Arbitrum Bridge
     /**
      * @notice change the arbitrum bridge address and corresponding L1 token address
-     * @dev normally this function should not be called
+     * @dev normally this function should not be called after token registration
      * @param newL2Gateway the new bridge address
      * @param newL1Address the new router address
      */
