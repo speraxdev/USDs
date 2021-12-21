@@ -299,58 +299,31 @@ def sperax(
         {'from': owner_l2}
     )
 
-    # need to be fixed to align with deploy.py
-    strategy_proxy = deploy_strategy(
-        TransparentUpgradeableProxy,
-        ThreePoolStrategy,
-        vault_proxy,
-        oracle_proxy,
-        usdt,
-        wbtc,
-        weth,
-        Contract,
-        proxy_admin,
-        admin,
-        owner_l2
-    )
-
-    buyback = deploy_buyback(
-        BuybackSingle,
-        vault_proxy,
-        spa,
-        mock_token2,
-        3000, # pool_fee
-        owner_l2
-    )
-
-    buyback_multihop  =  BuybackTwoHops.deploy(
-        mock_token3.address, # token1
-        vault_proxy.address,
-        {'from': owner_l2}
-    )
-    pool_fee1 = 3000
-    pool_fee2 = 3000
-
-    buyback_multihop.updateInputTokenInfo(
-        spa.address,
-        True, #supported
-        mock_token2.address, #_intermediateToken
-        pool_fee1,
-        pool_fee2
-    )
-
     # configure stablecoin collaterals in vault and oracle
     configure_collaterals(
         vault_proxy,
         oracle_proxy,
-        buyback,
+        usdc,
         usdt,
         wbtc,
-        mock_token4,
-        weth,
-        strategy_proxy,
+        mock_token2,
         owner_l2
     )
+
+    if brownie.network.show_active() in ['arbitrum-main-fork', 'arbitrum-one']:
+        (strategies, buybacks) = deploy_strategies(
+            TransparentUpgradeableProxy,
+            ThreePoolStrategy,
+            vault_proxy,
+            oracle_proxy,
+            usdt,
+            wbtc,
+            weth,
+            Contract,
+            proxy_admin,
+            admin,
+            owner_l2
+        )
 
     # here it's temporarily change Oralce for SPA from SPA-USDC to SPA-ETH
     # would suggest to use a mock token to mock USDC instead
@@ -511,11 +484,15 @@ def deploy_usds(
     )
     return usds_proxy
 
-def deploy_strategy(
+def deploy_strategies(
     TransparentUpgradeableProxy,
     ThreePoolStrategy,
+    BuybackTwoHops,
+    BuybackThreeHops,
     vault_proxy,
     oracle_proxy,
+    usds_proxy,
+    usdc,
     usdt,
     wbtc,
     weth,
@@ -524,10 +501,6 @@ def deploy_strategy(
     admin,
     owner_l2,
 ):
-    if brownie.network.show_active() in ['mainnet-fork', 'rinkeby']:
-        print("NOTE: skip deploying contracts for Arbitrum (L2)")
-        return
-
     # Arbitrum-one (mainnet):
     platform_address = '0x960ea3e3C7FB317332d990873d354E18d7645590'
     reward_token_address = '0x11cdb42b0eb46d95f990bedd4695a6e3fa034978'
@@ -538,21 +511,124 @@ def deploy_strategy(
         wbtc,
         weth,
     ]
-    assets_2 = [ # intended to fail
-        weth,
-    ]
-
     lp_tokens = [
         '0x8e0B8c8BB9db49a46697F3a5Bb8A308e744821D2',
         '0x8e0B8c8BB9db49a46697F3a5Bb8A308e744821D2',
         '0x8e0B8c8BB9db49a46697F3a5Bb8A308e744821D2',
     ]
-    lp_tokens_2 = [ # intended to fail
-        '0x8e0B8c8BB9db49a46697F3a5Bb8A308e744821D2',
-        '0x8e0B8c8BB9db49a46697F3a5Bb8A308e744821D2',
-    ]
 
-    # THREE POOL strategy
+    usdt_strategy = deploy_strategy(
+        TransparentUpgradeableProxy,
+        ThreePoolStrategy,
+        vault_proxy,
+        oracle_proxy,
+        Contract,
+        proxy_admin,
+        admin,
+        owner_l2,
+    )
+    usdt_strategy.initialize(
+        platform_address,
+        vault_proxy,
+        reward_token_address,
+        assets,
+        lp_tokens,
+        crv_gauge_address,
+        0,
+        oracle_proxy,
+        {'from': owner_l2}
+    )
+    wbtc_strategy = deploy_strategy(
+        TransparentUpgradeableProxy,
+        ThreePoolStrategy,
+        vault_proxy,
+        oracle_proxy,
+        Contract,
+        proxy_admin,
+        admin,
+        owner_l2,
+    )
+    wbtc_strategy.initialize(
+        platform_address,
+        vault_proxy,
+        reward_token_address,
+        assets,
+        lp_tokens,
+        crv_gauge_address,
+        1,
+        oracle_proxy,
+        {'from': owner_l2}
+    )
+    weth_strategy = deploy_strategy(
+        TransparentUpgradeableProxy,
+        ThreePoolStrategy,
+        vault_proxy,
+        oracle_proxy,
+        Contract,
+        proxy_admin,
+        admin,
+        owner_l2,
+    )
+    weth_strategy.initialize(
+        platform_address,
+        vault_proxy,
+        reward_token_address,
+        assets,
+        lp_tokens,
+        crv_gauge_address,
+        2,
+        oracle_proxy,
+        {'from': owner_l2}
+    )
+
+    two_hops_buyback = deploy_buyback_two_hops(
+        BuybackTwoHops,
+        vault_proxy,
+        usds_proxy,
+        usdt,
+        usdc,
+        wbtc,
+        weth,
+        owner_l2
+    )
+    three_hops_buyback = deploy_buyback_three_hops(
+        BuybackThreeHops,
+        vault_proxy,
+        usds_proxy,
+        usdc,
+        weth,
+        owner_l2
+    )
+
+    configure_vault(
+        vault_proxy,
+        usdt_strategy,
+        wbtc_strategy,
+        weth_strategy,
+        two_hops_buyback,
+        three_hops_buyback,
+        owner_l2
+    )
+
+    return ((
+        usdt_strategy,
+        wbtc_strategy,
+        weth_strategy,
+    ), (
+        two_hops_buyback,
+        three_hops_buyback
+    ))
+
+def deploy_strategy(
+    TransparentUpgradeableProxy,
+    ThreePoolStrategy,
+    vault_proxy,
+    oracle_proxy,
+    Contract,
+    proxy_admin,
+    admin,
+    owner_l2,
+):
     strategy = ThreePoolStrategy.deploy(
         {'from': owner_l2}
     )
@@ -568,92 +644,147 @@ def deploy_strategy(
         ThreePoolStrategy.abi
     )
 
-    with brownie.reverts("_supportedAssetIndex exceeds 2"):
-         strategy_proxy.initialize(
-         platform_address,
-         vault_proxy,
-         reward_token_address,
-         assets,
-         lp_tokens_2,
-         crv_gauge_address,
-         3,
-         oracle_proxy,
-         {'from': owner_l2}
-    )
-
-    with brownie.reverts("Invalid input arrays"):
-         strategy_proxy.initialize(
-         platform_address,
-         vault_proxy,
-         reward_token_address,
-         assets,
-         lp_tokens_2,
-         crv_gauge_address,
-         2,
-         oracle_proxy,
-         {'from': owner_l2}
-    )
-
-    with brownie.reverts("Must have exactly three assets"):
-        strategy_proxy.initialize(
-        platform_address,
-        vault_proxy,
-        reward_token_address,
-        assets_2,
-        lp_tokens_2,
-        crv_gauge_address,
-        2,
-        oracle_proxy,
-        {'from': owner_l2}
-    )
-    strategy_proxy.initialize(
-        platform_address,
-        vault_proxy,
-        reward_token_address,
-        assets,
-        lp_tokens,
-        crv_gauge_address,
-        2,
-        oracle_proxy,
-        {'from': owner_l2}
-    )
     return strategy_proxy
 
-def deploy_buyback(
-    BuybackSingle,
+def deploy_buyback_two_hops(
+    BuybackTwoHops,
     vault_proxy,
-    spa,
     usds_proxy,
-    pool_fee,
+    usdt,
+    usdc,
+    wbtc,
+    weth,
     owner_l2
 ):
-    if brownie.network.show_active() in ['mainnet-fork', 'rinkeby']:
-        print("NOTE: skip deploying contracts for Arbitrum (L2)")
-        return
-
-    buyback = BuybackSingle.deploy(
-        usds_proxy.address, # token1
+    buyback = BuybackTwoHops.deploy(
+        usds_proxy.address,
         vault_proxy.address,
         {'from': owner_l2}
     )
     buyback.updateInputTokenInfo(
-        spa.address, # token2
+        usdt,
         True, # supported
-        pool_fee,
+        usdc,
+        500,
+        500,
+        {'from': owner_l2}
+    )
+    buyback.updateInputTokenInfo(
+        wbtc,
+        True, # supported
+        usdc,
+        3000,
+        500,
+        {'from': owner_l2}
+    )
+    buyback.updateInputTokenInfo(
+        weth,
+        True, # supported
+        usdc,
+        10000,
+        500,
         {'from': owner_l2}
     )
     return buyback
+
+def deploy_buyback_three_hops(
+    BuybackThreeHops,
+    vault_proxy,
+    usds_proxy,
+    usdc,
+    weth,
+    owner_l2
+):
+    buyback = BuybackThreeHops.deploy(
+        usds_proxy.address,
+        vault_proxy.address,
+        {'from': owner_l2}
+    )
+    crv_address = '0x11cdb42b0eb46d95f990bedd4695a6e3fa034978'
+    buyback.updateInputTokenInfo(
+        crv_address,
+        True, # supported
+        weth,
+        usdc,
+        3000,
+        500,
+        500,
+        {'from': owner_l2}
+    )
+    return buyback
+
+def configure_vault(
+    vault_proxy,
+    usdt_strategy,
+    wbtc_strategy,
+    weth_strategy,
+    two_hops_buyback,
+    three_hops_buyback,
+    owner_l2
+):
+    vault_proxy.addStrategy(
+        usdt_strategy,
+        {'from': owner_l2}
+    )
+    vault_proxy.addStrategy(
+        wbtc_strategy,
+        {'from': owner_l2}
+    )
+    vault_proxy.addStrategy(
+        weth_strategy,
+        {'from': owner_l2}
+    )
+    vault_proxy.updateStrategyRwdBuybackAddr(
+        usdt_strategy,
+        three_hops_buyback.address,
+        {'from': owner_l2}
+    )
+    vault_proxy.updateStrategyRwdBuybackAddr(
+        wbtc_strategy,
+        three_hops_buyback.address,
+        {'from': owner_l2}
+    )
+    vault_proxy.updateStrategyRwdBuybackAddr(
+        weth_strategy,
+        three_hops_buyback.address,
+        {'from': owner_l2}
+    )
+    vault_proxy.updateCollateralInfo(
+        usdt,
+        usdt_strategy,
+        True,
+        80,
+        two_hops_buyback.address,
+        True,
+        {'from': owner_l2}
+    )
+    vault_proxy.updateCollateralInfo(
+        wbtc,
+        wbtc_strategy,
+        True,
+        80,
+        two_hops_buyback.address,
+        True,
+        {'from': owner_l2}
+    )
+    vault_proxy.updateCollateralInfo(
+        weth,
+        weth_strategy,
+        True,
+        80,
+        two_hops_buyback.address,
+        True,
+        {'from': owner_l2}
+    )
 
 
 def configure_collaterals(
     vault_proxy,
     oracle_proxy,
-    buyback,
+    usdc,
     usdt,
     wbtc,
-    mock_token4,
     mock_token2,
-    strategy_proxy,
     owner_l2
 ):
     if brownie.network.show_active() in ['mainnet-fork', 'rinkeby']:
@@ -663,9 +794,9 @@ def configure_collaterals(
     # Arbitrum mainnet collaterals: token address, chainlink
     collaterals = {
         # USDC
-        '0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8': '0x50834F3163758fcC1Df9973b6e91f0F0F0434aD3',
+        usdc: '0x50834F3163758fcC1Df9973b6e91f0F0F0434aD3',
         # USDT
-        mock_token4: '0x3f3f5dF88dC9F13eac63DF89EC16ef6e7E25DdE7',
+        usdt: '0x3f3f5dF88dC9F13eac63DF89EC16ef6e7E25DdE7',
         # DAI
         '0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1': '0xc5C8E77B397E531B8EC06BFb0048328B30E9eCfB',
         # WBTC
@@ -674,15 +805,16 @@ def configure_collaterals(
     }
 
     precision = 10**8
+    zero_address = brownie.convert.to_address('0x0000000000000000000000000000000000000000')
     for collateral, chainlink in collaterals.items():
         print("collateral", collateral)
         # authorize a new collateral
         vault_proxy.addCollateral(
             collateral, # address of: USDC, USDT, DAI or WBTC
-            strategy_proxy, # _defaultStrategyAddr: CURVE, AAVE, etc
-            True, # _allocationAllowed
-            80, # _allocatePercentage
-            buyback, # _buyBackAddr
+            zero_address, # _defaultStrategyAddr: CURVE, AAVE, etc
+            False, # _allocationAllowed
+            0, # _allocatePercentage
+            zero_address, # _buyBackAddr
             False, # _rebaseAllowed
             {'from': owner_l2}
         )
