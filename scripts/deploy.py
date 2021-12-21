@@ -225,9 +225,8 @@ def main():
 
     # configure stablecoin collaterals in vault and oracle
     configure_collaterals(vault_proxy, oracle_proxy, owner, convert)
-
     if network.show_active() in ['arbitrum-main-fork', 'arbitrum-one']:
-        deploy_strategies(usds_proxy, vault_proxy, oracle_proxy, admin, owner)
+        deploy_strategy(usds_proxy, vault_proxy, oracle_proxy, admin, owner)
 
     print(f"\n{network.show_active()}:\n")
     editAddressFile(USDs_file, bancor.address, "bancor_formula")
@@ -293,7 +292,7 @@ def configure_collaterals(
             {'from': owner }
         )
 
-def deploy_strategies(
+def deploy_strategy(
     usds_proxy,
     vault_proxy,
     oracle_proxy,
@@ -306,9 +305,9 @@ def deploy_strategies(
     usdc_address = '0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8'
     crv_address = '0x11cdb42b0eb46d95f990bedd4695a6e3fa034978'
     # deploy strategy contracts for usdt, wbtc and weth
-    strategy_proxy_addr_usdt = deploy_strategy(0, admin, owner, vault_proxy, oracle_proxy)
-    strategy_proxy_addr_wbtc = deploy_strategy(1, admin, owner, vault_proxy, oracle_proxy)
-    strategy_proxy_addr_weth = deploy_strategy(2, admin, owner, vault_proxy, oracle_proxy)
+    strategy_proxy_addr_usdt = deploy_one_strategy(0, admin, owner, vault_proxy, oracle_proxy)
+    strategy_proxy_addr_wbtc = deploy_one_strategy(1, admin, owner, vault_proxy, oracle_proxy)
+    strategy_proxy_addr_weth = deploy_one_strategy(2, admin, owner, vault_proxy, oracle_proxy)
     # deploy buyback contract supporting swapping usdt, wbtc and weth back to usds
     buybackTwoHops = BuybackTwoHops.deploy(
         usds_proxy.address,
@@ -368,12 +367,12 @@ def deploy_strategies(
         {'from': owner},
     )
     vault_proxy.updateStrategyRwdBuybackAddr(
-        strategy_proxy_addr_wbtc,
+        strategy_proxy_addr_usdt,
         buybackThreeHops.address,
         {'from': owner},
     )
     vault_proxy.updateStrategyRwdBuybackAddr(
-        strategy_proxy_addr_weth,
+        strategy_proxy_addr_usdt,
         buybackThreeHops.address,
         {'from': owner},
     )
@@ -414,37 +413,38 @@ def deploy_strategies(
     print(f"BuybackThreeHops (crv) deployed at address: {buybackThreeHops.address}")
 
 
-def deploy_strategy(index, admin, owner, vault_proxy, oracle_proxy):
-    strategy = ThreePoolStrategy.deploy(
-        {'from': owner, 'gas_limit': 100000000},
-    )
-    proxy_admin = ProxyAdmin.deploy(
-        {'from': admin},
-    )
-    proxy = TransparentUpgradeableProxy.deploy(
-        strategy.address,
-        proxy_admin.address,
-        eth_utils.to_bytes(hexstr="0x"),
-        {'from': admin},
-#        publish_source=True,
-    )
-    strategy_proxy = Contract.from_abi(
-        "ThreePoolStrategy",
-        proxy.address,
-        ThreePoolStrategy.abi
-    )
+def deploy_one_strategy(index, admin, owner, vault_proxy, oracle_proxy):
+    if network.show_active() == 'mainnet' or 'arbitrum-main-fork':
+        strategy = ThreePoolStrategy.deploy(
+            {'from': owner, 'gas_limit': 100000000},
+        )
+        proxy_admin = ProxyAdmin.deploy(
+            {'from': admin},
+        )
+        proxy = TransparentUpgradeableProxy.deploy(
+            strategy.address,
+            proxy_admin.address,
+            eth_utils.to_bytes(hexstr="0x"),
+            {'from': admin},
+    #        publish_source=True,
+        )
+        strategy_proxy = Contract.from_abi(
+            "ThreePoolStrategy",
+            proxy.address,
+            ThreePoolStrategy.abi
+        )
 
-    strategy_vars_base.vault_proxy_address = vault_proxy.address
-    strategy_vars_base.index = index
-    strategy_vars_base.oralce_proxy_address = oracle_proxy.address
-    strategy_proxy.initialize(
-        strategy_vars_base.platform_address,
-        strategy_vars_base.vault_proxy_address,
-        strategy_vars_base.reward_token_address,
-        strategy_vars_base.assets,
-        strategy_vars_base.lp_tokens,
-        strategy_vars_base.crv_gauge_address,
-        strategy_vars_base.index,
-        {'from': owner, 'gas_limit': 100000000},
-    )
-    return strategy_proxy.address
+        strategy_vars_base.vault_proxy_address = vault_proxy.address
+        strategy_vars_base.index = index
+        strategy_vars_base.oralce_proxy_address = oracle_proxy.address
+        strategy_proxy.initialize(
+            strategy_vars_base.platform_address,
+            strategy_vars_base.vault_proxy_address,
+            strategy_vars_base.reward_token_address,
+            strategy_vars_base.assets,
+            strategy_vars_base.lp_tokens,
+            strategy_vars_base.crv_gauge_address,
+            strategy_vars_base.index,
+            {'from': owner, 'gas_limit': 100000000},
+        )
+        return strategy_proxy.address
