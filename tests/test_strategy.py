@@ -15,7 +15,8 @@ def test_withdraw(sperax, weth,usdt,wbtc,owner_l2, accounts):
         oracle_proxy,
         strategy_proxy,
         buyback,
-        buyback_multihop
+        buyback_multihop,
+        bancor
     ) = sperax
     amount = int(1000000000)
         ### usdt deposit-------------------------------------------------------
@@ -107,7 +108,8 @@ def test_check_balance(sperax, weth,usdt):
         oracle_proxy,
         strategy_proxy,
         buyback,
-        buyback_multihop
+        buyback_multihop,
+        bancor
     ) = sperax
     zero_address = "0x0000000000000000000000000000000000000000"
     balance = strategy_proxy.checkBalance(weth, {'from': vault_proxy.address})
@@ -129,7 +131,8 @@ def test__safe_approve_all_tokens(sperax, owner_l2):
         oracle_proxy,
         strategy_proxy,
         buyback,
-        buyback_multihop
+        buyback_multihop,
+        bancor
     ) = sperax
 
     strategy_proxy.safeApproveAllTokens(
@@ -146,7 +149,8 @@ def test_collect_reward_token(sperax):
         oracle_proxy,
         strategy_proxy,
         buyback,
-        buyback_multihop
+        buyback_multihop,
+        bancor
     ) = sperax
     txn = strategy_proxy.collectRewardToken(
         {'from': vault_proxy.address})
@@ -162,7 +166,8 @@ def test_set_reward_Token_Address(sperax, weth, owner_l2):
         oracle_proxy,
         strategy_proxy,
         buyback,
-        buyback_multihop
+        buyback_multihop,
+        bancor
     ) = sperax
     txn = strategy_proxy.setRewardTokenAddress(
         weth.address,
@@ -178,7 +183,8 @@ def test_set_reward_liquidation_threshold(sperax, weth, owner_l2):
         oracle_proxy,
         strategy_proxy,
         buyback,
-        buyback_multihop
+        buyback_multihop,
+        bancor
     ) = sperax
     threshold = int(10)
     txn = strategy_proxy.setRewardLiquidationThreshold(
@@ -199,7 +205,8 @@ def test_set_interest_liquidation_threshold(sperax, owner_l2):
         oracle_proxy,
         strategy_proxy,
         buyback,
-        buyback_multihop
+        buyback_multihop,
+        bancor
     ) = sperax
     Threshold = int(10)
     txn = strategy_proxy.setInterestLiquidationThreshold(
@@ -221,7 +228,8 @@ def test_set_PToken_address(sperax, weth, owner_l2):
         oracle_proxy,
         strategy_proxy,
         buyback,
-        buyback_multihop
+        buyback_multihop,
+        bancor
     ) = sperax
     reward_address = '0x8e0B8c8BB9db49a46697F3a5Bb8A308e744821D3'
     txn = strategy_proxy.setPTokenAddress(
@@ -246,7 +254,8 @@ def test_set_Reward_Token_zero_address_asset(sperax, weth, owner_l2):
         oracle_proxy,
         strategy_proxy,
         buyback,
-        buyback_multihop
+        buyback_multihop,
+        bancor
     ) = sperax
     zero_address = "0x0000000000000000000000000000000000000000"
 
@@ -267,7 +276,8 @@ def test_set_Reward_Token_zero_address_ptoken(sperax, weth, owner_l2):
         oracle_proxy,
         strategy_proxy,
         buyback,
-        buyback_multihop
+        buyback_multihop,
+        bancor
     ) = sperax
     zero_address = "0x0000000000000000000000000000000000000000"
     asset_address = '0x8e0B8c8BB9db49a46697F3a5Bb8A308e744822D3'
@@ -288,7 +298,8 @@ def test_set_PToken_address(sperax, weth, owner_l2):
         oracle_proxy,
         strategy_proxy,
         buyback,
-        buyback_multihop
+        buyback_multihop,
+        bancor
     ) = sperax
     ptoken_address2 = '0x8e0B8c8BB9db49a46697F3a5Bb8A308e744821D3'
     with brownie.reverts("pToken already set"):
@@ -314,7 +325,8 @@ def test_remove_PToken(sperax, owner_l2):
         oracle_proxy,
         strategy_proxy,
         buyback,
-        buyback_multihop
+        buyback_multihop,
+        bancor
     ) = sperax
     low_index = int(0)
 
@@ -341,7 +353,8 @@ def test_remove_PToken2(sperax, owner_l2):
         oracle_proxy,
         strategy_proxy,
         buyback,
-        buyback_multihop
+        buyback_multihop,
+        bancor
     ) = sperax
     low_index = int(1)
 
@@ -360,7 +373,8 @@ def test_remove_PToken_assets(sperax, owner_l2, accounts):
         oracle_proxy,
         strategy_proxy,
         buyback,
-        buyback_multihop
+        buyback_multihop,
+        bancor
     ) = sperax
     low_index = int(2)
 
@@ -381,7 +395,8 @@ def test_deposit(sperax, weth, accounts):
         oracle_proxy,
         strategy_proxy,
         buyback,
-        buyback_multihop
+        buyback_multihop,
+        bancor
     ) = sperax
 
     amount = int(9999)
@@ -421,7 +436,8 @@ def test_deposit_invalid_amount(sperax, weth):
         oracle_proxy,
         strategy_proxy,
         buyback,
-        buyback_multihop
+        buyback_multihop,
+        bancor
     ) = sperax
 
     amount = int(0)
@@ -443,7 +459,8 @@ def test_deposit_invalid_assets(sperax, weth, accounts, mock_token2):
         oracle_proxy,
         strategy_proxy,
         buyback,
-        buyback_multihop
+        buyback_multihop,
+        bancor
     ) = sperax
 
     amount = int(9999)
@@ -466,7 +483,8 @@ def test_withdraw_invalid_assets(sperax, mock_token3, accounts):
         oracle_proxy,
         strategy_proxy,
         buyback,
-        buyback_multihop
+        buyback_multihop,
+        bancor
     ) = sperax
 
     amount = int(9999)
@@ -488,7 +506,8 @@ def test_withdraw_invalid_amount(sperax, weth, accounts):
         oracle_proxy,
         strategy_proxy,
         buyback,
-        buyback_multihop
+        buyback_multihop,
+        bancor
     ) = sperax
 
     amount = int(0)
@@ -511,7 +530,8 @@ def test_withdraw_interest(sperax, weth,mock_token2, accounts):
         oracle_proxy,
         strategy_proxy,
         buyback,
-        buyback_multihop
+        buyback_multihop,
+        bancor
     ) = sperax
 
     amount = int(1000000000)
@@ -590,7 +610,8 @@ def test_withdraw_to_vault_invalid_amount(sperax, weth, owner_l2):
         oracle_proxy,
         strategy_proxy,
         buyback,
-        buyback_multihop
+        buyback_multihop,
+        bancor
     ) = sperax
 
     amount = int(0)
@@ -612,7 +633,8 @@ def test_withdraw_to_vault_invalid_assets(sperax, owner_l2):
         oracle_proxy,
         strategy_proxy,
         buyback,
-        buyback_multihop
+        buyback_multihop,
+        bancor
     ) = sperax
 
     amount = int(1000000000000000000000)
@@ -635,7 +657,8 @@ def test_withdraw_to_vault_invalid_recipient(sperax, mock_token3, owner_l2):
         oracle_proxy,
         strategy_proxy,
         buyback,
-        buyback_multihop
+        buyback_multihop,
+        bancor
     ) = sperax
 
     amount = int(10005)
@@ -656,7 +679,8 @@ def test_withdraw_to_vault(sperax, weth, owner_l2):
         oracle_proxy,
         strategy_proxy,
         buyback,
-        buyback_multihop
+        buyback_multihop,
+        bancor
     ) = sperax
     amount = int(1000000)
 

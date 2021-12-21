@@ -14,7 +14,10 @@ pytest:
 compiler:
     solc:
         version: 0.6.12
-        optimize: true
+        optimizer:
+            enabled: true
+            runs: 1
+      
         remappings:
           - "@openzeppelin/contracts-upgradeable=OpenZeppelin/openzeppelin-contracts-upgradeable@3.4.0/contracts"
           - "@openzeppelin/contracts=OpenZeppelin/openzeppelin-contracts@3.4.0/contracts"
