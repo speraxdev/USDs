@@ -7,12 +7,12 @@ import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/SafeERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
-
+import "../interfaces/IStrategy.sol";
 /**
  * @title USDs Strategies abstract contract
  * @author Sperax Foundation
  */
-abstract contract InitializableAbstractStrategy is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeable {
+abstract contract InitializableAbstractStrategy is IStrategy, Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeable {
     using SafeERC20Upgradeable for IERC20Upgradeable;
     using SafeMathUpgradeable for uint;
 
@@ -20,9 +20,13 @@ abstract contract InitializableAbstractStrategy is Initializable, OwnableUpgrade
     event PTokenRemoved(address indexed _asset, address _pToken);
     event Deposit(address indexed _asset, address _pToken, uint256 _amount);
     event Withdrawal(address indexed _asset, address _pToken, uint256 _amount);
+    event InterestCollected(
+        address indexed _asset,
+        address _pToken,
+        uint256 _amount
+    );
     event RewardTokenCollected(address recipient, uint256 amount);
     event RewardTokenAddressUpdated(address _oldAddress, address _newAddress);
-    event Validation (uint256 value);
     event RewardLiquidationThresholdUpdated(
         uint256 _oldThreshold,
         uint256 _newThreshold
@@ -46,9 +50,9 @@ abstract contract InitializableAbstractStrategy is Initializable, OwnableUpgrade
     address[] internal assetsMapped;
 
     // Reward token address
-    address public rewardTokenAddress;
-    uint256 public rewardLiquidationThreshold;
-    uint256 public interestLiquidationThreshold;
+    address public override rewardTokenAddress;
+    uint256 public override rewardLiquidationThreshold;
+    uint256 public override interestLiquidationThreshold;
 
     // Reserved for future expansion
     int256[100] private _reserved;
@@ -186,13 +190,13 @@ abstract contract InitializableAbstractStrategy is Initializable, OwnableUpgrade
     }
 
     /**
-     * @dev Check if an asset is supported.
+     * @dev Check if an asset/collateral is supported.
      * @param _asset    Address of the asset
      * @return bool     Whether asset is supported
      */
-    function supportsAsset(address _asset) external view returns (bool) {
-        return assetToPToken[_asset] != address(0);
-    }
+    function supportsCollateral(
+        address _asset
+    ) external view virtual override returns (bool);
 
     /***************************************
                  Abstract
@@ -206,7 +210,7 @@ abstract contract InitializableAbstractStrategy is Initializable, OwnableUpgrade
     function deposit(
         address _asset,
         uint256 _amount
-    ) external virtual;
+    ) external virtual override;
 
     /**
      * @dev Withdraw an amount of asset from the platform.
@@ -218,22 +222,22 @@ abstract contract InitializableAbstractStrategy is Initializable, OwnableUpgrade
         address _recipient,
         address _asset,
         uint256 _amount
-    ) external virtual;
+    ) external virtual override;
 
     /**
      * @dev Withdraw the interest earned of asset from the platform.
      * @param _recipient         Address to which the asset should be sent
      * @param _asset             Address of the asset
      */
-    function withdrawInterest(
+    function collectInterest(
         address _recipient,
         address _asset
-    ) external virtual;
+    ) external virtual override;
 
     /**
      * @dev Collect accumulated reward token and send to Vault.
      */
-    function collectRewardToken() external virtual;
+    function collectRewardToken() external virtual override;
 
     /**
      * @dev Withdraw an amount of asset from the platform to vault
@@ -257,6 +261,7 @@ abstract contract InitializableAbstractStrategy is Initializable, OwnableUpgrade
         external
         view
         virtual
+        override
         returns (uint256 balance);
 
     /**
@@ -268,6 +273,7 @@ abstract contract InitializableAbstractStrategy is Initializable, OwnableUpgrade
         external
         view
         virtual
+        override
         returns (uint256 interestEarned);
 
     /**

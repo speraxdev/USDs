@@ -3,7 +3,12 @@ import pytest
 import eth_utils
 import math
 import os
+import json
 import brownie
+from dotenv import load_dotenv
+
+# load environment variables defined in .env
+load_dotenv()
 
 @pytest.fixture(scope="module", autouse=True)
 def admin(accounts):
@@ -11,17 +16,70 @@ def admin(accounts):
 
 @pytest.fixture(scope="module", autouse=True)
 def owner_l1(accounts):
+    if brownie.network.show_active() == 'rinkeby':
+        return accounts.add(os.getenv('LOCAL_ACCOUNT_PRIVATE_KEY')) # minter
     return accounts[1]
 
 @pytest.fixture(scope="module", autouse=True)
-def usds1(USDsL1, owner_l1):
+def gatewayL1():
+    # rinkeby
+    if brownie.network.show_active() == 'rinkeby':
+        gateway = '0x917dc9a69f65dc3082d518192cd3725e1fa96ca2'
+    else: # Ethereum mainnet
+        gateway = '0xcEe284F754E854890e311e3280b767F80797180d'
+    return gateway
+
+@pytest.fixture(scope="module", autouse=True)
+def spa_l1(SperaxToken, SperaxTokenL1, gatewayL1, owner_l1):
+    # rinkeby:
+    if brownie.network.show_active() == 'rinkeby':
+        spa_l1_address = '0x7776B097f723eBbc8cd1a17f1fe253D11235cCE1'
+        router = '0x70c143928ecffaf9f5b406f7f4fc28dc43d68380'
+        cwd = os.getcwd()
+        filepath = cwd + '/supporting_contracts/SperaxTokenABI.json'
+        with open(filepath) as f:
+            abi = json.load(f)
+        # retrieve existing SPA contract
+        spa = brownie.Contract.from_abi(
+            'SperaxToken',
+            spa_l1_address,
+            abi
+        )
+    else:
+        # Ethereum mainnet
+        router = '0x72Ce9c846789fdB6fC1f34aC4AD25Dd9ef7031ef'
+        # deploy SPA contract
+        spa = SperaxToken.deploy(
+            'Sperax L1',
+            'SPAL1',
+            1000000000, # initial supply
+            {'from': owner_l1}
+        )
+
+    wspa = SperaxTokenL1.deploy(
+        'Wrapped Sperax L1',
+        'wSPAL1',
+        spa.address,
+        gatewayL1,
+        router,
+        {'from': owner_l1}
+    )
+    spa.setMintable(
+        wspa.address,
+        True,
+        {'from': owner_l1}
+    )
+    return (wspa, spa)
+
+@pytest.fixture(scope="module", autouse=True)
+def usds1(USDsL1, gatewayL1, owner_l1):
     usds1 = USDsL1.deploy(
         {'from': owner_l1}
     )
     usds1.initialize(
         'USDs Layer 1',
         'USDs1',
-        '0xcEe284F754E854890e311e3280b767F80797180d', # L1 bridge
+        gatewayL1, # L1 bridge/gateway
         '0x72Ce9c846789fdB6fC1f34aC4AD25Dd9ef7031ef', # L1 router
         {'from': owner_l1}
     )
@@ -32,10 +90,19 @@ def owner_l2(accounts):
     return accounts[2]
 
 @pytest.fixture(scope="module", autouse=True)
+def vault_fee(accounts):
+    return accounts[3]
+
+@pytest.fixture(scope="module", autouse=True)
+def user_account(accounts):
+    return accounts[4]
+
+@pytest.fixture(scope="module", autouse=True)
 def mock_token2(MockToken, owner_l2):
-    return MockToken.deploy(
+    mock_token = MockToken.deploy(
         {'from': owner_l2}
     )
+    return mock_token
 
 @pytest.fixture(scope="module", autouse=True)
 def mock_token3(MockToken, owner_l1, owner_l2):
@@ -46,14 +113,6 @@ def mock_token3(MockToken, owner_l1, owner_l2):
     mock_token.transfer(owner_l2.address, mock_token.balanceOf(owner_l1), {'from': owner_l1})
     return mock_token
 
-
-@pytest.fixture(scope="module", autouse=True)
-def vault_fee(accounts):
-    return accounts[3]
-
-@pytest.fixture(scope="module", autouse=True)
-def user_account(accounts):
-    return accounts[4]
 
 @pytest.fixture(scope="module", autouse=True)
 def chainlink_flags():
@@ -68,19 +127,48 @@ def weth():
     weth_address = '0x82af49447d8a07e3bd95bd0d56f35241523fbab1'
     # Arbitrum-rinkeby testnet:
     #weth_address = '0xB47e6A5f8b33b3F17603C83a0535A9dcD7E32681'
+    # Ethereum mainnet fork
+    if brownie.network.show_active() in ['mainnet-fork', 'rinkeby']:
+        weth_address = '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2'
     return brownie.interface.IWETH9(weth_address)
 
 @pytest.fixture(scope="module", autouse=True)
 def usdt():
     # Arbitrum-one mainnet:
     usdt_address = '0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9'
+    # Ethereum mainnet fork
+    if brownie.network.show_active() in ['mainnet-fork', 'rinkeby']:
+        usdt_address = '0xdac17f958d2ee523a2206206994597c13d831ec7'
     return brownie.interface.IERC20(usdt_address)
 
 @pytest.fixture(scope="module", autouse=True)
 def wbtc():
     # Arbitrum-one mainnet:
     wbtc_address = '0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f'
+    # Ethereum mainnet fork
+    if brownie.network.show_active() in ['mainnet-fork', 'rinkeby']:
+        wbtc_address = '0x2260fac5e5542a773aa44fbcfedf7c193bc2c599'
     return brownie.interface.IERC20(wbtc_address)
+
+@pytest.fixture(scope="module", autouse=True)
+def usdc():
+    # Arbitrum-one mainnet:
+    usdc_address = '0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8'
+    # Arbitrum-rinkeby testnet:
+    #usdc_address = '0x09b98f8b2395d076514037ff7d39a091a536206c'
+    # Ethereum mainnet fork
+    if brownie.network.show_active() in ['mainnet-fork', 'rinkeby']:
+        usdc_address = '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48'
+
+    return brownie.interface.IERC20(usdc_address)
+
+@pytest.fixture(scope="module", autouse=True)
+def mock_token4(MockToken, accounts):
+    mock_token = MockToken.deploy(
+        {'from': accounts[5]}
+    )
+    usdt_address = mock_token.address
+    return brownie.interface.IERC20(usdt_address)
 
 @pytest.fixture(scope="module", autouse=True)
 def proxy_admin(
@@ -105,24 +193,31 @@ def sperax(
     usds1,
     ThreePoolStrategy,
     BuybackSingle,
-    BuybackMultihop,
+    BuybackTwoHops,
     chainlink_flags,
     usdt,
     wbtc,
     weth,
+    usdc,
     mock_token2,
     mock_token3,
+    mock_token4,
     Contract,
     admin,
     vault_fee,
-    owner_l2
+    owner_l2,
+    accounts,
 ):
+    if brownie.network.show_active() in ['mainnet-fork', 'rinkeby']:
+        print("NOTE: skip deploying contracts for Arbitrum (L2)")
+        return
+
     # Arbitrum-one (mainnet):
-    chainlink_eth_price_feed = '0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612'
+    chainlink_usdc_price_feed = '0x50834F3163758fcC1Df9973b6e91f0F0F0434aD3'
     l2_gateway = '0x096760F208390250649E3e8763348E783AEF5562'
 
     # Arbitrum rinkeby:
-    #chainlink_eth_price_feed = '0x5f0423B1a6935dc5596e7A24d98532b67A0AeFd8'
+    #chainlink_usdc_price_feed = '0xe020609A0C31f4F96dCBB8DF9882218952dD95c4'
     #l2_gateway = '0x9b014455AcC2Fe90c52803849d0002aeEC184a06'
 
     bancor = deploy_bancor(
@@ -144,6 +239,7 @@ def sperax(
     oracle_proxy = deploy_oracle(
         Oracle,
         TransparentUpgradeableProxy,
+        usdc,
         Contract,
         proxy_admin,
         admin,
@@ -172,10 +268,43 @@ def sperax(
         {'from': owner_l2},
     )
 
+
+    oracle_proxy.initialize(
+        chainlink_usdc_price_feed,
+        spa.address,
+        mock_token2.address,
+        chainlink_flags,
+        {'from': owner_l2}
+    )
+
+    vault_proxy.initialize(
+        spa.address,
+        core_proxy.address,
+        vault_fee,
+        {'from': owner_l2}
+    )
+
+    vault_proxy.updateUSDsAddress(
+        usds_proxy.address,
+        {'from': owner_l2}
+    )
+
+    vault_proxy.updateOracleAddress(
+        oracle_proxy.address,
+        {'from': owner_l2}
+    )
+
+    oracle_proxy.updateUSDsAddress(
+        usds_proxy.address,
+        {'from': owner_l2}
+    )
+
+    # need to be fixed to align with deploy.py
     strategy_proxy = deploy_strategy(
         TransparentUpgradeableProxy,
         ThreePoolStrategy,
         vault_proxy,
+        oracle_proxy,
         usdt,
         wbtc,
         weth,
@@ -194,47 +323,20 @@ def sperax(
         owner_l2
     )
 
-    buyback_multihop  =  BuybackMultihop.deploy(
+    buyback_multihop  =  BuybackTwoHops.deploy(
         mock_token3.address, # token1
         vault_proxy.address,
         {'from': owner_l2}
     )
     pool_fee1 = 3000
     pool_fee2 = 3000
-    
+
     buyback_multihop.updateInputTokenInfo(
         spa.address,
         True, #supported
         mock_token2.address, #_intermediateToken
         pool_fee1,
         pool_fee2
-    )
-
-    oracle_proxy.initialize(
-        chainlink_eth_price_feed,
-        spa.address,
-        weth.address,
-        chainlink_flags,
-        {'from': owner_l2}
-    )
-    oracle_proxy.updateUSDsAddress(
-        usds_proxy.address,
-        {'from': owner_l2}
-    )
-
-    vault_proxy.initialize(
-        spa.address,
-        core_proxy.address,
-        vault_fee,
-        {'from': owner_l2}
-    )
-    vault_proxy.updateUSDsAddress(
-        usds_proxy.address,
-        {'from': owner_l2}
-    )
-    vault_proxy.updateOracleAddress(
-        oracle_proxy.address,
-        {'from': owner_l2}
     )
 
     # configure stablecoin collaterals in vault and oracle
@@ -244,13 +346,18 @@ def sperax(
         buyback,
         usdt,
         wbtc,
+        mock_token4,
+        weth,
+        strategy_proxy,
         owner_l2
     )
 
+    # here it's temporarily change Oralce for SPA from SPA-USDC to SPA-ETH
+    # would suggest to use a mock token to mock USDC instead
     mintSPA(spa,  mock_token2.balanceOf(owner_l2) , owner_l2, vault_proxy)
 
-    amount = 100000
-    create_uniswap_v3_pool(
+    amount = 1000000
+    spa_mock_pool =  create_uniswap_v3_pool(
         mock_token2.balanceOf(owner_l2),
         spa, # token1
         amount, # amount1
@@ -270,8 +377,23 @@ def sperax(
         vault_proxy
     )
 
+    deposit_weth(weth, owner_l2, accounts, amount)
 
-   
+    weth_erc20 = brownie.interface.IERC20(weth.address)
+
+    spa_mock_pool =  create_uniswap_v3_pool(
+        mock_token2.balanceOf(owner_l2),
+        spa, # token1
+        amount, # amount1
+        weth_erc20, # token2
+        amount, # amount2
+        owner_l2,
+        vault_proxy
+    )
+
+    update_oracle_setting(oracle_proxy, owner_l2, weth, usds_proxy)
+
+
     return (
         spa,
         usds_proxy,
@@ -280,7 +402,8 @@ def sperax(
         oracle_proxy,
         strategy_proxy,
         buyback,
-        buyback_multihop
+        buyback_multihop,
+        bancor
     )
 
 
@@ -336,6 +459,7 @@ def deploy_vault(
 def deploy_oracle(
     Oracle,
     TransparentUpgradeableProxy,
+    usdc,
     Contract,
     proxy_admin,
     admin,
@@ -351,6 +475,9 @@ def deploy_oracle(
         {'from': admin}
     )
     oracle_proxy = Contract.from_abi("Oracle", proxy.address, Oracle.abi)
+
+
+
     return oracle_proxy
 
 
@@ -385,11 +512,11 @@ def deploy_usds(
     )
     return usds_proxy
 
-
 def deploy_strategy(
     TransparentUpgradeableProxy,
     ThreePoolStrategy,
     vault_proxy,
+    oracle_proxy,
     usdt,
     wbtc,
     weth,
@@ -398,6 +525,10 @@ def deploy_strategy(
     admin,
     owner_l2,
 ):
+    if brownie.network.show_active() in ['mainnet-fork', 'rinkeby']:
+        print("NOTE: skip deploying contracts for Arbitrum (L2)")
+        return
+
     # Arbitrum-one (mainnet):
     platform_address = '0x960ea3e3C7FB317332d990873d354E18d7645590'
     reward_token_address = '0x11cdb42b0eb46d95f990bedd4695a6e3fa034978'
@@ -408,9 +539,16 @@ def deploy_strategy(
         wbtc,
         weth,
     ]
+    assets_2 = [ # intended to fail
+        weth,
+    ]
 
     lp_tokens = [
         '0x8e0B8c8BB9db49a46697F3a5Bb8A308e744821D2',
+        '0x8e0B8c8BB9db49a46697F3a5Bb8A308e744821D2',
+        '0x8e0B8c8BB9db49a46697F3a5Bb8A308e744821D2',
+    ]
+    lp_tokens_2 = [ # intended to fail
         '0x8e0B8c8BB9db49a46697F3a5Bb8A308e744821D2',
         '0x8e0B8c8BB9db49a46697F3a5Bb8A308e744821D2',
     ]
@@ -430,6 +568,45 @@ def deploy_strategy(
         proxy.address,
         ThreePoolStrategy.abi
     )
+
+    with brownie.reverts("_supportedAssetIndex exceeds 2"):
+         strategy_proxy.initialize(
+         platform_address,
+         vault_proxy,
+         reward_token_address,
+         assets,
+         lp_tokens_2,
+         crv_gauge_address,
+         3,
+         oracle_proxy,
+         {'from': owner_l2}
+    )
+
+    with brownie.reverts("Invalid input arrays"):
+         strategy_proxy.initialize(
+         platform_address,
+         vault_proxy,
+         reward_token_address,
+         assets,
+         lp_tokens_2,
+         crv_gauge_address,
+         2,
+         oracle_proxy,
+         {'from': owner_l2}
+    )
+
+    with brownie.reverts("Must have exactly three assets"):
+        strategy_proxy.initialize(
+        platform_address,
+        vault_proxy,
+        reward_token_address,
+        assets_2,
+        lp_tokens_2,
+        crv_gauge_address,
+        2,
+        oracle_proxy,
+        {'from': owner_l2}
+    )
     strategy_proxy.initialize(
         platform_address,
         vault_proxy,
@@ -437,10 +614,11 @@ def deploy_strategy(
         assets,
         lp_tokens,
         crv_gauge_address,
+        2,
+        oracle_proxy,
         {'from': owner_l2}
     )
     return strategy_proxy
-
 
 def deploy_buyback(
     BuybackSingle,
@@ -450,6 +628,10 @@ def deploy_buyback(
     pool_fee,
     owner_l2
 ):
+    if brownie.network.show_active() in ['mainnet-fork', 'rinkeby']:
+        print("NOTE: skip deploying contracts for Arbitrum (L2)")
+        return
+
     buyback = BuybackSingle.deploy(
         usds_proxy.address, # token1
         vault_proxy.address,
@@ -470,34 +652,42 @@ def configure_collaterals(
     buyback,
     usdt,
     wbtc,
+    mock_token4,
+    mock_token2,
+    strategy_proxy,
     owner_l2
 ):
+    if brownie.network.show_active() in ['mainnet-fork', 'rinkeby']:
+        print("NOTE: skip deploying contracts for Arbitrum (L2)")
+        return
+
     # Arbitrum mainnet collaterals: token address, chainlink
     collaterals = {
         # USDC
         '0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8': '0x50834F3163758fcC1Df9973b6e91f0F0F0434aD3',
         # USDT
-        usdt: '0x3f3f5dF88dC9F13eac63DF89EC16ef6e7E25DdE7',
+        mock_token4: '0x3f3f5dF88dC9F13eac63DF89EC16ef6e7E25DdE7',
         # DAI
         '0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1': '0xc5C8E77B397E531B8EC06BFb0048328B30E9eCfB',
         # WBTC
         wbtc: '0x6ce185860a4963106506C203335A2910413708e9',
+        mock_token2: '0x3f3f5dF88dC9F13eac63DF89EC16ef6e7E25DdE7',
     }
 
     precision = 10**8
-    zero_address = brownie.convert.to_address('0x0000000000000000000000000000000000000000')
     for collateral, chainlink in collaterals.items():
+        print("collateral", collateral)
         # authorize a new collateral
         vault_proxy.addCollateral(
             collateral, # address of: USDC, USDT, DAI or WBTC
-            zero_address, # _defaultStrategyAddr: CURVE, AAVE, etc
-            False, # _allocationAllowed
-            0, # _allocatePercentage
+            strategy_proxy, # _defaultStrategyAddr: CURVE, AAVE, etc
+            True, # _allocationAllowed
+            80, # _allocatePercentage
             buyback, # _buyBackAddr
             False, # _rebaseAllowed
             {'from': owner_l2}
         )
-        # wire up price feed for the added collateral
+                # wire up price feed for the added collateral
         oracle_proxy.updateCollateralInfo(
             collateral, # ERC20 address
             True, # supported
@@ -505,17 +695,6 @@ def configure_collaterals(
             precision, # chainlink price feed precision
             {'from': owner_l2}
         )
-
-# create pool for pair tokens (input parameters) on Arbitrum-one
-# To obtain the interface to INonfungiblePositionManager required
-# copying the following files from @uniswap-v3-periphery@1.3.0:
-#
-# - contracts/interface/IERC721Permit.sol
-# - contracts/interface/INonfungiblePositionManager.sol
-# - contracts/interface/IPeripheryImmutableState.sol
-# - contracts/interface/IPeripheryPayments.sol
-# - contracts/interface/IPoolInitializer.sol
-# - contracts/libraries/PoolAddress.sol
 
 
 def create_uniswap_v3_pool(
@@ -527,6 +706,10 @@ def create_uniswap_v3_pool(
     owner_l2,
     vault_proxy
 ):
+    if brownie.network.show_active() in ['mainnet-fork', 'rinkeby']:
+        print("NOTE: skip deploying contracts for Arbitrum (L2)")
+        return
+
     position_mgr_address = '0xC36442b4a4522E871399CD717aBDD847Ab11FE88'
     position_mgr = brownie.interface.INonfungiblePositionManager(position_mgr_address)
 
@@ -567,6 +750,9 @@ def create_uniswap_v3_pool(
         {'from': owner_l2}
     )
     print(txn.return_value)
+    return pool
+
+
 
 def mintSPA(
     spa,
@@ -574,12 +760,17 @@ def mintSPA(
     owner_l2,
     vault_proxy
 ):
+    if brownie.network.show_active() in ['mainnet-fork', 'rinkeby']:
+        print("NOTE: skip deploying contracts for Arbitrum (L2)")
+        return
+
     # make owner allowed to mint SPA tokens
     txn = spa.setMintable(
         owner_l2.address,
         True,
         {'from': owner_l2}
     )
+
     assert txn.events['Mintable']['account'] == owner_l2.address
 
     txn = spa.mintForUSDs(
@@ -590,6 +781,25 @@ def mintSPA(
     assert txn.events['Transfer']['to'] == owner_l2
     assert txn.events['Transfer']['value'] == amount
 
+def update_oracle_setting(oracle_proxy, owner_l2, spa, usds_proxy):
+    if brownie.network.show_active() in ['mainnet-fork', 'rinkeby']:
+        print("NOTE: skip deploying contracts for Arbitrum (L2)")
+        return
+
+    oracle_proxy.updateUniPoolsSetting(
+        spa.address,
+        usds_proxy.address,
+        3000,
+        3000,
+    {'from': owner_l2} )
+
+
+def deposit_weth(weth, owner_l2, accounts, amount):
+    txn = weth.deposit({'from': owner_l2, 'amount': 100000000000000000})
+    weth_erc20 = brownie.interface.IERC20(weth.address)
+    # transfer weth to strategy_proxy contract
+    txn = weth_erc20.transfer(accounts[5],
+                            amount, {'from': owner_l2})
 
 def lower_tick():
     return math.ceil(-887272 / 60) * 60

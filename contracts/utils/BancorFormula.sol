@@ -226,8 +226,10 @@ contract BancorFormula {
     /**
      * @dev computes log(x / FIXED_1) * FIXED_1.
      * This functions assumes that "x >= FIXED_1", because the output would be negative otherwise.
+     * @dev Changed: internal pure to public view for testing purposes
      */
-    function generalLog(uint256 x) internal pure returns (uint256) {
+
+    function generalLog(uint256 x) public view returns (uint256) {
         uint256 res = 0;
 
         // If x >= 2, then we compute the integer part of log2(x), which is larger than 0.
@@ -253,8 +255,9 @@ contract BancorFormula {
 
     /**
      * @dev computes the largest integer smaller than or equal to the binary logarithm of the input.
+     * @dev Changed: internal pure to public view for testing purposes
      */
-    function floorLog2(uint256 _n) internal pure returns (uint8) {
+    function floorLog2(uint256 _n) public view returns (uint8) {
         uint8 res = 0;
 
         if (_n < 256) {
@@ -280,8 +283,9 @@ contract BancorFormula {
      * @dev the global "maxExpArray" is sorted in descending order, and therefore the following statements are equivalent:
      * - This function finds the position of [the smallest value in "maxExpArray" larger than or equal to "x"]
      * - This function finds the highest position of [a value in "maxExpArray" larger than or equal to "x"]
+     * @dev Changed: internal view to public view for testing purposes
      */
-    function findPositionInMaxExpArray(uint256 _x) internal view returns (uint8) {
+    function findPositionInMaxExpArray(uint256 _x) public view returns (uint8) {
         uint8 lo = MIN_PRECISION;
         uint8 hi = MAX_PRECISION;
 
@@ -303,8 +307,9 @@ contract BancorFormula {
      * it returns "e ^ (x / 2 ^ precision) * 2 ^ precision", that is, the result is upshifted for accuracy.
      * the global "maxExpArray" maps each "precision" to "((maximumExponent + 1) << (MAX_PRECISION - precision)) - 1".
      * the maximum permitted value for "x" is therefore given by "maxExpArray[precision] >> (MAX_PRECISION - precision)".
+     * @dev Changed: internal pure to public view for testing purposes
      */
-    function generalExp(uint256 _x, uint8 _precision) internal pure returns (uint256) {
+    function generalExp(uint256 _x, uint8 _precision) public view returns (uint256) {
         uint256 xi = _x;
         uint256 res = 0;
 
@@ -386,8 +391,9 @@ contract BancorFormula {
      * - The natural logarithm of r is calculated via Taylor series for log(1 + x), where x = r - 1
      * - The natural logarithm of the input is calculated by summing up the intermediate results above
      * - For example: log(250) = log(e^4 * e^1 * e^0.5 * 1.021692859) = 4 + 1 + 0.5 + log(1 + 0.021692859)
+     * @dev Changed: internal pure to public view for testing purposes
      */
-    function optimalLog(uint256 x) internal pure returns (uint256) {
+    function optimalLog(uint256 x) public view returns (uint256) {
         uint256 res = 0;
 
         uint256 y;
@@ -458,8 +464,9 @@ contract BancorFormula {
      * - The exponentiation of r is calculated via Taylor series for e^x, where x = r
      * - The exponentiation of the input is calculated by multiplying the intermediate results above
      * - For example: e^5.521692859 = e^(4 + 1 + 0.5 + 0.021692859) = e^4 * e^1 * e^0.5 * e^0.021692859
+     *   @dev Changed: internal pure to public view for testing purposes
      */
-    function optimalExp(uint256 x) internal pure returns (uint256) {
+    function optimalExp(uint256 x) public view returns (uint256) {
         uint256 res = 0;
 
         uint256 y;

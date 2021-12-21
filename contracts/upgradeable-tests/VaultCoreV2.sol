@@ -23,6 +23,10 @@ contract VaultCoreV2 is Initializable, OwnableUpgradeable, AccessControlUpgradea
 	using SafeMathUpgradeable for uint;
 	using StableMath for uint;
 
+	function version() public pure returns (uint) {
+		return 2;
+	}
+
 	bytes32 public constant REBASER_ROLE = keccak256("REBASER_ROLE");
 
 	bool public override mintRedeemAllowed;
@@ -58,23 +62,30 @@ contract VaultCoreV2 is Initializable, OwnableUpgradeable, AccessControlUpgradea
 	uint16 public override constant swapFee_A_prec = 10**4;
 	uint8 public override constant allocatePercentage_prec = 10**2;
 
-	function version() public pure returns (uint) {
-		return 2;
-	}
-
-	event parametersUpdated(uint _chiInit, uint32 _chi_beta, uint32 _chi_gamma, uint32 _swapFee_p, uint32 _swapFee_theta, uint32 _swapFee_a, uint32 _swapFee_A);
+	event ParametersUpdated(uint _chiInit, uint32 _chi_beta, uint32 _chi_gamma, uint32 _swapFee_p, uint32 _swapFee_theta, uint32 _swapFee_a, uint32 _swapFee_A);
 	event USDsMinted(address indexed wallet, uint indexed USDsAmt, uint collateralAmt, uint SPAsAmt, uint feeAmt);
 	event USDsRedeemed(address indexed wallet, uint indexed USDsAmt, uint collateralAmt, uint SPAsAmt, uint feeAmt);
 	event Rebase(uint indexed oldSupply, uint indexed newSupply);
 	event CollateralAdded(address indexed collateralAddr, bool addded, address defaultStrategyAddr, bool allocationAllowed, uint8 allocatePercentage, address buyBackAddr, bool rebaseAllowed);
 	event CollateralChanged(address indexed collateralAddr, bool addded, address defaultStrategyAddr, bool allocationAllowed, uint8 allocatePercentage, address buyBackAddr, bool rebaseAllowed);
 	event StrategyAdded(address strategyAddr, bool added);
-	event MintRedeemPermssionChanged(bool indexed permission);
-	event AllocationPermssionChanged(bool indexed permission);
+	event StrategyRwdBuyBackUpdateded(address strategyAddr, address buybackAddr);
+	event MintRedeemPermssionChanged(bool permission);
+	event AllocationPermssionChanged(bool permission);
+	event RebasePermssionChanged(bool permission);
 	event SwapFeeInOutPermissionChanged(bool indexed swapfeeInAllowed, bool indexed swapfeeOutAllowed);
 	event CollateralAllocated(address indexed collateralAddr, address indexed depositStrategyAddr, uint allocateAmount);
 	event USDsAddressUpdated(address oldAddr, address newAddr);
     event OracleAddressUpdated(address oldAddr, address newAddr);
+	event TotalValueLocked(
+		uint totalValueLocked,
+		uint totalValueInVault,
+		uint totalValueInStrategies
+	);
+	event SPAprice(uint SPAprice);
+    event USDsPrice(uint USDsPrice);
+    event CollateralPrice(uint CollateralPrice);
+
 	/**
 	 * @dev check if USDs mint & redeem are both allowed
 	 */
@@ -108,6 +119,7 @@ contract VaultCoreV2 is Initializable, OwnableUpgradeable, AccessControlUpgradea
 	}
 	struct strategyStruct {
 		address strategyAddr;
+		address rewardTokenBuybackAddr;
 		bool added;
 	}
 	mapping(address => collateralStruct) public collateralsInfo;
@@ -174,7 +186,7 @@ contract VaultCoreV2 is Initializable, OwnableUpgradeable, AccessControlUpgradea
 		swapFee_theta = _swapFee_theta;
 		swapFee_a = _swapFee_a;
 		swapFee_A = _swapFee_A;
-		emit parametersUpdated(chiInit, chi_beta, chi_gamma, swapFee_p, swapFee_theta, swapFee_a, swapFee_A);
+		emit ParametersUpdated(chiInit, chi_beta, chi_gamma, swapFee_p, swapFee_theta, swapFee_a, swapFee_A);
 	}
 
 	/**
@@ -191,6 +203,14 @@ contract VaultCoreV2 is Initializable, OwnableUpgradeable, AccessControlUpgradea
 	function updateAllocationPermission(bool _allocationAllowed) external onlyOwner {
 		allocationAllowed = _allocationAllowed;
 		emit AllocationPermssionChanged(allocationAllowed);
+	}
+
+	/**
+	 * @dev enable/disable rebasing
+	 */
+	function updateRebasePermission(bool _rebaseAllowed) external onlyOwner {
+		rebaseAllowed = _rebaseAllowed;
+		emit RebasePermssionChanged(rebaseAllowed);
 	}
 
 	/**
@@ -253,57 +273,73 @@ contract VaultCoreV2 is Initializable, OwnableUpgradeable, AccessControlUpgradea
 	}
 
 	/**
+	 * @dev authorize an strategy
+	 * @param _strategyAddr strategy contract address
+	 */
+	function updateStrategyRwdBuybackAddr(
+		address _strategyAddr,
+		address _buyBackAddr
+	) external onlyOwner {
+		require(strategiesInfo[_strategyAddr].added, "Strategy not added");
+		strategyStruct storage addingStrategy = strategiesInfo[_strategyAddr];
+		addingStrategy.strategyAddr = _strategyAddr;
+		addingStrategy.rewardTokenBuybackAddr = _buyBackAddr;
+		emit StrategyRwdBuyBackUpdateded(_strategyAddr, _buyBackAddr);
+	}
+
+
+	/**
 	 * @dev mint USDs (burn SPA, lock collateral) by entering USDs amount
 	 * @param collateralAddr the address of user's chosen collateral
-	 * @param USDsMintAmt the amount of USDs to be minted
-	 * @param slippageSPA maximum amount of SPA burnt
-	 * @param slippageCollateral maximum amount of collateral locked
+	 * @param USDsAmtToMint the amount of USDs to be minted
+	 * @param maxCollateralLocked maximum amount of collateral locked
+	 * @param maxSPAburnt maximum amount of SPA burnt
 	 * @param deadline transaction deadline
 	 */
-	function mintWithUSDs(address collateralAddr, uint USDsMintAmt, uint slippageCollateral, uint slippageSPA, uint deadline)
+	function mintBySpecifyingUSDsAmt(address collateralAddr, uint USDsAmtToMint, uint maxCollateralLocked, uint maxSPAburnt, uint deadline)
 		public
 		whenMintRedeemAllowed
 		nonReentrant
 	{
 		require(collateralsInfo[collateralAddr].added, "Collateral not added");
-		require(USDsMintAmt > 0, "Amount needs to be greater than 0");
-		_mint(collateralAddr, USDsMintAmt, 0, USDsMintAmt, slippageCollateral, slippageSPA, deadline);
+		require(USDsAmtToMint > 0, "Amount needs to be greater than 0");
+		_mint(collateralAddr, USDsAmtToMint, 0, USDsAmtToMint, maxCollateralLocked, maxSPAburnt, deadline);
 	}
 
 	/**
 	 * @dev mint USDs (burn SPA, lock collateral) by entering SPA amount
 	 * @param collateralAddr the address of user's chosen collateral
-	 * @param SPAamt the amount of SPA to burn
-	 * @param slippageUSDs minimum amount of USDs minted
-	 * @param slippageCollateral maximum amount of collateral locked
+	 * @param SPAamtToBurn the amount of SPA to burn
+	 * @param minUSDsMinted minimum amount of USDs minted
+	 * @param maxCollateralLocked maximum amount of collateral locked
 	 * @param deadline transaction deadline
 	 */
-	function mintWithSPA(address collateralAddr, uint SPAamt, uint slippageUSDs, uint slippageCollateral, uint deadline)
+	function mintBySpecifyingSPAamt(address collateralAddr, uint SPAamtToBurn, uint minUSDsMinted, uint maxCollateralLocked, uint deadline)
 		public
 		whenMintRedeemAllowed
 		nonReentrant
 	{
 		require(collateralsInfo[collateralAddr].added, "Collateral not added");
-		require(SPAamt > 0, "Amount needs to be greater than 0");
-		_mint(collateralAddr, SPAamt, 1, slippageUSDs, slippageCollateral, SPAamt, deadline);
+		require(SPAamtToBurn > 0, "Amount needs to be greater than 0");
+		_mint(collateralAddr, SPAamtToBurn, 1, minUSDsMinted, maxCollateralLocked, SPAamtToBurn, deadline);
 	}
 
 	/**
 	 * @dev mint USDs (burn SPA, lock collateral) by entering collateral amount
 	 * @param collateralAddr the address of user's chosen collateral
-	 * @param collateralAmt the amount of collateral locked
-	 * @param slippageUSDs minimum amount of USDs minted
-	 * @param slippageSPA maximum amount of SPA burnt
+	 * @param collateralAmtToLock the amount of collateral locked
+	 * @param minUSDsMinted minimum amount of USDs minted
+	 * @param maxSPAburnt maximum amount of SPA burnt
 	 * @param deadline transaction deadline
 	 */
-	function mintWithColla(address collateralAddr, uint collateralAmt, uint slippageUSDs, uint slippageSPA, uint deadline)
+	function mintBySpecifyingCollateralAmt(address collateralAddr, uint collateralAmtToLock, uint minUSDsMinted, uint maxSPAburnt, uint deadline)
 		public
 		whenMintRedeemAllowed
 		nonReentrant
 	{
 		require(collateralsInfo[collateralAddr].added, "Collateral not added");
-		require(collateralAmt > 0, "Amount needs to be greater than 0");
-		_mint(collateralAddr, collateralAmt, 2, slippageUSDs, collateralAmt, slippageSPA, deadline);
+		require(collateralAmtToLock > 0, "Amount needs to be greater than 0");
+		_mint(collateralAddr, collateralAmtToLock, 2, minUSDsMinted, collateralAmtToLock, maxSPAburnt, deadline);
 	}
 
 	/**
@@ -311,9 +347,9 @@ contract VaultCoreV2 is Initializable, OwnableUpgradeable, AccessControlUpgradea
 	 * @param collateralAddr the address of the collateral
 	 * @param valueAmt the amount of tokens (the specific meaning depends on valueType)
 	 * @param valueType the type of tokens (specific meanings are listed lower)
-	 *		valueType = 0: mintWithUSDs
-	 *		valueType = 1: mintWithSPA
-	 *		valueType = 2: mintWithColla
+	 *		valueType = 0: mintBySpecifyingUSDsAmt
+	 *		valueType = 1: mintBySpecifyingSPAamt
+	 *		valueType = 2: mintBySpecifyingCollateralAmt
 	 */
 	function _mint(
 		address collateralAddr,
@@ -341,7 +377,16 @@ contract VaultCoreV2 is Initializable, OwnableUpgradeable, AccessControlUpgradea
 		// mint USDs and collect swapIn fees
 		IUSDs(USDsAddr).mint(msg.sender, USDsAmt);
 		IUSDs(USDsAddr).mint(feeVault, swapFeeAmount);
+
+		uint priceColla = IOracle(oracleAddr).getCollateralPrice(collateralAddr);
+		uint priceSPA = IOracle(oracleAddr).getSPAprice();
+		uint priceUSDs = IOracle(oracleAddr).getUSDsPrice();
+
 		emit USDsMinted(msg.sender, USDsAmt, collateralDepAmt, SPABurnAmt, swapFeeAmount);
+		emit TotalValueLocked(totalValueLocked(), totalValueInVault(), totalValueInStrategies());
+		emit CollateralPrice(priceColla);
+		emit SPAprice(priceSPA);
+		emit USDsPrice(priceUSDs);
 	}
 
 	/**
@@ -401,7 +446,15 @@ contract VaultCoreV2 is Initializable, OwnableUpgradeable, AccessControlUpgradea
 		IUSDs(USDsAddr).burn(msg.sender, USDsBurntAmt);
 		IERC20Upgradeable(USDsAddr).safeTransferFrom(msg.sender, feeVault, swapFeeAmount);
 
+		uint priceColla = IOracle(oracleAddr).getCollateralPrice(collateralAddr);
+		uint priceSPA = IOracle(oracleAddr).getSPAprice();
+		uint priceUSDs = IOracle(oracleAddr).getUSDsPrice();
+
 		emit USDsRedeemed(msg.sender, USDsBurntAmt, collateralUnlockedAmt, SPAMintAmt, swapFeeAmount);
+		emit TotalValueLocked(totalValueLocked(), totalValueInVault(), totalValueInStrategies());
+		emit CollateralPrice(priceColla);
+		emit SPAprice(priceSPA);
+		emit USDsPrice(priceUSDs);
 	}
 
 	/**
@@ -420,6 +473,13 @@ contract VaultCoreV2 is Initializable, OwnableUpgradeable, AccessControlUpgradea
 		} else {
 			emit Rebase(USDsOldSupply, USDsOldSupply);
 		}
+
+		uint priceSPA = IOracle(oracleAddr).getSPAprice();
+		uint priceUSDs = IOracle(oracleAddr).getUSDsPrice();
+
+		emit SPAprice(priceSPA);
+		emit USDsPrice(priceUSDs);
+		emit TotalValueLocked(totalValueLocked(), totalValueInVault(), totalValueInStrategies());
 	}
 
 	/**
@@ -450,8 +510,10 @@ contract VaultCoreV2 is Initializable, OwnableUpgradeable, AccessControlUpgradea
 			if (rewardTokenAmount > liquidationThreshold) {
 				strategy.collectRewardToken();
 				uint rewardAmt = IERC20Upgradeable(rewardTokenAddress).balanceOf(address(this));
-				IERC20Upgradeable(rewardTokenAddress).safeTransfer(strategy.rewardTokenBuybackAddress(), rewardAmt);
-				USDsIncrement_viaReward = IBuyback(strategy.rewardTokenBuybackAddress()).swap(rewardTokenAddress, rewardAmt);
+				address rewardTokenBuybackAddr =
+					strategiesInfo[address(strategy)].rewardTokenBuybackAddr;
+				IERC20Upgradeable(rewardTokenAddress).safeTransfer(rewardTokenBuybackAddr, rewardAmt);
+				USDsIncrement_viaReward = IBuyback(rewardTokenBuybackAddr).swap(rewardTokenAddress, rewardAmt);
 			}
 		}
 	}
@@ -464,7 +526,7 @@ contract VaultCoreV2 is Initializable, OwnableUpgradeable, AccessControlUpgradea
 		uint liquidationThreshold = strategy.interestLiquidationThreshold();
 		uint interestEarned = strategy.checkInterestEarned(collateralAddr);
 		if (interestEarned > liquidationThreshold) {
-			strategy.withdraw(address(this), collateral.collateralAddr, interestEarned);
+			strategy.collectInterest(address(this), collateral.collateralAddr);
 			IERC20Upgradeable(collateralAddr).safeTransfer(collateral.buyBackAddr, interestEarned);
 			USDsIncrement_viaInterest = IBuyback(collateral.buyBackAddr).swap(collateralAddr, interestEarned);
 		}

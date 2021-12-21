@@ -15,7 +15,8 @@ def test_upgrade_vault(sperax, VaultCoreV2, proxy_admin, Contract, admin, owner_
         oracle_proxy,
         strategy_proxy,
         buyback,
-        buyback_multihop
+        buyback_multihop,
+        bancor
     ) = sperax
 
     print("upgrade Vault contract:\n")
