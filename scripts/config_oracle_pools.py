@@ -42,6 +42,7 @@ def main():
         if len(usds_pool_address) == 0:
             print("\nMissing USDs Pool address\n")
             return
+    if usds_pool_ready == 'n':
     spa_pool = brownie.interface.IUniswapV3Pool(spa_pool_address)
     spa_pool.increaseObservationCardinalityNext(20, {'from': owner})
     if usds_pool_ready == 'y':
