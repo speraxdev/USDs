@@ -1,5 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
-
+// SPDX-License-Identifier: MIT
 pragma solidity >=0.4.0;
 
 // computes square roots using the babylonian method

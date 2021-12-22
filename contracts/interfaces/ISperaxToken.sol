@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 pragma solidity >=0.5.0;
 
 interface ISperaxToken {
@@ -16,4 +17,5 @@ interface ISperaxToken {
     function transferFrom(address from, address to, uint value) external returns (bool);
 
     function burnFrom(address account, uint256 amount) external;
+    function mintForUSDs(address account, uint256 amount) external;
 }
