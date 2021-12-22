@@ -142,7 +142,7 @@ def main():
 
     # VaultCore
     vault = VaultCore.deploy(
-        {'from': owner, 'gas_limit': 100000000 }
+        {'from': owner, 'gas_limit': 10000000000 }
 #        publish_source=True,
     )
     proxy = TransparentUpgradeableProxy.deploy(
@@ -161,7 +161,7 @@ def main():
 
     # Oracle
     oracle = Oracle.deploy(
-        {'from': owner, 'gas_limit': 100000000 },
+        {'from': owner, 'gas_limit': 10000000000 },
 #        publish_source=True,
     )
     proxy = TransparentUpgradeableProxy.deploy(
@@ -181,7 +181,7 @@ def main():
 
     # USDs
     usds = USDsL2.deploy(
-        {'from': owner, 'gas_limit': 100000000 },
+        {'from': owner, 'gas_limit': 10000000000 },
 #        publish_source=True,
     )
     proxy = TransparentUpgradeableProxy.deploy(
@@ -416,7 +416,7 @@ def deploy_strategies(
 
 def deploy_strategy(index, admin, owner, vault_proxy, oracle_proxy):
     strategy = ThreePoolStrategy.deploy(
-        {'from': owner, 'gas_limit': 100000000},
+        {'from': owner, 'gas_limit': 10000000000},
     )
     proxy_admin = ProxyAdmin.deploy(
         {'from': admin},
@@ -445,6 +445,6 @@ def deploy_strategy(index, admin, owner, vault_proxy, oracle_proxy):
         strategy_vars_base.lp_tokens,
         strategy_vars_base.crv_gauge_address,
         strategy_vars_base.index,
-        {'from': owner, 'gas_limit': 100000000},
+        {'from': owner, 'gas_limit': 10000000000},
     )
     return strategy_proxy.address
