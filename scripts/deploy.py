@@ -413,43 +413,6 @@ def deploy_strategy(
     print(f"BuybackThreeHops (crv) deployed at address: {buybackThreeHops.address}")
 
 
-<<<<<<< HEAD
-def deploy_one_strategy(index, admin, owner, vault_proxy, oracle_proxy):
-    if network.show_active() == 'mainnet' or 'arbitrum-main-fork':
-        strategy = ThreePoolStrategy.deploy(
-            {'from': owner, 'gas_limit': 100000000},
-        )
-        proxy_admin = ProxyAdmin.deploy(
-            {'from': admin},
-        )
-        proxy = TransparentUpgradeableProxy.deploy(
-            strategy.address,
-            proxy_admin.address,
-            eth_utils.to_bytes(hexstr="0x"),
-            {'from': admin},
-    #        publish_source=True,
-        )
-        strategy_proxy = Contract.from_abi(
-            "ThreePoolStrategy",
-            proxy.address,
-            ThreePoolStrategy.abi
-        )
-
-        strategy_vars_base.vault_proxy_address = vault_proxy.address
-        strategy_vars_base.index = index
-        strategy_vars_base.oralce_proxy_address = oracle_proxy.address
-        strategy_proxy.initialize(
-            strategy_vars_base.platform_address,
-            strategy_vars_base.vault_proxy_address,
-            strategy_vars_base.reward_token_address,
-            strategy_vars_base.assets,
-            strategy_vars_base.lp_tokens,
-            strategy_vars_base.crv_gauge_address,
-            strategy_vars_base.index,
-            {'from': owner, 'gas_limit': 100000000},
-        )
-        return strategy_proxy.address
-=======
 def deploy_strategy(index, admin, owner, vault_proxy, oracle_proxy):
     strategy = ThreePoolStrategy.deploy(
         {'from': owner, 'gas_limit': 10000000000},
@@ -484,4 +447,3 @@ def deploy_strategy(index, admin, owner, vault_proxy, oracle_proxy):
         {'from': owner, 'gas_limit': 10000000000},
     )
     return strategy_proxy.address
->>>>>>> b07551c2f212e8899b4d2853616bbc393e23c0b3
