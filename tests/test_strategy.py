@@ -395,7 +395,8 @@ def test_remove_PToken(sperax, owner_l2, accounts):
         oracle_proxy,
         strategy_proxy,
         buyback,
-        buyback_multihop
+        buyback_multihop,
+        bancor
     ) = sperax
     value= int (0)
 
@@ -737,7 +738,8 @@ def test_withdraw_to_vault_invalid_recipient(sperax, mock_token3, owner_l2):
         oracle_proxy,
         strategy_proxy,
         buyback,
-        buyback_multihop
+        buyback_multihop,
+        bancor
     ) = sperax
 
     amount = int(10005)
@@ -758,7 +760,8 @@ def test_withdraw_to_vault(sperax, weth, owner_l2):
         oracle_proxy,
         strategy_proxy,
         buyback,
-        buyback_multihop
+        buyback_multihop,
+        bancor
     ) = sperax
     amount = int(1000000)
 
