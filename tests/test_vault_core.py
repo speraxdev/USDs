@@ -98,8 +98,9 @@ def test_mint_usds(sperax, mock_token4, owner_l2, accounts, weth, mock_token2):
     )
     txn = vault_proxy.allocate({'from': owner_l2})
     txn = vault_proxy.allocate({'from': owner_l2})
-    assert txn.events["CollateralAllocated"]["allocateAmount"] >  0
 
+    assert txn.events["CollateralAllocated"]["allocateAmount"] >  0
+   
     vault_proxy.updateCollateralInfo(
         weth, 
         strategy_proxy, 
@@ -142,10 +143,8 @@ def test_mint_usds(sperax, mock_token4, owner_l2, accounts, weth, mock_token2):
 
     core_proxy.chiRedeem(vault_proxy, {'from': owner_l2})
 
-    #emit TotalValueLocked(totalValueLocked(), totalValueInVault(), totalValueInStrategies());
+  
 
-
- 
 def test_mint_spa(sperax, weth, owner_l2, accounts, mock_token2):
     (   spa,
         usds_proxy,
@@ -588,8 +587,11 @@ def test_vault_core_tools_spa_amount_calculator(sperax, owner_l2):
     with reverts('invalid valueType'):
         txn = core_proxy.SPAAmountCalculator(1, 10000, vault_proxy, 3000,{'from': owner_l2})
 
-    txn = core_proxy.SPAAmountCalculator(0, 10000, vault_proxy, 3000,{'from': owner_l2})
-    txn = core_proxy.SPAAmountCalculator(0, 10000, vault_proxy, 0,{'from': owner_l2})
+    amount = core_proxy.SPAAmountCalculator.call(0, 10000, vault_proxy, 3000,{'from': owner_l2})
+    assert amount > 0
+
+    amount = core_proxy.SPAAmountCalculator.call(0, 10000, vault_proxy, 0,{'from': owner_l2})
+    assert amount > 0
 
 
 def test_usds_amount_calculator(sperax, owner_l2, weth):
@@ -605,15 +607,19 @@ def test_usds_amount_calculator(sperax, owner_l2, weth):
         bancor,
     ) = sperax
 
-    txn = core_proxy.USDsAmountCalculator(2, 10000, vault_proxy, weth, 3000,{'from': owner_l2})
-    #assert txn.return_value > 0
-    txn = core_proxy.USDsAmountCalculator(2, 10000, vault_proxy, weth, 0,{'from': owner_l2})
+    amt = core_proxy.USDsAmountCalculator.call(2, 10000, vault_proxy, weth, 3000,{'from': owner_l2})
+    assert amt > 0
+    txn = core_proxy.USDsAmountCalculator.call(2, 10000, vault_proxy, weth, 0,{'from': owner_l2})
+    assert amt > 0
 
-    txn = core_proxy.USDsAmountCalculator(0, 10000, vault_proxy, weth, 3000,{'from': owner_l2})
-    #assert txn.return_value > 0
-    txn = core_proxy.USDsAmountCalculator(0, 10000, vault_proxy, weth, 0,{'from': owner_l2})
+    amt = core_proxy.USDsAmountCalculator.call(0, 10000, vault_proxy, weth, 3000,{'from': owner_l2})
+    assert amt  == 0
 
-    txn = core_proxy.USDsAmountCalculator(1, 10000, vault_proxy, weth, 3000,{'from': owner_l2})
+    amt = core_proxy.USDsAmountCalculator.call(0, 10000, vault_proxy, weth, 0,{'from': owner_l2})
+    assert amt == 0
+
+    amt = core_proxy.USDsAmountCalculator.call(1, 10000, vault_proxy, weth, 3000,{'from': owner_l2})
+    assert amt > 0
 
 
 def test_colla_dept_amount_calculator(sperax, owner_l2, weth):
@@ -629,15 +635,20 @@ def test_colla_dept_amount_calculator(sperax, owner_l2, weth):
         bancor,
     ) = sperax
 
-    txn = core_proxy.collaDeptAmountCalculator(1, 10000, vault_proxy, weth, 3000,{'from': owner_l2})
-    #assert txn.return_value > 0
-    txn = core_proxy.collaDeptAmountCalculator(1, 10000, vault_proxy, weth, 0,{'from': owner_l2})
+    amt = core_proxy.collaDeptAmountCalculator.call(1, 10000, vault_proxy, weth, 3000,{'from': owner_l2})
+    assert amt > 0
 
-    txn = core_proxy.collaDeptAmountCalculator(0, 10000, vault_proxy, weth, 3000,{'from': owner_l2})
-    #assert txn.return_value > 0
-    txn = core_proxy.collaDeptAmountCalculator(0, 10000, vault_proxy, weth, 0,{'from': owner_l2})
+    amt = core_proxy.collaDeptAmountCalculator.call(1, 10000, vault_proxy, weth, 0,{'from': owner_l2})
+    assert amt > 0
 
-    txn = core_proxy.collaDeptAmountCalculator(1, 10000, vault_proxy, weth, 3000,{'from': owner_l2})
+    amt = core_proxy.collaDeptAmountCalculator.call(0, 10000, vault_proxy, weth, 3000,{'from': owner_l2})
+    assert amt > 0
+    
+    amt = core_proxy.collaDeptAmountCalculator.call(0, 10000, vault_proxy, weth, 0,{'from': owner_l2})
+    assert amt > 0
+
+    amt = core_proxy.collaDeptAmountCalculator.call(1, 10000, vault_proxy, weth, 3000,{'from': owner_l2})
+    assert amt > 0
 
 
 
