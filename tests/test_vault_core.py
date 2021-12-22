@@ -15,7 +15,8 @@ def test_mint_usds(sperax, mock_token4, owner_l2, accounts, weth, mock_token2):
         oracle_proxy,
         strategy_proxy,
         buyback,
-        buyback_multihop
+        buyback_multihop,
+        bancor
     ) = sperax
 
 
@@ -139,7 +140,8 @@ def test_mint_spa(sperax, weth, owner_l2, accounts, mock_token2):
         oracle_proxy,
         strategy_proxy,
         buyback,
-        buyback_multihop
+        buyback_multihop,
+        bancor
     ) = sperax
 
     deadline = 1637632800 + brownie.chain.time() 
@@ -192,7 +194,8 @@ def test_mint_collateral(sperax, weth, owner_l2, accounts, mock_token2):
         oracle_proxy,
         strategy_proxy,
         buyback,
-        buyback_multihop
+        buyback_multihop,
+        bancor
     ) = sperax
 
     deadline = 1637632800 + brownie.chain.time() 
@@ -246,7 +249,8 @@ def test_allow_allocate(sperax, accounts, owner_l2):
         oracle_proxy,
         strategy_proxy,
         buyback,
-        buyback_multihop
+        buyback_multihop,
+        bancor
     ) = sperax
 
 
@@ -262,7 +266,8 @@ def test_vault_core_fail_allocate(sperax, accounts, owner_l2):
         oracle_proxy,
         strategy_proxy,
         buyback,
-        buyback_multihop
+        buyback_multihop,
+        bancor
     ) = sperax
 
     with reverts('Allocate paused'):
@@ -282,7 +287,8 @@ def test_upgrage_collateral(sperax, mock_token2, accounts, owner_l2, weth):
         oracle_proxy,
         strategy_proxy,
         buyback,
-        buyback_multihop
+        buyback_multihop,
+        bancor
     ) = sperax
    
     collateralAddr = weth.address
@@ -331,7 +337,8 @@ def test_vault_core_add_collatral(sperax, mock_token4, accounts, owner_l2, weth)
         oracle_proxy,
         strategy_proxy,
         buyback,
-        buyback_multihop
+        buyback_multihop,
+        bancor
     ) = sperax
 
     collateralAddr = weth.address
@@ -360,7 +367,8 @@ def test_add_strategy(sperax, mock_token4, accounts, owner_l2, weth):
         oracle_proxy,
         strategy_proxy,
         buyback,
-        buyback_multihop
+        buyback_multihop,
+        bancor
     ) = sperax
 
     txn = vault_proxy.addStrategy(strategy_proxy, {'from': owner_l2})
@@ -380,7 +388,8 @@ def test_update_strategy_rwd_buyback_addr(sperax, owner_l2):
         oracle_proxy,
         strategy_proxy,
         buyback,
-        buyback_multihop
+        buyback_multihop,
+        bancor
     ) = sperax
 
     with reverts('Strategy not added'):
@@ -407,7 +416,8 @@ def test_reedem(sperax, accounts, mock_token4, owner_l2, weth):
         oracle_proxy,
         strategy_proxy,
         buyback,
-        buyback_multihop
+        buyback_multihop,
+        bancor
     ) = sperax
 
     deadline=brownie.chain.time()+200
@@ -463,7 +473,8 @@ def test_reedem(sperax, accounts, owner_l2, weth, mock_token2):
         oracle_proxy,
         strategy_proxy,
         buyback,
-        buyback_multihop
+        buyback_multihop,
+        bancor
     ) = sperax
 
     deadline = brownie.chain.time() + 2000
@@ -521,7 +532,8 @@ def test_reedem_collateral_from_strategy(sperax, accounts, owner_l2, weth):
         oracle_proxy,
         strategy_proxy,
         buyback,
-        buyback_multihop
+        buyback_multihop,
+        bancor
     ) = sperax
 
     deadline = brownie.chain.time() + 2000
@@ -572,7 +584,8 @@ def test_vault_core_allocate(sperax, accounts, owner_l2):
         oracle_proxy,
         strategy_proxy,
         buyback,
-        buyback_multihop
+        buyback_multihop,
+        bancor
     ) = sperax
     txn = vault_proxy.updateAllocationPermission(True, {'from': owner_l2})
 

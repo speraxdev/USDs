@@ -402,7 +402,8 @@ def sperax(
         oracle_proxy,
         strategy_proxy,
         buyback,
-        buyback_multihop
+        buyback_multihop,
+        bancor
     )
 
 

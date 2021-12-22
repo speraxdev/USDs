@@ -11,7 +11,9 @@ def test_swap_succesful(sperax, mock_token2, mock_token3, owner_l2):
         oracle_proxy,
         strategy_proxy,
         buyback,
-        buyback_multihop
+        buyback_multihop,
+        bancor
+        
     ) = sperax
 
     amount = 10000
@@ -45,7 +47,8 @@ def test_swap_unsuccesful_call_not_vault(sperax, mock_token2, mock_token3, owner
         oracle_proxy,
         strategy_proxy,
         buyback,
-        buyback_multihop
+        buyback_multihop,
+        bancor
     ) = sperax
 
     amount = 10000
@@ -75,7 +78,8 @@ def test_swap_unsuccesful_call_token_not_supported(sperax, weth, mock_token3, ow
         oracle_proxy,
         strategy_proxy,
         buyback,
-        buyback_multihop
+        buyback_multihop,
+        bancor
     ) = sperax
 
     amount = 10000
