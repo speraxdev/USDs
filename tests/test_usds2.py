@@ -15,9 +15,8 @@ def test_valid_mint(sperax, accounts, amount):
         core_proxy,
         vault_proxy,
         oracle_proxy,
-        strategy_proxy,
-        buyback,
-        buyback_multihop,
+        strategy_proxies,
+        buybacks,
         bancor
     ) = sperax
 
@@ -32,10 +31,10 @@ def test_valid_mint(sperax, accounts, amount):
     assert usds_proxy.balanceOf(first_owner) == amount
     assert usds_proxy.totalSupply() == amount
 
-    # approve transfer 
+    # approve transfer
     usds_proxy.approve(approver, amount, {'from': first_owner})
     txn = usds_proxy.transferFrom(first_owner, second_owner, amount, {'from': approver})
-    assert txn.events['Transfer']['from'] == first_owner 
+    assert txn.events['Transfer']['from'] == first_owner
     assert txn.events['Transfer']['to'] == second_owner
     assert txn.events['Transfer']['value'] == amount
     assert usds_proxy.balanceOf(second_owner) == amount
@@ -44,7 +43,7 @@ def test_valid_mint(sperax, accounts, amount):
     # first_owner no longer owns the tokens. try to transfer
     with brownie.reverts():
         usds_proxy.transfer(failed_owner, amount, {'from': first_owner})
-    
+
     # new owner transfers stablecoin
     usds_proxy.transfer(third_owner, amount, {'from': second_owner})
     assert usds_proxy.balanceOf(third_owner) == amount
@@ -57,6 +56,6 @@ def test_valid_mint(sperax, accounts, amount):
     with brownie.reverts():
         usds_proxy.burn(third_owner, amount_to_burn, {'from': second_owner})
 
-    # new owner stablecoins can only be burned by vault 
+    # new owner stablecoins can only be burned by vault
     usds_proxy.burn(third_owner, amount_to_burn, {'from': vault_proxy.address})
     assert usds_proxy.totalSupply() == amount - amount_to_burn

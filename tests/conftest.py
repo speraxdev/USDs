@@ -366,7 +366,11 @@ def sperax(
         oracle_proxy,
         strategies,
         buybacks,
+<<<<<<< HEAD
         bancor,
+=======
+        bancor
+>>>>>>> 6b4339c5d90926b4e0f121ed86f77501ab320539
     )
 
 

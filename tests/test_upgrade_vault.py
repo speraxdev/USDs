@@ -13,9 +13,8 @@ def test_upgrade_vault(sperax, VaultCoreV2, proxy_admin, Contract, admin, owner_
         core_proxy,
         vault_proxy,
         oracle_proxy,
-        strategy_proxy,
-        buyback,
-        buyback_multihop,
+        strategy_proxies,
+        buybacks,
         bancor
     ) = sperax
 
@@ -54,7 +53,7 @@ def test_upgrade_vault(sperax, VaultCoreV2, proxy_admin, Contract, admin, owner_
 
     print(f"Vault v2 proxy address: {new_vault_proxy.address}")
     # requires duplicating VaultCore.sol contract. The duplicate contract should
-    # be called VaultCoreV2.sol. This version 2 contract must expose a new function 
+    # be called VaultCoreV2.sol. This version 2 contract must expose a new function
     # called version() that returns the string "Vault v.2"
     assert new_vault_proxy.version() == "Vault v.2"
 
@@ -78,7 +77,7 @@ def test_upgrade_vault(sperax, VaultCoreV2, proxy_admin, Contract, admin, owner_
             {'from': admin}
         )
 
-    # configure collateral 
+    # configure collateral
     collaterals = [
         '0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8', # USDC
         '0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9', # USDT
