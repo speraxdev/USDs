@@ -289,7 +289,6 @@ contract Oracle is Initializable, IOracle, OwnableUpgradeable {
      *      e.g. for USDsPerSPA, tokenA = SPA and tokenB = USDs
      * @dev tokenBPertokenA has the same precision as tokenB
      */
-    // changed: internal to public for testing purposes. 
     function _getUniMAPrice(
         address tokenAtokenBPool,
         address tokenA,
@@ -297,7 +296,7 @@ contract Oracle is Initializable, IOracle, OwnableUpgradeable {
         uint128 tokenA_prec,
         uint128 tokenB_prec,
         uint32 movingAvgPeriod
-    ) public view returns(uint) {
+    ) internal view returns(uint) {
         // get MA tick
         uint32 oldestObservationSecondsAgo =
             OracleLibrary.getOldestObservationSecondsAgo(tokenAtokenBPool);

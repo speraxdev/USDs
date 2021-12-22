@@ -250,6 +250,7 @@ contract VaultCoreTools is Initializable {
 	function collaDeptAmountCalculator(
 		uint valueType, uint USDsAmt, address _VaultCoreContract, address collaAddr, uint swapFee
 	) public view returns (uint256 collaDeptAmt) {
+		require(valueType == 0 || valueType == 1, 'invalid valueType');
 		IVaultCore _vaultContract = IVaultCore(_VaultCoreContract);
 		uint collaAddrDecimal = uint(ERC20Upgradeable(collaAddr).decimals());
 		if (valueType == 1) {
@@ -281,6 +282,7 @@ contract VaultCoreTools is Initializable {
 	function USDsAmountCalculator(
 		uint valueType, uint valueAmt, address _VaultCoreContract, address collaAddr, uint swapFee
 	) public view returns (uint256 USDsAmt) {
+		require(valueType == 1 || valueType == 2, 'invalid valueType');
 		IVaultCore _vaultContract = IVaultCore(_VaultCoreContract);
 		uint priceSPA = IOracle(_vaultContract.oracleAddr()).getSPAprice();
 		uint precisionSPA = IOracle(_vaultContract.oracleAddr()).getSPAprice_prec();

@@ -13,9 +13,12 @@ def test_upgrade_oracle(sperax, OracleV2, proxy_admin, Contract, admin, owner_l2
         core_proxy,
         vault_proxy,
         oracle_proxy,
+<<<<<<< HEAD
         strategy_proxy,
-        buyback,
-        buyback_multihop,
+=======
+        strategy_proxies,
+>>>>>>> 6b4339c5d90926b4e0f121ed86f77501ab320539
+        buybacks,
         bancor
     ) = sperax
 
@@ -59,7 +62,7 @@ def test_upgrade_oracle(sperax, OracleV2, proxy_admin, Contract, admin, owner_l2
 
     print(f"Oracle v2 proxy address: {new_oracle_proxy.address}")
     # requires duplicating Oracle.sol contract. The duplicate contract should
-    # be called OracleV2.sol. This version 2 contract must expose a new function 
+    # be called OracleV2.sol. This version 2 contract must expose a new function
     # called version() that returns the string "Oracle v.2"
     assert new_oracle_proxy.version() == "Oracle v.2"
 
@@ -90,7 +93,7 @@ def test_upgrade_oracle(sperax, OracleV2, proxy_admin, Contract, admin, owner_l2
         # USDT
         '0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9': '0x3f3f5dF88dC9F13eac63DF89EC16ef6e7E25DdE7',
         # DAI
-        '0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1': '0xc5C8E77B397E531B8EC06BFb0048328B30E9eCfB', 
+        '0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1': '0xc5C8E77B397E531B8EC06BFb0048328B30E9eCfB',
         # WBTC
         '0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f': '0x6ce185860a4963106506C203335A2910413708e9',
     }
