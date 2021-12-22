@@ -13,9 +13,8 @@ def test_upgrade_usds(sperax, USDsL2V2, proxy_admin, Contract, admin, owner_l2, 
         core_proxy,
         vault_proxy,
         oracle_proxy,
-        strategy_proxy,
-        buyback,
-        buyback_multihop,
+        strategy_proxies,
+        buybacks,
         bancor
     ) = sperax
 
@@ -56,6 +55,6 @@ def test_upgrade_usds(sperax, USDsL2V2, proxy_admin, Contract, admin, owner_l2, 
 
     print(f"USDsL2 v2 proxy address: {new_usds_proxy.address}")
     # requires duplicating USDsL2.sol contract. The duplicate contract should
-    # be called USDsL2V2.sol. This version 2 contract must expose a new function 
+    # be called USDsL2V2.sol. This version 2 contract must expose a new function
     # called version() that returns the string "USDsL2 v.2"
     assert new_usds_proxy.version() == "USDsL2 v.2"

@@ -365,7 +365,8 @@ def sperax(
         vault_proxy,
         oracle_proxy,
         strategies,
-        buybacks
+        buybacks,
+        bancor
     )
 
 
