@@ -364,15 +364,9 @@ def sperax(
         core_proxy,
         vault_proxy,
         oracle_proxy,
-<<<<<<< HEAD
-        strategy_proxy,
-        buyback,
-        buyback_multihop,
-        bancor
-=======
         strategies,
-        buybacks
->>>>>>> b07551c2f212e8899b4d2853616bbc393e23c0b3
+        buybacks,
+        bancor,
     )
 
 
