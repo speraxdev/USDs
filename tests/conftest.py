@@ -10,6 +10,11 @@ from dotenv import load_dotenv
 # load environment variables defined in .env
 load_dotenv()
 
+def ordered_tokens(token1, amount1, token2, amount2):
+    if(token1.address.lower() < token2.address.lower()):
+        return token1, amount1, token2, amount2
+    return token2, amount2, token1, amount1
+
 @pytest.fixture(scope="module", autouse=True)
 def admin(accounts):
     return accounts[0]
@@ -98,7 +103,7 @@ def user_account(accounts):
     return accounts[4]
 
 @pytest.fixture(scope="module", autouse=True)
-def mock_usdc(MockToken, owner_l2):
+def mock_token2(MockToken, owner_l2):
     mock_token = MockToken.deploy(
         'Mock USDC',
         'MockUSDC',
@@ -157,22 +162,16 @@ def wbtc():
     return brownie.interface.IERC20(wbtc_address)
 
 @pytest.fixture(scope="module", autouse=True)
-def usdc(MockToken):
-    mock_token = MockToken.deploy(
-        'Mock USDC',
-        'MockUSDC',
-        6,
-        {'from': owner_l2}
-    )
-    # # Arbitrum-one mainnet:
-    # usdc_address = '0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8'
+def usdc():
+    # Arbitrum-one mainnet:
+    usdc_address = '0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8'
     # # Arbitrum-rinkeby testnet:
     # #usdc_address = '0x09b98f8b2395d076514037ff7d39a091a536206c'
     # # Ethereum mainnet fork
     # if brownie.network.show_active() in ['mainnet-fork', 'rinkeby']:
     #     usdc_address = '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48'
 
-    return brownie.interface.IERC20(mock_token.address)
+    return brownie.interface.IERC20(usdc_address)
 
 @pytest.fixture(scope="module", autouse=True)
 def dai():
@@ -221,7 +220,7 @@ def sperax(
     weth,
     usdc,
     dai,
-    mock_usdc,
+    mock_token2,
     mock_token3,
     mock_token4,
     Contract,
@@ -293,7 +292,7 @@ def sperax(
     oracle_proxy.initialize(
         chainlink_usdc_price_feed,
         spa.address,
-        mock_usdc.address,
+        mock_token2.address,
         chainlink_flags,
         {'from': owner_l2}
     )
@@ -329,7 +328,7 @@ def sperax(
         wbtc,
         weth,
         dai,
-        mock_usdc,
+        mock_token2,
         owner_l2
     )
 
@@ -352,46 +351,12 @@ def sperax(
             owner_l2
         )
 
+    amount = 1000000
     # here it's temporarily change Oralce for SPA from SPA-USDC to SPA-ETH
     # would suggest to use a mock token to mock USDC instead
-    mintSPA(spa,  mock_usdc.balanceOf(owner_l2) , owner_l2, vault_proxy)
-
-    amount = 1000000
-    spa_mock_pool =  create_uniswap_v3_pool(
-        spa, # token1
-        2*amount, # amount1
-        mock_usdc, # token2
-        amount, # amount2
-        owner_l2,
-        vault_proxy
-    )
-
-    #
-    # create_uniswap_v3_pool(
-    #     0,
-    #     mock_usdc, # token1
-    #     amount, # amount1
-    #     mock_token3, # token2
-    #     amount, # amount2
-    #     owner_l2,
-    #     vault_proxy
-    # )
-    #
-    # deposit_weth(weth, owner_l2, accounts, amount)
-    #
-    # weth_erc20 = brownie.interface.IERC20(weth.address)
-    #
-    # spa_mock_pool =  create_uniswap_v3_pool(
-    #     mock_usdc.balanceOf(owner_l2),
-    #     spa, # token1
-    #     amount, # amount1
-    #     weth_erc20, # token2
-    #     amount, # amount2
-    #     owner_l2,
-    #     vault_proxy
-    # )
-    #
-    # update_oracle_setting(oracle_proxy, owner_l2, weth, usds_proxy)
+    mintSPA(spa, amount, owner_l2, vault_proxy)
+    spa_usds_pool =  create_uniswap_v3_pool(spa, mock_token2, int(100 * 10**18), int(100 * 10**18), 10000, owner_l2)
+    update_oracle_setting(oracle_proxy, mock_token2, owner_l2, weth, usds_proxy)
 
     return (
         spa,
@@ -815,7 +780,7 @@ def configure_collaterals(
     wbtc,
     weth,
     dai,
-    mock_usdc,
+    mock_token2,
     owner_l2
 ):
     if brownie.network.show_active() in ['mainnet-fork', 'rinkeby']:
@@ -830,7 +795,7 @@ def configure_collaterals(
         dai: '0xc5C8E77B397E531B8EC06BFb0048328B30E9eCfB',
         wbtc: '0x6ce185860a4963106506C203335A2910413708e9',
         weth: '0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612',
-        mock_usdc: '0x50834F3163758fcC1Df9973b6e91f0F0F0434aD3',
+        mock_token2: '0x50834F3163758fcC1Df9973b6e91f0F0F0434aD3',
     }
 
     precision = 10**8
@@ -858,58 +823,34 @@ def configure_collaterals(
 
 
 def create_uniswap_v3_pool(
-    spa,
-    amount1,
+    token1,
     token2,
+    amount1,
     amount2,
-    owner_l2,
-    vault_proxy
+    fee,
+    owner
 ):
-    if brownie.network.show_active() in ['mainnet-fork', 'rinkeby']:
-        print("NOTE: skip deploying contracts for Arbitrum (L2)")
-        return
-
     position_mgr_address = '0xC36442b4a4522E871399CD717aBDD847Ab11FE88'
     position_mgr = brownie.interface.INonfungiblePositionManager(position_mgr_address)
 
+    t1, a1, t2, a2 = ordered_tokens(token1, amount1, token2, amount2)
+    print("t1: ", t1)
+    print("a1: ", a1)
+    print("t2: ", t2)
+    print("a2: ", a2)
     # approve uniswap's non fungible position manager to transfer our tokens
-    spa.approve(position_mgr.address, amount1, {'from': owner_l2})
-    token2.approve(position_mgr.address, amount2, {'from': owner_l2})
+    t1.approve(position_mgr.address, a1, {'from': owner})
+    t2.approve(position_mgr.address, a2, {'from': owner})
 
     # create a transaction pool
-    fee = 3000
     txn = position_mgr.createAndInitializePoolIfNecessary(
-        spa,
-        token2,
+        t1,
+        t2,
         fee,
-        encode_price(amount1, amount2),
-        {'from': owner_l2}
+        encode_price(a1, a2),
+        {'from': owner}
     )
-    # newly created pool address
-    pool = txn.return_value
-    print(f"uniswap v3 pool address (spa-token2 pair): {pool}")
-
-    # provide initial liquidity
-    deadline = 1637632800 + brownie.chain.time() # deadline: 2 hours
-    params = [
-        spa,
-        token2,
-        fee,
-        lower_tick(), # tickLower
-        upper_tick(), # tickUpper
-        amount1,
-        amount2,
-        0, # minimum amount of spa expected
-        0, # minimum amount of token2 expected
-        owner_l2,
-        deadline
-    ]
-    txn = position_mgr.mint(
-        params,
-        {'from': owner_l2}
-    )
-    print(txn.return_value)
-    return pool
+    return txn.return_value
 
 
 def mintSPA(
@@ -939,16 +880,16 @@ def mintSPA(
     assert txn.events['Transfer']['to'] == owner_l2
     assert txn.events['Transfer']['value'] == amount
 
-def update_oracle_setting(oracle_proxy, owner_l2, spa, usds_proxy):
+def update_oracle_setting(oracle_proxy, mock_token2, owner_l2, spa, usds_proxy):
     if brownie.network.show_active() in ['mainnet-fork', 'rinkeby']:
         print("NOTE: skip deploying contracts for Arbitrum (L2)")
         return
 
     oracle_proxy.updateUniPoolsSetting(
-        spa.address,
-        usds_proxy.address,
-        3000,
-        3000,
+        mock_token2.address,
+        mock_token2.address,
+        10000,
+        500,
     {'from': owner_l2} )
 
 
@@ -966,7 +907,7 @@ def upper_tick():
     return math.floor(887272 / 60) * 60
 
 def encode_price(n1, n2):
-    return math.trunc(math.sqrt(int(n2)/int(n1)) * 2**96)
+    return math.trunc(math.sqrt(int(n1)/int(n2)) * 2**96)
 
 
 @pytest.fixture(autouse=True)
