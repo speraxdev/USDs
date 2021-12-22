@@ -684,7 +684,7 @@ def configure_collaterals(
             True, # _allocationAllowed
             80, # _allocatePercentage
             buyback, # _buyBackAddr
-            False, # _rebaseAllowed
+            True, # _rebaseAllowed
             {'from': owner_l2}
         )
                 # wire up price feed for the added collateral
