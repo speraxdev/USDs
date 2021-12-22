@@ -240,7 +240,7 @@ def test_get_USDs_price(sperax,mock_token2,accounts, owner_l2):
 
 
     txn = vault_proxy.mintBySpecifyingUSDsAmt(
-        weth.address,
+        mock_token2.address,
         int(amount),
         slippage_collateral,
         slippage_spa,
