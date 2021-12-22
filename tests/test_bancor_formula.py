@@ -12,7 +12,7 @@ def test_power(sperax, owner_l2):
         vault_proxy,
         oracle_proxy,
         strategy_proxy,
-        buyback,  
+        buybacks,  
         bancor
     ) = sperax
     LIMIT_MAX_NUM = hex(0x200000000000000000000000000000001)
@@ -54,7 +54,7 @@ def test_general_log(sperax, owner_l2):
         vault_proxy,
         oracle_proxy,
         strategy_proxy,
-        buyback,      
+        buybacks,      
         bancor
     ) = sperax
     tx=bancor.generalLog(
@@ -81,7 +81,7 @@ def test_general_floorLog2(sperax, owner_l2):
         vault_proxy,
         oracle_proxy,
         strategy_proxy,
-        buyback,
+        buybacks,
         bancor
     ) = sperax
 
@@ -100,7 +100,7 @@ def test_general_find_position_in_max_exp_array(sperax, owner_l2):
         vault_proxy,
         oracle_proxy,
         strategy_proxy,
-        buyback,
+        buybacks,
         bancor
     ) = sperax
     a= hex(0x03eab73b3bbfe282243ce2ffffffffffff)
@@ -126,7 +126,7 @@ def test_general_exp(sperax, owner_l2):
         vault_proxy,
         oracle_proxy,
         strategy_proxy,
-        buyback,
+        buybacks,
         bancor
     ) = sperax
     b= hex(0x03eab73b3bbfe282243ce1fffffffffffe)
@@ -143,7 +143,7 @@ def test_optimal_log(sperax, owner_l2):
         vault_proxy,
         oracle_proxy,
         strategy_proxy,
-        buyback,
+        buybacks,
         bancor
     ) = sperax
     a0= hex( 0xd3094c70f034de4b96ff7d5b6f99fcd9)
@@ -195,7 +195,7 @@ def test_optimal_exp(sperax, owner_l2):
         vault_proxy,
         oracle_proxy,
         strategy_proxy,
-        buyback,
+        buybacks,
         bancor
     ) = sperax
     a0= hex( 0x010000000000000000000000000000001)

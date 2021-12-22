@@ -12,7 +12,7 @@ def test_swap_succesful(sperax, mock_token2, mock_token3, owner_l2):
         strategy_proxy,
         buyback,
         buyback_multihop,
-        bancor
+        
         
     ) = sperax
 
@@ -46,8 +46,7 @@ def test_swap_unsuccesful_call_not_vault(sperax, mock_token2, mock_token3, owner
         vault_proxy,
         oracle_proxy,
         strategy_proxy,
-        buyback,
-        buyback_multihop,
+        buybacks,
         bancor
     ) = sperax
 
