@@ -486,11 +486,13 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 		collateralStruct memory collateral;
 		for (uint y = 0; y < allCollaterals.length; y++) {
 			collateral = allCollaterals[y];
-			strategy = IStrategy(collateral.defaultStrategyAddr);
-			if (strategy.supportsCollateral(collateral.collateralAddr) && collateral.rebaseAllowed) {
-				uint USDsIncrement_viaReward = _harvestReward(strategy);
-				uint USDsIncrement_viaInterest = _harvestInterest(strategy, collateral.collateralAddr);
-				USDsIncrement = USDsIncrement.add(USDsIncrement_viaReward).add(USDsIncrement_viaInterest);
+			if (collateral.defaultStrategyAddr != address(0)) {
+				strategy = IStrategy(collateral.defaultStrategyAddr);
+				if (collateral.rebaseAllowed && strategy.supportsCollateral(collateral.collateralAddr)) {
+					uint USDsIncrement_viaReward = _harvestReward(strategy);
+					uint USDsIncrement_viaInterest = _harvestInterest(strategy, collateral.collateralAddr);
+					USDsIncrement = USDsIncrement.add(USDsIncrement_viaReward).add(USDsIncrement_viaInterest);
+				}
 			}
 		}
 	}
@@ -536,18 +538,21 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 		collateralStruct memory collateral;
 		for (uint y = 0; y < allCollaterals.length; y++) {
 			collateral = allCollaterals[y];
-			strategy = IStrategy(collateral.defaultStrategyAddr);
-			if (collateral.allocationAllowed && collateral.defaultStrategyAddr != address(0) && strategy.supportsCollateral(collateral.collateralAddr)) {
-				uint valueInStrategy = _valueInStrategy(collateral.collateralAddr);
-				uint valueInVault = _valueInVault(collateral.collateralAddr);
-				uint valueInStrategy_optimal = valueInStrategy.add(valueInVault).mul(collateral.allocatePercentage).div(allocatePercentage_prec);
-				if (valueInStrategy_optimal > valueInStrategy) {
-					uint amtToAllocate = valueInStrategy_optimal.sub(valueInStrategy);
-					IERC20Upgradeable(collateral.collateralAddr).safeTransfer(collateral.defaultStrategyAddr, amtToAllocate);
-					strategy.deposit(collateral.collateralAddr, amtToAllocate);
-					emit CollateralAllocated(collateral.collateralAddr, collateral.defaultStrategyAddr, amtToAllocate);
+			if (collateral.defaultStrategyAddr != address(0)) {
+				strategy = IStrategy(collateral.defaultStrategyAddr);
+				if (collateral.allocationAllowed && strategy.supportsCollateral(collateral.collateralAddr)) {
+					uint valueInStrategy = _valueInStrategy(collateral.collateralAddr);
+					uint valueInVault = _valueInVault(collateral.collateralAddr);
+					uint valueInStrategy_optimal = valueInStrategy.add(valueInVault).mul(collateral.allocatePercentage).div(allocatePercentage_prec);
+					if (valueInStrategy_optimal > valueInStrategy) {
+						uint amtToAllocate = valueInStrategy_optimal.sub(valueInStrategy);
+						IERC20Upgradeable(collateral.collateralAddr).safeTransfer(collateral.defaultStrategyAddr, amtToAllocate);
+						strategy.deposit(collateral.collateralAddr, amtToAllocate);
+						emit CollateralAllocated(collateral.collateralAddr, collateral.defaultStrategyAddr, amtToAllocate);
+					}
 				}
 			}
+
 		}
 	}
 
