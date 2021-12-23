@@ -214,6 +214,10 @@ def main():
         vault_proxy.address,
         {'from': owner }
     )
+    txn = oracle_proxy.updateUSDsAddress(
+        usds_proxy.address,
+        {'from': owner }
+    )
 
     spa = Contract.from_abi("SperaxTokenL2", spa_l2_address, SperaxTokenL2.abi)
     if network.show_active() != 'arbitrum-main-fork':
