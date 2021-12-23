@@ -52,7 +52,14 @@ contract VaultCoreToolsV2 is Initializable {
 				.div(precisionUSDs);
 			afterB = _vaultContract.chiInit().add(chiAdjustmentB);
 		} else {
-			uint chiAdjustmentB = uint(_vaultContract.chi_beta()).mul(uint(_vaultContract.chi_prec())).mul(precisionUSDs - priceUSDs).mul(precisionUSDs - priceUSDs).div(_vaultContract.chi_beta_prec());
+			uint chiAdjustmentB = uint(_vaultContract.chi_beta())
+				.mul(uint(_vaultContract.chi_prec()))
+				.mul(precisionUSDs - priceUSDs)
+				.mul(precisionUSDs - priceUSDs);
+			chiAdjustmentB = chiAdjustmentB
+				.div(_vaultContract.chi_beta_prec())
+				.div(precisionUSDs)
+				.div(precisionUSDs);
 			(, afterB) = _vaultContract.chiInit().trySub(chiAdjustmentB);
 		}
 		(, chiTarget_) = afterB.trySub(chiAdjustmentA);
