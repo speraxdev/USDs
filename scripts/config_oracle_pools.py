@@ -1,12 +1,7 @@
 import sys
 import signal
+import click
 import brownie
-from brownie import (
-    Oracle,
-    network,
-    Contract,
-    accounts
-)
 
 def signal_handler(signal, frame):
     sys.exit(0)
@@ -18,16 +13,16 @@ def signal_handler(signal, frame):
 def main():
     # handle ctrl-C event
     signal.signal(signal.SIGINT, signal_handler)
-    print("\nEnter contract owner account password:")
-    try:
-        owner = accounts.load(filename="minter.keystore")
-    except ValueError:
-        print("\nInvalid owner wallet or password\n")
-        return
-    except FileNotFoundError:
-        print("\nFile not found: ~/.brownie/accounts/minter.json")
-        return
-    print(f"\nConfigure Uniswap pools on Oracle on {network.show_active()}:\n")
+    # log in account
+    owner = brownie.accounts.load(
+        click.prompt(
+            "account",
+            type=click.Choice(brownie.accounts.load())
+        )
+    )
+    print(f"account: {owner.address}\n")
+
+    print(f"\nConfigure Uniswap pools on Oracle on {brownie.network.show_active()}:\n")
     pool_address = input("Enter Pool address: ").strip()
     if len(pool_address) == 0:
         print("\nMissing Pool address\n")
