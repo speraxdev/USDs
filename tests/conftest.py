@@ -162,7 +162,7 @@ def usdc(MockToken, owner_l2):
         {'from': owner_l2}
     )
     print("USDC: ", token.address)
-    return token
+    return brownie.interface.IERC20(token.address)
 
 @pytest.fixture(scope="module", autouse=True)
 def dai():
@@ -333,8 +333,8 @@ def sperax(
     # here it's temporarily change Oralce for SPA from SPA-USDC to SPA-ETH
     # would suggest to use a mock token to mock USDC instead
     mintSPA(spa, amount, owner_l2, vault_proxy)
-    spa_usds_pool =  create_uniswap_v3_pool(spa, usdc, int(100 * 10**18), int(100 * 10**18), 10000, owner_l2)
-    spa_usds_pool2 =  create_uniswap_v3_pool(spa, usdc, int(100 * 10**18), int(100 * 10**18), 500, owner_l2)
+    spa_usds_pool =  create_uniswap_v3_pool(spa, usdc, int(100 * 10**18), int(100 * 10**6), 3000, owner_l2)
+  
     update_oracle_setting(oracle_proxy, usdc, owner_l2, weth, usds_proxy)
 
     return (
@@ -831,21 +831,21 @@ def create_uniswap_v3_pool(
 
     deadline = 1637632800 + brownie.chain.time() # deadline: 2 hours
     params = [
-        token1,
-        token2,
+        t1,
+        t2,
         fee,
         lower_tick(), # tickLower
         upper_tick(), # tickUpper
-        amount1,
-        amount2,
+        a1,
+        a2,
         0, # minimum amount of spa expected
         0, # minimum amount of token2 expected
-        owner_l2,
+        owner,
         deadline
     ]
     txn = position_mgr.mint(
         params,
-        {'from': owner_l2}
+        {'from': owner}
     )
 
 
@@ -887,8 +887,8 @@ def update_oracle_setting(oracle_proxy, usdc, owner_l2, spa, usds_proxy):
     oracle_proxy.updateUniPoolsSetting(
         usdc.address,
         usdc.address,
-        10000,
-        500,
+        3000,
+        3000,
     {'from': owner_l2} )
 
 
