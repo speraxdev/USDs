@@ -16,10 +16,9 @@ def test_chi_redeem(sperax, owner_l2):
         bancor
     ) = sperax
 
-
     core_proxy.chiRedeem(vault_proxy, {'from': owner_l2})
 
-def test_mint_usds(sperax, mock_token4, owner_l2, accounts, weth, mock_token2):
+def test_mint_usds(sperax, owner_l2, accounts, weth):
     (
         spa,
         usds_proxy,
@@ -31,7 +30,20 @@ def test_mint_usds(sperax, mock_token4, owner_l2, accounts, weth, mock_token2):
         bancor
     ) = sperax
 
+    (
+        usdt_strategy,
+        wbtc_strategy,
+        weth_strategy,
+    ) = strategy_proxies
 
+    (
+        two_hops_buyback, 
+        three_hops_buyback
+    ) = buybacks
+
+    
+
+    invalid_coll = brownie.convert.to_address('0x0000000000000000000000000000000000000000')
     deadline = 1637632800 + brownie.chain.time()
     amount  = 1000000
     slippage_collateral = 1000000000000000000000000000000
@@ -47,7 +59,7 @@ def test_mint_usds(sperax, mock_token4, owner_l2, accounts, weth, mock_token2):
     #collateral not addedd
     with reverts():
         vault_proxy.mintBySpecifyingUSDsAmt(
-            mock_token2.address,
+            invalid_coll,
             int(amount),
             slippage_collateral,
             slippage_spa,
@@ -88,10 +100,10 @@ def test_mint_usds(sperax, mock_token4, owner_l2, accounts, weth, mock_token2):
     txn = vault_proxy.updateAllocationPermission(True, {'from': owner_l2})
     vault_proxy.updateCollateralInfo(
         weth,
-        strategy_proxy,
+        weth_strategy,
         True,
         80,
-        buyback,
+        two_hops_buyback,
         True, {'from': owner_l2}
     )
     txn = vault_proxy.allocate({'from': owner_l2})
@@ -101,10 +113,10 @@ def test_mint_usds(sperax, mock_token4, owner_l2, accounts, weth, mock_token2):
 
     vault_proxy.updateCollateralInfo(
         weth,
-        strategy_proxy,
+        weth_strategy,
         True,
         80,
-        buyback,
+        two_hops_buyback,
         True, {'from': owner_l2}
     )
 
@@ -112,10 +124,10 @@ def test_mint_usds(sperax, mock_token4, owner_l2, accounts, weth, mock_token2):
 
     vault_proxy.updateCollateralInfo(
         weth,
-        strategy_proxy,
+        weth_strategy,
         False,
         80,
-        buyback,
+        two_hops_buyback,
         True, {'from': owner_l2}
     )
 
@@ -143,7 +155,7 @@ def test_mint_usds(sperax, mock_token4, owner_l2, accounts, weth, mock_token2):
 
 
 
-def test_mint_spa(sperax, weth, owner_l2, accounts, mock_token2):
+def test_mint_spa(sperax, weth, owner_l2, accounts):
     (   spa,
         usds_proxy,
         core_proxy,
@@ -154,6 +166,7 @@ def test_mint_spa(sperax, weth, owner_l2, accounts, mock_token2):
         bancor
     ) = sperax
 
+    invalid_coll = brownie.convert.to_address('0x0000000000000000000000000000000000000000')
     deadline = 1637632800 + brownie.chain.time()
     amount  = 1000
     slippage_collateral = 1000000000000000000000000000000
@@ -168,7 +181,7 @@ def test_mint_spa(sperax, weth, owner_l2, accounts, mock_token2):
 
     with reverts():
         vault_proxy.mintBySpecifyingSPAamt(
-            mock_token2.address,
+            invalid_coll,
             int(amount),
             slippage_usds,
             slippage_collateral,
@@ -196,7 +209,7 @@ def test_mint_spa(sperax, weth, owner_l2, accounts, mock_token2):
     )
 
 
-def test_mint_collateral(sperax, weth, owner_l2, accounts, mock_token2):
+def test_mint_collateral(sperax, weth, owner_l2, accounts):
     (   spa,
         usds_proxy,
         core_proxy,
@@ -207,6 +220,7 @@ def test_mint_collateral(sperax, weth, owner_l2, accounts, mock_token2):
         bancor
     ) = sperax
 
+    invalid_coll = brownie.convert.to_address('0x0000000000000000000000000000000000000000')
     deadline = 1637632800 + brownie.chain.time()
     amount  = 10000
     slippage_collateral = 10
@@ -221,7 +235,7 @@ def test_mint_collateral(sperax, weth, owner_l2, accounts, mock_token2):
 
     with reverts():
         vault_proxy.mintBySpecifyingCollateralAmt(
-            mock_token2.address,
+            invalid_coll,
             int(amount),
             slippage_collateral,
             slippage_coll,
@@ -286,7 +300,7 @@ def test_vault_core_fail_allocate(sperax, accounts, owner_l2):
 
 
 
-def test_upgrage_collateral(sperax, mock_token2, accounts, owner_l2, weth):
+def test_upgrage_collateral(sperax, accounts, owner_l2, weth):
     (   spa,
         usds_proxy,
         core_proxy,
@@ -297,11 +311,14 @@ def test_upgrage_collateral(sperax, mock_token2, accounts, owner_l2, weth):
         bancor
     ) = sperax
 
+    (two_hops_buyback, three_hops_buyback) = buybacks
+
     collateralAddr = weth.address
     defaultStrategyAddr = brownie.convert.to_address('0x0000000000000000000000000000000000000000')
+    invalid_coll = brownie.convert.to_address('0x0000000000000000000000000000000000000000')
     allocationAllowed = True
     allocatePercentage = 0
-    buyBackAddr = buyback.address
+    buyBackAddr = two_hops_buyback.address
     rebaseAllowed = True
 
     with reverts('Ownable: caller is not the owner'):
@@ -315,7 +332,7 @@ def test_upgrage_collateral(sperax, mock_token2, accounts, owner_l2, weth):
 
     with reverts('Collateral not added'):
         vault_proxy.updateCollateralInfo(
-            mock_token2,
+            invalid_coll,
             defaultStrategyAddr,
             allocationAllowed,
             allocatePercentage,
@@ -335,7 +352,7 @@ def test_upgrage_collateral(sperax, mock_token2, accounts, owner_l2, weth):
 
 
 
-def test_vault_core_add_collatral(sperax, mock_token4, accounts, owner_l2, weth):
+def test_vault_core_add_collatral(sperax, accounts, owner_l2, weth):
     (   spa,
         usds_proxy,
         core_proxy,
@@ -350,7 +367,7 @@ def test_vault_core_add_collatral(sperax, mock_token4, accounts, owner_l2, weth)
     defaultStrategyAddr = brownie.convert.to_address('0x0000000000000000000000000000000000000000')
     allocationAllowed = True
     allocatePercentage = 0
-    buyBackAddr = buyback.address
+    buyBackAddr = (two_hops_buyback, three_hops_buyback) = buybacks
     rebaseAllowed = True
 
     with reverts('Collateral added'):
@@ -359,12 +376,12 @@ def test_vault_core_add_collatral(sperax, mock_token4, accounts, owner_l2, weth)
             defaultStrategyAddr,
             allocationAllowed,
             allocatePercentage,
-            buyBackAddr,
+            two_hops_buyback,
             rebaseAllowed, {'from': owner_l2})
 
 
 
-def test_add_strategy(sperax, mock_token4, accounts, owner_l2, weth):
+def test_add_strategy(sperax, accounts, owner_l2, weth):
     (   spa,
         usds_proxy,
         core_proxy,
@@ -375,12 +392,20 @@ def test_add_strategy(sperax, mock_token4, accounts, owner_l2, weth):
         bancor
     ) = sperax
 
-    txn = vault_proxy.addStrategy(strategy_proxy, {'from': owner_l2})
+
+    (
+        usdt_strategy,
+        wbtc_strategy,
+        weth_strategy,
+    ) = strategy_proxies
+
+    defaultStrategyAddr = brownie.convert.to_address('0x0000000000000000000000000000000000000000')
+    txn = vault_proxy.addStrategy(defaultStrategyAddr, {'from': owner_l2})
     assert txn.events["StrategyAdded"]["added"] == True
 
 
     with reverts('Strategy added'):
-        vault_proxy.addStrategy(strategy_proxy, {'from': owner_l2})
+        vault_proxy.addStrategy(defaultStrategyAddr, {'from': owner_l2})
 
 
 
@@ -395,25 +420,37 @@ def test_update_strategy_rwd_buyback_addr(sperax, owner_l2):
         bancor
     ) = sperax
 
+    (
+        usdt_strategy,
+        wbtc_strategy,
+        weth_strategy,
+    ) = strategy_proxies
+
+    (
+        two_hops_buyback, 
+        three_hops_buyback
+    ) = buybacks
+
+    defaultStrategyAddr = brownie.convert.to_address('0x0000000000000000000000000000000000000000')
     with reverts('Strategy not added'):
         txn = vault_proxy.updateStrategyRwdBuybackAddr(
-            strategy_proxy,
-            buyback,
+            defaultStrategyAddr,
+            two_hops_buyback,
         {'from': owner_l2})
 
-    vault_proxy.addStrategy(strategy_proxy, {'from': owner_l2})
+    vault_proxy.addStrategy(defaultStrategyAddr, {'from': owner_l2})
     txn = vault_proxy.updateStrategyRwdBuybackAddr(
-            strategy_proxy,
-            buyback,
+            defaultStrategyAddr,
+            two_hops_buyback,
         {'from': owner_l2})
 
-    assert txn.events["StrategyRwdBuyBackUpdateded"]["strategyAddr"]  == strategy_proxy.address
-    assert txn.events["StrategyRwdBuyBackUpdateded"]["buybackAddr"]  == buyback.address
+    assert txn.events["StrategyRwdBuyBackUpdateded"]["strategyAddr"]  == defaultStrategyAddr
+    assert txn.events["StrategyRwdBuyBackUpdateded"]["buybackAddr"]  == two_hops_buyback.address
 
 
 
 
-def test_reedem(sperax, accounts, owner_l2, weth, mock_token2):
+def test_reedem(sperax, accounts, owner_l2, weth):
     (   spa,
         usds_proxy,
         core_proxy,
@@ -426,6 +463,7 @@ def test_reedem(sperax, accounts, owner_l2, weth, mock_token2):
 
     deadline = brownie.chain.time() + 2000
     amount  = 1000000
+    invalid_coll = brownie.convert.to_address('0x0000000000000000000000000000000000000000')
 
     slippage_collateral_mint = 1000000000000000000000000000000
     slippage_spa_mint = 1000000000000000000000000000000
@@ -454,7 +492,7 @@ def test_reedem(sperax, accounts, owner_l2, weth, mock_token2):
         vault_proxy.redeem(weth.address, 0, slippage_collateral, slippage_spa, deadline, {'from': accounts[5]})
 
     with reverts():
-        vault_proxy.redeem(mock_token2.address, amount, slippage_collateral, slippage_spa, deadline, {'from': accounts[5]})
+        vault_proxy.redeem(invalid_coll, amount, slippage_collateral, slippage_spa, deadline, {'from': accounts[5]})
 
 
     txn = spa.setMintable(
@@ -519,7 +557,7 @@ def test_reedem_collateral_from_strategy(sperax, accounts, owner_l2, weth):
     with reverts():
         txn = vault_proxy.redeem(weth.address, amount, slippage_collateral, slippage_spa, deadline, {'from': accounts[5]})
 
-def test_vault_core_allocate(sperax, accounts, owner_l2):
+def test_vault_core_allocate(sperax, owner_l2):
     (
         spa,
         usds_proxy,
@@ -548,9 +586,9 @@ def test_vault_core_tools_spa_amount_calculator(sperax, owner_l2):
     ) = sperax
 
     with reverts('invalid valueType'):
-        txn = core_proxy.SPAAmountCalculator(1, 10000, vault_proxy, 3000,{'from': owner_l2})
+        txn = core_proxy.SPAAmountCalculator(1, 10000, vault_proxy, 10000,{'from': owner_l2})
 
-    txn = core_proxy.SPAAmountCalculator(0, 10000, vault_proxy, 3000,{'from': owner_l2})
+    txn = core_proxy.SPAAmountCalculator(0, 10000, vault_proxy, 10000,{'from': owner_l2})
 
     assert txn.return_value > 0
 
