@@ -1,49 +1,31 @@
 import sys
 import signal
+import click
 import brownie
-from brownie import (
-    Oracle,
-    network,
-    Contract,
-    accounts
-)
 
 def signal_handler(signal, frame):
     sys.exit(0)
 
-# this script configures the Uniswap pool addresses in Oracle
-# Oracle use one pool (SPA-ETH) to get the price of SPA
+# this script helps increase slots of reserved for moving average on a Uni V3
+# pool
+# Oracle use one pool (SPA-USDC) to get the price of SPA
 # and the other (USDs-USDC) to get the price of USDs
-# note: configure the pool for SPA first
 def main():
     # handle ctrl-C event
     signal.signal(signal.SIGINT, signal_handler)
+    # log in account
+    owner = brownie.accounts.load(
+        click.prompt(
+            "account",
+            type=click.Choice(brownie.accounts.load())
+        )
+    )
+    print(f"account: {owner.address}\n")
 
-    print("\nEnter contract owner account password:")
-    try:
-        owner = accounts.load(filename="minter.keystore")
-    except ValueError:
-        print("\nInvalid owner wallet or password\n")
+    print(f"\nConfigure Uniswap pools on Oracle on {brownie.network.show_active()}:\n")
+    pool_address = input("Enter Pool address: ").strip()
+    if len(pool_address) == 0:
+        print("\nMissing Pool address\n")
         return
-    except FileNotFoundError:
-        print("\nFile not found: ~/.brownie/accounts/minter.json")
-        return
-    print(f"\nConfigure Uniswap pools on Oracle on {network.show_active()}:\n")
-    spa_pool_address = input("Enter SPA-USDC Pool address: ").strip()
-    if len(spa_pool_address) == 0:
-        print("\nMissing SPA Pool address\n")
-        return
-    usds_pool_ready = input("Is the USDs-USDC pool ready? (y/n)").strip()
-    if usds_pool_ready != 'y' and usds_pool_ready != 'n':
-        print("\nInvalid Input (y/n)\n")
-        return
-    if usds_pool_ready == 'y':
-        usds_pool_address = input("Enter USDs Pool address: ").strip()
-        if len(usds_pool_address) == 0:
-            print("\nMissing USDs Pool address\n")
-            return
-    spa_pool = brownie.interface.IUniswapV3Pool(spa_pool_address)
-    spa_pool.increaseObservationCardinalityNext(20, {'from': owner})
-    if usds_pool_ready == 'y':
-        usds_pool = brownie.interface.IUniswapV3Pool(usds_pool_address)
-        spa_pool.increaseObservationCardinalityNext(20, {'from': owner})
+    pool = brownie.interface.IUniswapV3Pool(pool_address)
+    pool.increaseObservationCardinalityNext(20, {'from': owner})

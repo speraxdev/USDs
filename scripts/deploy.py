@@ -129,7 +129,7 @@ def main():
 
     # VaultCoreTools
     core = VaultCoreTools.deploy(
-        {'from': owner }
+        {'from': owner, 'gas_limit': 2000000000}
     )
     proxy = TransparentUpgradeableProxy.deploy(
         core.address,
@@ -138,11 +138,11 @@ def main():
         {'from': admin }
     )
     vault_tools_proxy = Contract.from_abi("VaultCoreTools", proxy.address, VaultCoreTools.abi)
-    txn = vault_tools_proxy.initialize(bancor.address, {'from': owner})
+    txn = vault_tools_proxy.initialize(bancor.address, {'from': owner, 'gas_limit': 2000000000})
 
     # VaultCore
     vault = VaultCore.deploy(
-        {'from': owner, 'gas_limit': 10000000000 }
+        {'from': owner, 'gas_limit': 2000000000}
 #        publish_source=True,
     )
     proxy = TransparentUpgradeableProxy.deploy(
@@ -156,12 +156,12 @@ def main():
         spa_l2_address,
         vault_tools_proxy.address,
         fee_vault,
-        {'from': owner }
+        {'from': owner, 'gas_limit': 2000000000}
     )
 
     # Oracle
     oracle = Oracle.deploy(
-        {'from': owner, 'gas_limit': 10000000000 },
+        {'from': owner, 'gas_limit': 2000000000},
 #        publish_source=True,
     )
     proxy = TransparentUpgradeableProxy.deploy(
@@ -176,12 +176,12 @@ def main():
         spa_l2_address,
         usdc_arbitrum,
         chainlink_flags,
-        {'from': owner }
+        {'from': owner, 'gas_limit': 2000000000}
     )
 
     # USDs
     usds = USDsL2.deploy(
-        {'from': owner, 'gas_limit': 10000000000 },
+        {'from': owner, 'gas_limit': 2000000000},
 #        publish_source=True,
     )
     proxy = TransparentUpgradeableProxy.deploy(
@@ -197,21 +197,25 @@ def main():
         vault_proxy.address,
         l2_gateway,
         usds_l1_address,
-        {'from': owner },
+        {'from': owner, 'gas_limit': 2000000000},
     )
 
     # configure VaultCore contract with USDs, Oracle contract address
     txn = vault_proxy.updateUSDsAddress(
         usds_proxy,
-        {'from': owner }
+        {'from': owner, 'gas_limit': 2000000000}
     )
     # configure VaultCore contract with Oracle contract address
     txn = vault_proxy.updateOracleAddress(
         oracle_proxy.address,
-        {'from': owner }
+        {'from': owner, 'gas_limit': 2000000000}
     )
     txn = oracle_proxy.updateVaultAddress(
         vault_proxy.address,
+        {'from': owner, 'gas_limit': 2000000000}
+    )
+    txn = oracle_proxy.updateUSDsAddress(
+        usds_proxy.address,
         {'from': owner }
     )
 
@@ -220,20 +224,26 @@ def main():
         txn = spa.setMintable(
             vault_proxy.address,
             True,
-            {'from': owner }
+            {'from': owner, 'gas_limit': 2000000000}
         )
 
     # configure stablecoin collaterals in vault and oracle
     configure_collaterals(vault_proxy, oracle_proxy, owner, convert)
+<<<<<<< HEAD
     if network.show_active() in ['arbitrum-main-fork', 'arbitrum-one']:
         deploy_strategy(usds_proxy, vault_proxy, oracle_proxy, admin, owner)
+=======
+
+    # if network.show_active() in ['arbitrum-main-fork', 'arbitrum-one']:
+    #     deploy_strategies(usds_proxy, vault_proxy, oracle_proxy, admin, owner)
+>>>>>>> origin/main
 
     print(f"\n{network.show_active()}:\n")
     editAddressFile(USDs_file, bancor.address, "bancor_formula")
     editAddressFile(USDs_file, vault_tools_proxy.address, "vault_core_tools_proxy")
     editAddressFile(USDs_file, vault_proxy.address, "vault_core_proxy")
     editAddressFile(USDs_file, oracle_proxy.address, "oracle_proxy")
-    editAddressFile(USDs_file, usds_proxy.address, "USDs__l2_proxy")
+    editAddressFile(USDs_file, usds_proxy.address, "USDs_l2_proxy")
     print(f"Bancor Formula address: {bancor.address}")
 
     print(f"Vault Core Tools:")
@@ -415,7 +425,7 @@ def deploy_strategy(
 
 def deploy_strategy(index, admin, owner, vault_proxy, oracle_proxy):
     strategy = ThreePoolStrategy.deploy(
-        {'from': owner, 'gas_limit': 10000000000},
+        {'from': owner, 'gas_limit': 1500000000},
     )
     proxy_admin = ProxyAdmin.deploy(
         {'from': admin},
@@ -444,6 +454,6 @@ def deploy_strategy(index, admin, owner, vault_proxy, oracle_proxy):
         strategy_vars_base.lp_tokens,
         strategy_vars_base.crv_gauge_address,
         strategy_vars_base.index,
-        {'from': owner, 'gas_limit': 10000000000},
+        {'from': owner, 'gas_limit': 1500000000},
     )
     return strategy_proxy.address
