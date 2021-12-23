@@ -50,10 +50,6 @@ contract OracleV2 is Initializable, IOracle, OwnableUpgradeable {
     uint24 SPAoraclePoolFee;
     uint24 USDsOraclePoolFee;
 
-    function version() public pure returns (uint) {
-		return 2;
-	}
-
     event USDsInOutRatioUpdated(
         uint USDsInOutRatio,
         uint USDsOutflow_average,
@@ -100,9 +96,9 @@ contract OracleV2 is Initializable, IOracle, OwnableUpgradeable {
         lastUpdateTime = uint32(now % 2**32);
         priceFeedUSDC = AggregatorV3Interface(_priceFeedUSDC);
         SPAaddr = _SPAaddr;
-        SPA_prec = uint128(10)**ERC20(SPAaddr).decimals();
+        SPA_prec = uint128(10)**18;
         USDCaddr = _USDCaddr;
-        USDC_prec = uint128(10)**ERC20(USDCaddr).decimals();
+        USDC_prec = uint128(10)**6;
         movingAvgShortPeriod = 600;
         movingAvgLongPeriod = 3600;
         chainlinkFlags = FlagsInterface(_chainlinkFlags);
@@ -167,7 +163,7 @@ contract OracleV2 is Initializable, IOracle, OwnableUpgradeable {
     /**
      * @notice update the price of tokenA to the latest
      * @dev the price would be updated only once per updatePeriod time
-     * @dev USDsInOutRatio is accurate after 24 hours (one iteration)
+     * @dev USDsInOutRatio is accurate after one iteration
      */
     function updateInOutRatio() external override {
         uint32 currTime = uint32(now % 2 ** 32);
@@ -180,7 +176,7 @@ contract OracleV2 is Initializable, IOracle, OwnableUpgradeable {
         USDsOutflow[indexNew] = IUSDs(USDsAddr).burntViaUsers();
         uint USDsInflow_average = USDsInflow[indexNew].sub(USDsInflow[indexOld]);
         uint USDsOutflow_average = USDsOutflow[indexNew].sub(USDsOutflow[indexOld]);
-        if (USDsInOutRatio == 0) {
+        if (USDsInflow_average == 0) {
             USDsInOutRatio = USDsInOutRatio_prec;
         } else {
             USDsInOutRatio = USDsOutflow_average.mul(USDsInOutRatio_prec).div(USDsInflow_average);
