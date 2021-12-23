@@ -40,13 +40,19 @@ contract VaultCoreTools is Initializable {
 		) public view returns (uint chiTarget_) {
 		IVaultCore _vaultContract = IVaultCore(_VaultCoreContract);
 		uint chiAdjustmentA = blockPassed.mul(_vaultContract.chi_alpha());
-		uint chiAdjustmentB;
 		uint afterB;
 		if (priceUSDs >= precisionUSDs) {
-			chiAdjustmentB = uint(_vaultContract.chi_beta()).mul(uint(_vaultContract.chi_prec())).mul(priceUSDs - precisionUSDs).mul(priceUSDs - precisionUSDs).div(_vaultContract.chi_beta_prec());
+			uint chiAdjustmentB = uint(_vaultContract.chi_beta())
+				.mul(uint(_vaultContract.chi_prec()))
+				.mul(priceUSDs - precisionUSDs)
+				.mul(priceUSDs - precisionUSDs);
+			chiAdjustmentB = chiAdjustmentB
+				.div(_vaultContract.chi_beta_prec())
+				.div(precisionUSDs)
+				.div(precisionUSDs);
 			afterB = _vaultContract.chiInit().add(chiAdjustmentB);
 		} else {
-			chiAdjustmentB = uint(_vaultContract.chi_beta()).mul(uint(_vaultContract.chi_prec())).mul(precisionUSDs - priceUSDs).mul(precisionUSDs - priceUSDs).div(_vaultContract.chi_beta_prec());
+			uint chiAdjustmentB = uint(_vaultContract.chi_beta()).mul(uint(_vaultContract.chi_prec())).mul(precisionUSDs - priceUSDs).mul(precisionUSDs - priceUSDs).div(_vaultContract.chi_beta_prec());
 			(, afterB) = _vaultContract.chiInit().trySub(chiAdjustmentB);
 		}
 		(, chiTarget_) = afterB.trySub(chiAdjustmentA);
@@ -116,7 +122,7 @@ contract VaultCoreTools is Initializable {
 			(uint powResWithPrec, uint8 powResPrec) = BancorInstance.power(
 				uint(_vaultContract.swapFee_A()), uint(_vaultContract.swapFee_A_prec()), uint32(exponentWithPrec), USDsInOutRatio_prec
 			);
-			uint toReturn = uint(powResWithPrec >> powResPrec).mul(uint(_vaultContract.swapFee_prec())) / 100;
+			uint toReturn = uint(powResWithPrec.mul(uint(_vaultContract.swapFee_prec())) >> powResPrec) / 100;
 			if (toReturn >= uint(_vaultContract.swapFee_prec())) {
 				return uint(_vaultContract.swapFee_prec());
 			} else {
