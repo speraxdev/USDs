@@ -163,7 +163,7 @@ contract Oracle is Initializable, IOracle, OwnableUpgradeable {
     /**
      * @notice update the price of tokenA to the latest
      * @dev the price would be updated only once per updatePeriod time
-     * @dev USDsInOutRatio is accurate after 24 hours (one iteration)
+     * @dev USDsInOutRatio is accurate after one iteration
      */
     function updateInOutRatio() external override {
         uint32 currTime = uint32(now % 2 ** 32);
@@ -176,8 +176,10 @@ contract Oracle is Initializable, IOracle, OwnableUpgradeable {
         USDsOutflow[indexNew] = IUSDs(USDsAddr).burntViaUsers();
         uint USDsInflow_average = USDsInflow[indexNew].sub(USDsInflow[indexOld]);
         uint USDsOutflow_average = USDsOutflow[indexNew].sub(USDsOutflow[indexOld]);
-        if (USDsInOutRatio == 0) {
+        if (USDsInflow_average == 0 && USDsOutflow_average == 0) {
             USDsInOutRatio = USDsInOutRatio_prec;
+        } else if (USDsInflow_average == 0 && USDsOutflow_average > 0) {
+            USDsInOutRatio = 10 * USDsInOutRatio_prec;
         } else {
             USDsInOutRatio = USDsOutflow_average.mul(USDsInOutRatio_prec).div(USDsInflow_average);
         }
