@@ -143,12 +143,12 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 		startBlockHeight = block.number;
 		chi_alpha = uint32(chi_alpha_prec * 513 / 10**10);
 		chiInit = uint(chi_prec * 95 / 100);
-		chi_beta = chi_beta_prec * 9;
-		chi_gamma = chi_gamma_prec;
-		swapFee_p = swapFee_p_prec * 99 / 100;
-		swapFee_theta = swapFee_theta_prec * 50;
-		swapFee_a = swapFee_a_prec * 12 / 10;
-		swapFee_A = swapFee_A_prec * 20;
+		chi_beta = chi_beta_prec * 9; //TODO: fix datatype WORNG
+		chi_gamma = chi_gamma_prec;	  //TODO: fix datatype CORRECT
+		swapFee_p = swapFee_p_prec * 99 / 100; //TODO: fix datatype WRONG
+		swapFee_theta = swapFee_theta_prec * 50; //TODO: fix datatype WRONG
+		swapFee_a = swapFee_a_prec * 12 / 10; //TODO: fix datatype WRONG
+		swapFee_A = swapFee_A_prec * 20; //TODO: fix datatype WRONG
 		feeVault = _feeVault;
 		_setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
 	}

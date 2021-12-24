@@ -262,20 +262,20 @@ def main():
 
         print(f"upgrade {oracle} contract:\n")
         new_oracle = version_contract.deploy(
-            {'from': owner, 'gas_limit': 1000000000}
+            {'from': owner, 'gas_limit': 2000000000}
         )
 
         proxy_admin.upgrade(
             oracle_proxy.address,
             new_oracle.address,
-            {'from': admin, 'gas_limit': 1000000000}
+            {'from': admin, 'gas_limit': 500000000}
         )
         new_oracle.initialize(
             chainlink_usdc_price_feed,
-            SperaxTokenL2[-1],
+            "0x5575552988A3A80504bBaeB1311674fCFd40aD4B", # hardcoded SperaxTokenL2 Arbitrum mainnet address
             usdc_arbitrum,
             chainlink_flags,
-            {'from': owner, 'gas_limit': 1000000000}
+            {'from': owner, 'gas_limit': 1500000000}
         )
 
         new_oracle_proxy = Contract.from_abi(

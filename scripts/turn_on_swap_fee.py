@@ -29,7 +29,7 @@ def main():
     # log in account
     owner = brownie.accounts.load(
         click.prompt(
-            "account",
+            "owner",
             type=click.Choice(brownie.accounts.load())
         )
     )
