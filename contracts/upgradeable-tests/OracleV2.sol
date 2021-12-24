@@ -176,8 +176,10 @@ contract OracleV2 is Initializable, IOracle, OwnableUpgradeable {
         USDsOutflow[indexNew] = IUSDs(USDsAddr).burntViaUsers();
         uint USDsInflow_average = USDsInflow[indexNew].sub(USDsInflow[indexOld]);
         uint USDsOutflow_average = USDsOutflow[indexNew].sub(USDsOutflow[indexOld]);
-        if (USDsInflow_average == 0) {
+        if (USDsInflow_average == 0 && USDsOutflow_average == 0) {
             USDsInOutRatio = USDsInOutRatio_prec;
+        } else if (USDsInflow_average == 0 && USDsOutflow_average > 0) {
+            USDsInOutRatio = 10 * USDsInOutRatio_prec;
         } else {
             USDsInOutRatio = USDsOutflow_average.mul(USDsInOutRatio_prec).div(USDsInflow_average);
         }
