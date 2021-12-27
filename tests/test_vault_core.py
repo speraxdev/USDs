@@ -45,7 +45,7 @@ def test_mint_usds(sperax, owner_l2, accounts, weth):
 
     invalid_coll = brownie.convert.to_address('0x0000000000000000000000000000000000000000')
     deadline = 1637632800 + brownie.chain.time()
-    amount  = 1000000
+    amount  = 100000
     slippage_collateral = 1000000000000000000000000000000
     slippage_spa = 1000000000000000000000000000000
     spa.approve(accounts[5].address, amount, {'from': owner_l2})
@@ -573,24 +573,6 @@ def test_vault_core_allocate(sperax, owner_l2):
     txn = vault_proxy.allocate({'from': owner_l2})
 
 
-def test_vault_core_tools_spa_amount_calculator(sperax, owner_l2):
-    (
-        spa,
-        usds_proxy,
-        core_proxy,
-        vault_proxy,
-        oracle_proxy,
-        strategy_proxies,
-        buybacks,
-        bancor
-    ) = sperax
-
-    with reverts('invalid valueType'):
-        txn = core_proxy.SPAAmountCalculator(1, 10000, vault_proxy, 10000,{'from': owner_l2})
-
-    txn = core_proxy.SPAAmountCalculator(0, 10000, vault_proxy, 10000,{'from': owner_l2})
-
-    assert txn.return_value > 0
 
 def test_vault_core_tools_spa_amount_calculator(sperax, owner_l2):
     (
@@ -608,10 +590,10 @@ def test_vault_core_tools_spa_amount_calculator(sperax, owner_l2):
         txn = core_proxy.SPAAmountCalculator(1, 10000, vault_proxy, 3000,{'from': owner_l2})
 
     amount = core_proxy.SPAAmountCalculator.call(0, 10000, vault_proxy, 3000,{'from': owner_l2})
-    assert amount > 0
+    assert amount  == 0
 
     amount = core_proxy.SPAAmountCalculator.call(0, 10000, vault_proxy, 0,{'from': owner_l2})
-    assert amount > 0
+    assert amount == 0 
 
 
 def test_usds_amount_calculator(sperax, owner_l2, weth):
@@ -631,11 +613,8 @@ def test_usds_amount_calculator(sperax, owner_l2, weth):
     txn = core_proxy.USDsAmountCalculator.call(2, 10000, vault_proxy, weth, 0,{'from': owner_l2})
     assert amt > 0
 
-    amt = core_proxy.USDsAmountCalculator.call(0, 10000, vault_proxy, weth, 3000,{'from': owner_l2})
-    assert amt  == 0
-
-    amt = core_proxy.USDsAmountCalculator.call(0, 10000, vault_proxy, weth, 0,{'from': owner_l2})
-    assert amt == 0
+    with reverts('invalid valueType'):
+        amt = core_proxy.USDsAmountCalculator.call(0, 10000, vault_proxy, weth, 3000,{'from': owner_l2})
 
     amt = core_proxy.USDsAmountCalculator.call(1, 10000, vault_proxy, weth, 3000,{'from': owner_l2})
     assert amt > 0
