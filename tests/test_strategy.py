@@ -167,7 +167,8 @@ def test_set_reward_Token_Address(sperax, weth, owner_l2):
         vault_proxy,
         oracle_proxy,
         strategy_proxies,
-        buybacks
+        buybacks,
+        bancor
     ) = sperax
     strategy_proxy = strategy_proxies[2];
     txn = strategy_proxy.setRewardTokenAddress(
@@ -208,6 +209,7 @@ def test_set_interest_liquidation_threshold(sperax, owner_l2):
         buybacks,
         bancor
     ) = sperax
+    strategy_proxy = strategy_proxies[2];
     Threshold = int(10)
     txn = strategy_proxy.setInterestLiquidationThreshold(
         Threshold,
@@ -275,7 +277,8 @@ def test_set_Reward_Token_zero_address_ptoken(sperax, weth, owner_l2):
         vault_proxy,
         oracle_proxy,
         strategy_proxies,
-        buybacks
+        buybacks,
+        bancor
     ) = sperax
     strategy_proxy = strategy_proxies[2];
     zero_address = "0x0000000000000000000000000000000000000000"
@@ -479,7 +482,8 @@ def test_withdraw_invalid_assets(sperax, invalid_collateral, accounts):
         vault_proxy,
         oracle_proxy,
         strategy_proxies,
-        buybacks
+        buybacks,
+        bancor
     ) = sperax
     strategy_proxy = strategy_proxies[2];
     amount = int(9999)
@@ -624,7 +628,8 @@ def test_withdraw_to_vault_invalid_assets(sperax, owner_l2):
         vault_proxy,
         oracle_proxy,
         strategy_proxies,
-        buybacks
+        buybacks,
+        bancor
     ) = sperax
     strategy_proxy = strategy_proxies[2];
     amount = int(1000000000000000000000)
@@ -646,7 +651,8 @@ def test_withdraw_to_vault_invalid_recipient(sperax, invalid_collateral, owner_l
         vault_proxy,
         oracle_proxy,
         strategy_proxies,
-        buybacks
+        buybacks,
+        bancor
     ) = sperax
     strategy_proxy = strategy_proxies[2];
     amount = int(10005)
@@ -666,7 +672,8 @@ def test_withdraw_to_vault(sperax, weth, owner_l2):
         vault_proxy,
         oracle_proxy,
         strategy_proxies,
-        buybacks
+        buybacks,
+        bancor
     ) = sperax
     strategy_proxy = strategy_proxies[2];
     amount = int(1000000)

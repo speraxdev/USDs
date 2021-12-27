@@ -133,7 +133,7 @@ def usdt(MockToken, owner_l2):
     )
     print("USDT: ", token.address)
     return brownie.interface.IERC20(token.address)
-    
+
 
 @pytest.fixture(scope="module", autouse=True)
 def wbtc(MockToken, owner_l2):
@@ -150,7 +150,7 @@ def wbtc(MockToken, owner_l2):
     print("WBTC: ", token.address)
     return brownie.interface.IERC20(token.address)
 
-    return 
+    return
 @pytest.fixture(scope="module", autouse=True)
 def usdc(MockToken, owner_l2):
     if brownie.network.show_active() == 'arbitrum-rinkeby':
@@ -334,9 +334,7 @@ def sperax(
     # would suggest to use a mock token to mock USDC instead
     mintSPA(spa, amount, owner_l2, vault_proxy)
     deposit_weth(weth, owner_l2, accounts, amount)
-    spa_usds_pool =  create_uniswap_v3_pool(spa, usdc, int(100 * 10**18), int(100 * 10**6), 3000, owner_l2)
-  
-    update_oracle_setting(oracle_proxy, usdc, owner_l2, weth, usds_proxy)
+    spa_usdc_pool =  create_uniswap_v3_pool(spa, usdc, int(100 * 10**18), int(100 * 10**6), 3000, owner_l2)
 
     return (
         spa,

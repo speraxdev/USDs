@@ -9,7 +9,7 @@ contract MockToken is ERC20 {
         uint8 decimals
     ) public ERC20(name_, symbol_) {
         _setupDecimals(decimals);
-        uint256 amount = 10000000000 * (10 ** decimals);
+        uint256 amount = 10000000000 * (10 ** uint(decimals));
          _mint(_msgSender(), amount);
     }
 }

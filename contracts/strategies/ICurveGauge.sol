@@ -5,7 +5,7 @@ pragma solidity ^0.6.12;
 interface ICurveGauge {
     function balanceOf(address account) external view returns (uint256);
 
-    function deposit(uint256 value, address account) external;
+    function deposit(uint256 _value) external;
 
     function withdraw(uint256 value) external;
 
