@@ -99,7 +99,7 @@ mainnet_deploy_address = DeployAddresses(
     ## Note: these need to be added. here it's  0xdeadbeef in the meantime...
     wSPAL1['mainnet'], #L1_wSPA NOTE: this is a wrong address. only here for testing purpose
     "0x0000000000000000000000000000000000000000", #L1_USDs NOTE: this is a wrong address. only here for testing purpose
-    "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef", #L1_feeVault NOTE: this is a wrong address. only here for testing purpose
+    "0x4F987B24bD2194a574bB3F57b4e66B7f7eD36196", #L2_feeVault NOTE: this is a wrong address. only here for testing purpose
     SPAL2['mainnet'] #L2_SPA. NOTE: this is a wrong address. only here for testing purpose
     )
 

@@ -56,7 +56,6 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
         require(_supportedAssetIndex < 3, "_supportedAssetIndex exceeds 2");
         // Should be set prior to abstract initialize call otherwise
         // abstractSetPToken calls will fail
-        curveGauge = ICurveGauge(_crvGaugeAddress);
         InitializableAbstractStrategy._initialize(
             _platformAddress,
             _vaultAddress,
@@ -64,8 +63,14 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
             _assets,
             _pTokens
         );
+        curveGauge = ICurveGauge(_crvGaugeAddress);
+        curvePool = ICurvePool(platformAddress);
         supportedAssetIndex = _supportedAssetIndex;
         oracle = IOracle(_oracleAddr);
+        _abstractSetPToken(
+            assetsMapped[_supportedAssetIndex],
+            assetToPToken[assetsMapped[_supportedAssetIndex]]
+        );
     }
 
     /**
@@ -116,14 +121,13 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
             uint256(1e18).sub(maxSlippage)
         );
         // Do the deposit to 3pool
-        //triger to deposit LP tokens
-        curvePool.add_liquidity(_amounts, minMintAmount);
+        // triger to deposit LP tokens
+        curvePool.add_liquidity(_amounts, 0);
         allocatedAmt[_asset] = allocatedAmt[_asset].add(_amount);
         // Deposit into Gauge
         IERC20 pToken = IERC20(assetToPToken[_asset]);
         curveGauge.deposit(
-            pToken.balanceOf(address(this)),
-            address(this)
+            pToken.balanceOf(address(this))
         );
         emit Deposit(_asset, address(assetToPToken[_asset]), _amount);
     }
@@ -215,11 +219,12 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
      * @dev Approve the spending of all assets by their corresponding pool tokens,
      *      if for some reason is it necessary.
      */
-    function safeApproveAllTokens() override external {
+    function safeApproveAllTokens() override onlyOwner external {
         // This strategy is a special case since it only supports one asset
-        for (uint256 i = 0; i < assetsMapped.length; i++) {
-            _abstractSetPToken(assetsMapped[i], assetToPToken[assetsMapped[i]]);
-        }
+        _abstractSetPToken(
+            assetsMapped[supportedAssetIndex],
+            assetToPToken[assetsMapped[supportedAssetIndex]]
+        );
     }
 
     /**

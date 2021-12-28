@@ -3,6 +3,9 @@ import json
 import time
 import brownie
 
+@pytest.fixture(scope="module", autouse=True)
+def invalid_collateral():
+    return brownie.convert.to_address('0x0000000000000000000000000000000000000000')
 
 def user(accounts):
     return accounts[9]
@@ -164,7 +167,8 @@ def test_set_reward_Token_Address(sperax, weth, owner_l2):
         vault_proxy,
         oracle_proxy,
         strategy_proxies,
-        buybacks
+        buybacks,
+        bancor
     ) = sperax
     strategy_proxy = strategy_proxies[2];
     txn = strategy_proxy.setRewardTokenAddress(
@@ -205,6 +209,7 @@ def test_set_interest_liquidation_threshold(sperax, owner_l2):
         buybacks,
         bancor
     ) = sperax
+    strategy_proxy = strategy_proxies[2];
     Threshold = int(10)
     strategy_proxy = strategy_proxies[2];
     txn = strategy_proxy.setInterestLiquidationThreshold(
@@ -273,7 +278,8 @@ def test_set_Reward_Token_zero_address_ptoken(sperax, weth, owner_l2):
         vault_proxy,
         oracle_proxy,
         strategy_proxies,
-        buybacks
+        buybacks,
+        bancor
     ) = sperax
     strategy_proxy = strategy_proxies[2];
     zero_address = "0x0000000000000000000000000000000000000000"
@@ -446,7 +452,7 @@ def test_deposit_invalid_amount(sperax, weth):
         )
 
 
-def test_deposit_invalid_assets(sperax, weth, accounts, mock_token2):
+def test_deposit_invalid_assets(sperax, weth, accounts, invalid_collateral):
     (
         spa,
         usds_proxy,
@@ -462,14 +468,14 @@ def test_deposit_invalid_assets(sperax, weth, accounts, mock_token2):
 
     with brownie.reverts("Unsupported collateral"):
           strategy_proxy.deposit(
-            mock_token2.address,
+            invalid_collateral,
             amount,
             {'from': vault_proxy.address}
         )
 
 
 
-def test_withdraw_invalid_assets(sperax, mock_token3, accounts):
+def test_withdraw_invalid_assets(sperax, invalid_collateral, accounts):
     (
         spa,
         usds_proxy,
@@ -477,7 +483,8 @@ def test_withdraw_invalid_assets(sperax, mock_token3, accounts):
         vault_proxy,
         oracle_proxy,
         strategy_proxies,
-        buybacks
+        buybacks,
+        bancor
     ) = sperax
     strategy_proxy = strategy_proxies[2];
     amount = int(9999)
@@ -485,7 +492,7 @@ def test_withdraw_invalid_assets(sperax, mock_token3, accounts):
     with brownie.reverts("Invalid 3pool asset"):
         txn = strategy_proxy.withdraw(
             accounts[8],
-            mock_token3.address,
+            invalid_collateral,
             (amount/10),
             {'from': vault_proxy.address})
 
@@ -513,7 +520,7 @@ def test_withdraw_invalid_amount(sperax, weth, accounts):
         )
 
 
-def test_withdraw_interest(sperax, weth,mock_token2, accounts):
+def test_withdraw_interest(sperax, weth, invalid_collateral, accounts):
     (
         spa,
         usds_proxy,
@@ -532,7 +539,7 @@ def test_withdraw_interest(sperax, weth,mock_token2, accounts):
     with brownie.reverts("Unsupported collateral"):
         txn = strategy_proxy.collectInterest(
             accounts[8],
-            mock_token2.address,
+            invalid_collateral,
             {'from': vault_proxy.address}
         )
 
@@ -570,7 +577,7 @@ def test_withdraw_interest(sperax, weth,mock_token2, accounts):
     )
     with brownie.reverts("Unsupported collateral"):
         strategy_proxy.checkInterestEarned(
-        mock_token2.address, {'from': vault_proxy.address})
+        invalid_collateral, {'from': vault_proxy.address})
 
     interest = strategy_proxy.checkInterestEarned(
         weth.address, {'from': vault_proxy.address})
@@ -622,7 +629,8 @@ def test_withdraw_to_vault_invalid_assets(sperax, owner_l2):
         vault_proxy,
         oracle_proxy,
         strategy_proxies,
-        buybacks
+        buybacks,
+        bancor
     ) = sperax
     strategy_proxy = strategy_proxies[2];
     amount = int(1000000000000000000000)
@@ -636,7 +644,7 @@ def test_withdraw_to_vault_invalid_assets(sperax, owner_l2):
         )
 
 
-def test_withdraw_to_vault_invalid_recipient(sperax, mock_token3, owner_l2):
+def test_withdraw_to_vault_invalid_recipient(sperax, invalid_collateral, owner_l2):
     (
         spa,
         usds_proxy,
@@ -644,14 +652,15 @@ def test_withdraw_to_vault_invalid_recipient(sperax, mock_token3, owner_l2):
         vault_proxy,
         oracle_proxy,
         strategy_proxies,
-        buybacks
+        buybacks,
+        bancor
     ) = sperax
     strategy_proxy = strategy_proxies[2];
     amount = int(10005)
 
     with brownie.reverts("Unsupported collateral"):
          strategy_proxy.withdrawToVault(
-            mock_token3.address,
+            invalid_collateral,
             (amount),
             {'from': owner_l2.address})
 
@@ -664,7 +673,8 @@ def test_withdraw_to_vault(sperax, weth, owner_l2):
         vault_proxy,
         oracle_proxy,
         strategy_proxies,
-        buybacks
+        buybacks,
+        bancor
     ) = sperax
     strategy_proxy = strategy_proxies[2];
     amount = int(1000000)
