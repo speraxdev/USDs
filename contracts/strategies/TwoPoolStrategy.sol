@@ -84,7 +84,7 @@ contract TwoPoolStrategy is InitializableAbstractStrategy {
             and underlying collateral/asset
      * @param _lpAssetSlippage new slippage setting
      */
-    function changeSlippage(uint256 _lpAssetSlippage) external {
+    function changeSlippage(uint256 _lpAssetSlippage) external onlyOwner {
         lpAssetSlippage = _lpAssetSlippage;
         emit SlippageChanged(lpAssetSlippage);
     }
@@ -96,7 +96,7 @@ contract TwoPoolStrategy is InitializableAbstractStrategy {
             revert
      * @param _lpAssetThreshold new lpAssetThreshold
      */
-    function changeThreshold(uint256 _lpAssetThreshold) external {
+    function changeThreshold(uint256 _lpAssetThreshold) external onlyOwner {
         lpAssetThreshold = _lpAssetThreshold;
         emit ThresholdChanged(lpAssetThreshold);
     }
