@@ -9,7 +9,7 @@
 import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import '../interfaces/IOracle.sol';
-import { ICurvePool } from "./ICurvePool.sol";
+import { ICurve3Pool } from "./ICurve3Pool.sol";
 import { ICurveGauge } from "./ICurveGauge.sol";
 import { InitializableAbstractStrategy } from "./InitializableAbstractStrategy.sol";
 import { StableMath } from "../libraries/StableMath.sol";
@@ -19,11 +19,15 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
     using SafeERC20 for IERC20;
 
     event RewardTokenCollected(address recipient, uint256 amount);
+    event SlippageChanged(uint256 newSlippage);
+    event ThresholdChanged(uint256 newThreshold);
 
-    uint256 internal constant maxSlippage = 1e16; // 1%, same as the Curve UI
+    uint256 public lpAssetThreshold = 3000;
+    uint256 public lpAssetSlippage = 10*1e16; // TODO: change to a reasonable number
     uint256 internal supportedAssetIndex;
+
     ICurveGauge internal curveGauge;
-    ICurvePool internal curvePool;
+    ICurve3Pool internal curvePool;
     IOracle internal oracle;
 
     receive() external payable {}
@@ -64,7 +68,7 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
             _pTokens
         );
         curveGauge = ICurveGauge(_crvGaugeAddress);
-        curvePool = ICurvePool(platformAddress);
+        curvePool = ICurve3Pool(platformAddress);
         supportedAssetIndex = _supportedAssetIndex;
         oracle = IOracle(_oracleAddr);
         _abstractSetPToken(
@@ -72,6 +76,31 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
             assetToPToken[assetsMapped[_supportedAssetIndex]]
         );
     }
+
+    /**
+     * @dev change to a new lpAssetSlippage
+     * @dev lpAssetSlippage set to 1e16 means the slippage is 1% (overall precision
+            is 1e18); it is the slippage on the conversion between LP token
+            and underlying collateral/asset
+     * @param _lpAssetSlippage new slippage setting
+     */
+    function changeSlippage(uint256 _lpAssetSlippage) external onlyOwner {
+        lpAssetSlippage = _lpAssetSlippage;
+        emit SlippageChanged(lpAssetSlippage);
+    }
+
+    /**
+     * @dev change to a new lpAssetThreshold
+     * @dev lpAssetThreshold should be set to the minimum number
+            of totalPTokens such that curvePool.calc_withdraw_one_coin does not
+            revert
+     * @param _lpAssetThreshold new lpAssetThreshold
+     */
+    function changeThreshold(uint256 _lpAssetThreshold) external onlyOwner {
+        lpAssetThreshold = _lpAssetThreshold;
+        emit ThresholdChanged(lpAssetThreshold);
+    }
+
 
     /**
      * @dev Check if an asset/collateral is supported.
@@ -118,11 +147,11 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
             .divPrecisely(curvePool.get_virtual_price())
             .div(assetPrice_prec);
         uint256 minMintAmount = depositValue.mulTruncate(
-            uint256(1e18).sub(maxSlippage)
+            uint256(1e18).sub(lpAssetSlippage)
         );
         // Do the deposit to 3pool
         // triger to deposit LP tokens
-        curvePool.add_liquidity(_amounts, 0);
+        curvePool.add_liquidity(_amounts, minMintAmount);
         allocatedAmt[_asset] = allocatedAmt[_asset].add(_amount);
         // Deposit into Gauge
         IERC20 pToken = IERC20(assetToPToken[_asset]);
@@ -270,10 +299,13 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
         // amount in the worst case (i.e withdrawing all LP tokens)
         (uint256 contractPTokens, , uint256 totalPTokens) = _getTotalPTokens();
         uint256 poolCoinIndex = _getPoolCoinIndex(_asset);
-        uint256 maxAmount = curvePool.calc_withdraw_one_coin(
-            totalPTokens,
-            poolCoinIndex
-        );
+        uint256 maxAmount;
+        if (totalPTokens > lpAssetThreshold) {
+            maxAmount = curvePool.calc_withdraw_one_coin(
+                totalPTokens,
+                poolCoinIndex
+            );
+        }
         uint256 assetInterest;
         if (maxAmount > allocatedAmt[_asset]) {
             return assetInterest = maxAmount.sub(allocatedAmt[_asset]);
@@ -300,10 +332,13 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
         // Calculate how many platform tokens we need to withdraw the asset
         // amount in the worst case (i.e withdrawing all LP tokens)
         require(totalPTokens > 0, "Insufficient 3CRV balance");
-        uint256 maxAmount = curvePool.calc_withdraw_one_coin(
-            totalPTokens,
-            _getPoolCoinIndex(_asset)
-        );
+        uint256 maxAmount;
+        if (totalPTokens > lpAssetThreshold) {
+            maxAmount = curvePool.calc_withdraw_one_coin(
+                totalPTokens,
+                _getPoolCoinIndex(_asset)
+            );
+        }
         uint256 maxBurnedPTokens = totalPTokens.mul(_amount).div(maxAmount);
         // Not enough in this contract or in the Gauge, can't proceed
         require(totalPTokens >= maxBurnedPTokens, "Insufficient 3CRV balance");
