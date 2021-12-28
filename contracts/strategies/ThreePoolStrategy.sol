@@ -294,10 +294,12 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
         uint256 _amount
     ) internal {
         require(_recipient != address(0), "Invalid recipient");
+        require(supportsCollateral(_asset), "Unsupported collateral");
         require(_amount > 0, "Invalid amount");
         (uint256 contractPTokens, , uint256 totalPTokens) = _getTotalPTokens();
         // Calculate how many platform tokens we need to withdraw the asset
         // amount in the worst case (i.e withdrawing all LP tokens)
+        require(totalPTokens > 0, "Insufficient 3CRV balance");
         uint256 maxAmount = curvePool.calc_withdraw_one_coin(
             totalPTokens,
             _getPoolCoinIndex(_asset)
@@ -381,7 +383,7 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
         for (uint256 i = 0; i < 3; i++) {
             if (assetsMapped[i] == _asset) return i;
         }
-        revert("Invalid 3pool asset");
+        revert("Unsupported collateral");
     }
 
     /**
