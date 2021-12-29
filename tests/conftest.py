@@ -334,11 +334,13 @@ def sperax(
     # would suggest to use a mock token to mock USDC instead
     mintSPA(spa, amount, owner_l2, vault_proxy)
     deposit_weth(weth, owner_l2, accounts, amount)
-    create_uniswap_v3_pool(spa, usdc, int(100 * 10**18), int(10 * 10**18), 3000, owner_l2)
+    create_uniswap_v3_pool(spa, usdc, int(100 * 10**18), int(10 * 10**18), 3000, owner_l2) 
     update_oracle_setting(oracle_proxy, usdc, owner_l2)
     mintUSDs(usds_proxy, spa, vault_proxy, owner_l2, weth)
+    weth_erc20 = brownie.interface.IERC20(weth.address)
+    create_uniswap_v3_pool(weth_erc20, usdc, int(100 * 10**18), int(10 * 10**18), 3000, owner_l2)
+    create_uniswap_v3_pool(usdc, usds_proxy, int(100 * 10**18), int(10 * 10**18), 3000, owner_l2)
    
-
     return (
         spa,
         usds_proxy,
@@ -654,8 +656,8 @@ def deploy_buyback_two_hops(
         weth,
         True, # supported
         usdc,
-        10000,
-        500,
+        3000,
+        3000,
         {'from': owner_l2}
     )
     return buyback
@@ -680,8 +682,8 @@ def deploy_buyback_three_hops(
         weth,
         usdc,
         3000,
-        500,
-        500,
+        3000,
+        3000,
         {'from': owner_l2}
     )
     return buyback
@@ -787,7 +789,7 @@ def configure_collaterals(
             collateral, # address of: USDC, USDT, DAI or WBTC
             zero_address, # _defaultStrategyAddr: CURVE, AAVE, etc
             False, # _allocationAllowed
-            0, # _allocatePercentage
+            80, # _allocatePercentage
             zero_address, # _buyBackAddr
             False, # _rebaseAllowed
             {'from': owner_l2}
@@ -889,7 +891,7 @@ def mintUSDs(
     weth
     ):
     deadline = 1637632800 + brownie.chain.time()
-    amount  = 100000
+    amount  = 10 * 10**18
     slippage_collateral = 1000000000000000000000000000000
     slippage_spa = 1000000000000000000000000000000
 
