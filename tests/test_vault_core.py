@@ -465,26 +465,6 @@ def test_reedem(sperax, accounts, owner_l2, weth):
     amount  = 1000000
     invalid_coll = brownie.convert.to_address('0x0000000000000000000000000000000000000000')
 
-    slippage_collateral_mint = 1000000000000000000000000000000
-    slippage_spa_mint = 1000000000000000000000000000000
-
-    spa.approve(accounts[5].address, amount, {'from': owner_l2})
-    spa.transfer(accounts[5].address, amount, {'from': owner_l2})
-
-    spa.approve(vault_proxy.address, slippage_collateral_mint, {'from': accounts[5] })
-
-    weth_erc20 = brownie.interface.IERC20(weth.address)
-    weth_erc20.approve(vault_proxy.address, slippage_collateral_mint, {'from': accounts[5]})
-
-    txn = vault_proxy.mintBySpecifyingUSDsAmt(
-        weth.address,
-        int(amount),
-        slippage_collateral_mint,
-        slippage_spa_mint,
-        deadline,
-        {'from': accounts[5]}
-    )
-
     (
         usdt_strategy,
         wbtc_strategy,
@@ -542,28 +522,6 @@ def test_reedem_collateral_from_strategy(sperax, accounts, owner_l2, weth):
     ) = sperax
 
     deadline = brownie.chain.time() + 2000
-    amount  = 10000
-
-    slippage_collateral_mint = 1000000000000000000000000000000
-    slippage_spa_mint = 1000000000000000000000000000000
-
-    spa.approve(accounts[5].address, amount, {'from': owner_l2})
-    spa.transfer(accounts[5].address, amount, {'from': owner_l2})
-
-    spa.approve(vault_proxy.address, slippage_collateral_mint, {'from': accounts[5] })
-
-
-    weth_erc20 = brownie.interface.IERC20(weth.address)
-    weth_erc20.approve(vault_proxy.address, slippage_collateral_mint, {'from': accounts[5]})
-
-    txn = vault_proxy.mintBySpecifyingUSDsAmt(
-        weth.address,
-        int(amount),
-        slippage_collateral_mint,
-        slippage_spa_mint,
-        deadline,
-        {'from': accounts[5]}
-    )
 
     amount  = 100000
     slippage_collateral = 10
@@ -632,10 +590,10 @@ def test_vault_core_tools_spa_amount_calculator(sperax, owner_l2):
         txn = core_proxy.SPAAmountCalculator(1, 10000, vault_proxy, 3000,{'from': owner_l2})
 
     amount = core_proxy.SPAAmountCalculator.call(0, 10000, vault_proxy, 3000,{'from': owner_l2})
-    assert amount  == 0
+    assert amount  > 0
 
     amount = core_proxy.SPAAmountCalculator.call(0, 10000, vault_proxy, 0,{'from': owner_l2})
-    assert amount == 0 
+    assert amount > 0 
 
 
 def test_usds_amount_calculator(sperax, owner_l2, weth):
