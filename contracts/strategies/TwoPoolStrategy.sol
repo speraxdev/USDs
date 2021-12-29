@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 /**
- * @title Curve 3Pool Strategy
- * @notice Investment strategy for investing stablecoins via Curve 3Pool
+ * @title Curve 2Pool Strategy
+ * @notice Investment strategy for investing stablecoins via Curve 2Pool
  * @author Sperax Inc
  */
  pragma solidity ^0.6.12;
@@ -9,12 +9,12 @@
 import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import '../interfaces/IOracle.sol';
-import { ICurve3Pool } from "./ICurve3Pool.sol";
+import { ICurve2Pool } from "./ICurve2Pool.sol";
 import { ICurveGauge } from "./ICurveGauge.sol";
 import { InitializableAbstractStrategy } from "./InitializableAbstractStrategy.sol";
 import { StableMath } from "../libraries/StableMath.sol";
 
-contract ThreePoolStrategy is InitializableAbstractStrategy {
+contract TwoPoolStrategy is InitializableAbstractStrategy {
     using StableMath for uint256;
     using SafeERC20 for IERC20;
 
@@ -23,11 +23,11 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
     event ThresholdChanged(uint256 newThreshold);
 
     uint256 public lpAssetThreshold = 3000;
-    uint256 public lpAssetSlippage = 10*1e16; // TODO: change to a reasonable number
+    uint256 public lpAssetSlippage = 1e16; // 1%, same as the Curve UI
     uint256 internal supportedAssetIndex;
 
     ICurveGauge internal curveGauge;
-    ICurve3Pool internal curvePool;
+    ICurve2Pool internal curvePool;
     IOracle internal oracle;
 
     receive() external payable {}
@@ -37,7 +37,7 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
      * Initializer for setting up strategy internal state. This overrides the
      * InitializableAbstractStrategy initializer as Curve strategies don't fit
      * well within that abstraction.
-     * @param _platformAddress Address of the Curve 3pool
+     * @param _platformAddress Address of the Curve 2Pool
      * @param _vaultAddress Address of the vault
      * @param _rewardTokenAddress Address of CRV
      * @param _assets Addresses of supported assets. MUST be passed in the same
@@ -47,7 +47,7 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
      * @param _crvGaugeAddress Address of the Curve DAO gauge for this pool
      */
     function initialize(
-        address _platformAddress, // 3Pool address
+        address _platformAddress, // 2Pool address
         address _vaultAddress,
         address _rewardTokenAddress, // CRV
         address[] calldata _assets,
@@ -56,8 +56,8 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
         uint256 _supportedAssetIndex,
         address _oracleAddr
     ) external initializer {
-        require(_assets.length == 3, "Must have exactly three assets");
-        require(_supportedAssetIndex < 3, "_supportedAssetIndex exceeds 2");
+        require(_assets.length == 2, "Must have exactly two assets");
+        require(_supportedAssetIndex < 2, "_supportedAssetIndex exceeds 2");
         // Should be set prior to abstract initialize call otherwise
         // abstractSetPToken calls will fail
         InitializableAbstractStrategy._initialize(
@@ -68,7 +68,7 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
             _pTokens
         );
         curveGauge = ICurveGauge(_crvGaugeAddress);
-        curvePool = ICurve3Pool(platformAddress);
+        curvePool = ICurve2Pool(platformAddress);
         supportedAssetIndex = _supportedAssetIndex;
         oracle = IOracle(_oracleAddr);
         _abstractSetPToken(
@@ -120,7 +120,7 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
     }
 
     /**
-     * @dev Deposit asset into the Curve 3Pool
+     * @dev Deposit asset into the Curve 2Pool
      * @param _asset Address of asset to deposit
      * @param _amount Amount of asset to deposit
      */
@@ -132,9 +132,9 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
     {
         require(supportsCollateral(_asset), "Unsupported collateral");
         require(_amount > 0, "Must deposit something");
-        // 3Pool requires passing deposit amounts for all 3 assets, set to 0 for
+        // 2Pool requires passing deposit amounts for both 2 assets, set to 0 for
         // all
-        uint256[3] memory _amounts;
+        uint256[2] memory _amounts;
         uint256 poolCoinIndex = _getPoolCoinIndex(_asset);
         // Set the amount on the asset we want to deposit
         _amounts[poolCoinIndex] = _amount;
@@ -149,9 +149,9 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
         uint256 minMintAmount = depositValue.mulTruncate(
             uint256(1e18).sub(lpAssetSlippage)
         );
-        // Do the deposit to 3pool
+        // Do the deposit to 2Pool
         // triger to deposit LP tokens
-        curvePool.add_liquidity(_amounts, 0); //TODO: change to minMintAmount
+        curvePool.add_liquidity(_amounts, 0);
         allocatedAmt[_asset] = allocatedAmt[_asset].add(_amount);
         // Deposit into Gauge
         IERC20 pToken = IERC20(assetToPToken[_asset]);
@@ -170,7 +170,7 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
     }
 
     /**
-     * @dev Withdraw asset from Curve 3Pool
+     * @dev Withdraw asset from Curve 2Pool
      * @param _asset Address of asset to withdraw
      * @param _amount Amount of asset to withdraw
      */
@@ -182,7 +182,7 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
     }
 
     /**
-     * @dev Collect interest earned from 3Pool
+     * @dev Collect interest earned from 2Pool
      * @param _recipient Address to receive withdrawn asset
      * @param _asset Address of asset to withdraw
      */
@@ -204,7 +204,7 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
             .mul(assetInterest)
             .div(maxAmount);
         // Not enough in this contract or in the Gauge, can't proceed
-        require(totalPTokens >= maxBurnedPTokens, "Insufficient 3CRV balance");
+        require(totalPTokens >= maxBurnedPTokens, "Insufficient 2CRV balance");
         // We have enough LP tokens, make sure they are all on this contract
         if (contractPTokens < maxBurnedPTokens) {
             // Not enough of pool token exists on this contract, some must be
@@ -315,7 +315,7 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
     }
 
     /**
-     * @dev Withdraw asset from Curve 3Pool
+     * @dev Withdraw asset from Curve 2Pool
      * @param _recipient Address to receive withdrawn asset
      * @param _asset Address of asset to withdraw
      * @param _amount Amount of asset to withdraw
@@ -331,7 +331,7 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
         (uint256 contractPTokens, , uint256 totalPTokens) = _getTotalPTokens();
         // Calculate how many platform tokens we need to withdraw the asset
         // amount in the worst case (i.e withdrawing all LP tokens)
-        require(totalPTokens > 0, "Insufficient 3CRV balance");
+        require(totalPTokens > 0, "Insufficient 2CRV balance");
         uint256 maxAmount;
         if (totalPTokens > lpAssetThreshold) {
             maxAmount = curvePool.calc_withdraw_one_coin(
@@ -341,7 +341,7 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
         }
         uint256 maxBurnedPTokens = totalPTokens.mul(_amount).div(maxAmount);
         // Not enough in this contract or in the Gauge, can't proceed
-        require(totalPTokens >= maxBurnedPTokens, "Insufficient 3CRV balance");
+        require(totalPTokens >= maxBurnedPTokens, "Insufficient 2CRV balance");
         // We have enough LP tokens, make sure they are all on this contract
         if (contractPTokens < maxBurnedPTokens) {
             // Not enough of pool token exists on this contract, some must be
@@ -374,15 +374,15 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
     /**
      * @dev Call the necessary approvals for the Curve pool and gauge
      * @param _asset Address of the asset
-     * @param _pToken Address of the corresponding platform token (i.e. 3CRV)
+     * @param _pToken Address of the corresponding platform token (i.e. 2CRV)
      */
     function _abstractSetPToken(address _asset, address _pToken) override internal {
         IERC20 asset = IERC20(_asset);
         IERC20 pToken = IERC20(_pToken);
-        // 3Pool for asset (required for adding liquidity)
+        // 2Pool for asset (required for adding liquidity)
         asset.safeApprove(platformAddress, 0);
         asset.safeApprove(platformAddress, uint256(-1));
-        // 3Pool for LP token (required for removing liquidity)
+        // 2Pool for LP token (required for removing liquidity)
         pToken.safeApprove(platformAddress, 0);
         pToken.safeApprove(platformAddress, uint256(-1));
         // Gauge for LP token
@@ -391,7 +391,7 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
     }
 
     /**
-     * @dev Calculate the total platform token balance (i.e. 3CRV) that exist in
+     * @dev Calculate the total platform token balance (i.e. 2CRV) that exist in
      * this contract or is staked in the Gauge (or in other words, the total
      * amount platform tokens we own).
      */
@@ -412,10 +412,10 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
     }
 
     /**
-     * @dev Get the index of the coin in 3pool
+     * @dev Get the index of the coin in 2Pool
      */
     function _getPoolCoinIndex(address _asset) internal view returns (uint256) {
-        for (uint256 i = 0; i < 3; i++) {
+        for (uint256 i = 0; i < 2; i++) {
             if (assetsMapped[i] == _asset) return i;
         }
         revert("Unsupported collateral");
