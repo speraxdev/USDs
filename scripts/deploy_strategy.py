@@ -89,7 +89,7 @@ def main():
         click.prompt(
             "owner account",
             type=click.Choice(accounts.load())
-        )
+        ))
     print(f"contract owner account: {owner.address}\n")
 
     vault_proxy_address = input("Enter VaultCore proxy address: ").strip()

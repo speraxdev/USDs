@@ -11,13 +11,8 @@ def test_power(sperax, owner_l2):
         vault_core_tools,
         vault_proxy,
         oracle_proxy,
-<<<<<<< HEAD
-        strategy_proxy,
-        buybacks,  
-=======
         strategy_proxies,
         buybacks,
->>>>>>> 6b4339c5d90926b4e0f121ed86f77501ab320539
         bancor
     ) = sperax
     LIMIT_MAX_NUM = hex(0x200000000000000000000000000000001)
@@ -58,13 +53,8 @@ def test_general_log(sperax, owner_l2):
         vault_core_tools,
         vault_proxy,
         oracle_proxy,
-<<<<<<< HEAD
-        strategy_proxy,
-        buybacks,      
-=======
         strategy_proxies,
         buybacks,
->>>>>>> 6b4339c5d90926b4e0f121ed86f77501ab320539
         bancor
     ) = sperax
     tx=bancor.generalLog(
@@ -90,11 +80,7 @@ def test_general_floorLog2(sperax, owner_l2):
         vault_core_tools,
         vault_proxy,
         oracle_proxy,
-<<<<<<< HEAD
-        strategy_proxy,
-=======
         strategy_proxies,
->>>>>>> 6b4339c5d90926b4e0f121ed86f77501ab320539
         buybacks,
         bancor
     ) = sperax
@@ -113,11 +99,7 @@ def test_general_find_position_in_max_exp_array(sperax, owner_l2):
         vault_core_tools,
         vault_proxy,
         oracle_proxy,
-<<<<<<< HEAD
-        strategy_proxy,
-=======
         strategy_proxies,
->>>>>>> 6b4339c5d90926b4e0f121ed86f77501ab320539
         buybacks,
         bancor
     ) = sperax
@@ -143,11 +125,7 @@ def test_general_exp(sperax, owner_l2):
         vault_core_tools,
         vault_proxy,
         oracle_proxy,
-<<<<<<< HEAD
-        strategy_proxy,
-=======
         strategy_proxies,
->>>>>>> 6b4339c5d90926b4e0f121ed86f77501ab320539
         buybacks,
         bancor
     ) = sperax
@@ -164,11 +142,7 @@ def test_optimal_log(sperax, owner_l2):
         vault_core_tools,
         vault_proxy,
         oracle_proxy,
-<<<<<<< HEAD
-        strategy_proxy,
-=======
         strategy_proxies,
->>>>>>> 6b4339c5d90926b4e0f121ed86f77501ab320539
         buybacks,
         bancor
     ) = sperax
@@ -220,11 +194,7 @@ def test_optimal_exp(sperax, owner_l2):
         vault_core_tools,
         vault_proxy,
         oracle_proxy,
-<<<<<<< HEAD
-        strategy_proxy,
-=======
         strategy_proxies,
->>>>>>> 6b4339c5d90926b4e0f121ed86f77501ab320539
         buybacks,
         bancor
     ) = sperax
