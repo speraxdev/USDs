@@ -61,7 +61,6 @@ contract TwoPoolStrategy is InitializableAbstractStrategy {
         // Should be set prior to abstract initialize call otherwise
         // abstractSetPToken calls will fail
         curveGauge = ICurveGauge(_crvGaugeAddress);
-        curvePool = ICurve2Pool(platformAddress);
         supportedAssetIndex = _supportedAssetIndex;
         oracle = IOracle(_oracleAddr);
         InitializableAbstractStrategy._initialize(
@@ -71,11 +70,7 @@ contract TwoPoolStrategy is InitializableAbstractStrategy {
             _assets,
             _pTokens
         );
-
-        // _abstractSetPToken(
-        //     assetsMapped[_supportedAssetIndex],
-        //     assetToPToken[assetsMapped[_supportedAssetIndex]]
-        // );
+        curvePool = ICurve2Pool(platformAddress);
     }
 
     /**
