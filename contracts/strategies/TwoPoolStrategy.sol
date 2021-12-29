@@ -26,9 +26,9 @@ contract TwoPoolStrategy is InitializableAbstractStrategy {
     uint256 public lpAssetSlippage = 1e16; // 1%, same as the Curve UI
     uint256 internal supportedAssetIndex;
 
-    ICurveGauge internal curveGauge;
-    ICurve2Pool internal curvePool;
-    IOracle internal oracle;
+    ICurveGauge public curveGauge;
+    ICurve2Pool public curvePool;
+    IOracle public oracle;
 
     receive() external payable {}
     fallback() external payable {}
@@ -60,6 +60,10 @@ contract TwoPoolStrategy is InitializableAbstractStrategy {
         require(_supportedAssetIndex < 2, "_supportedAssetIndex exceeds 2");
         // Should be set prior to abstract initialize call otherwise
         // abstractSetPToken calls will fail
+        curveGauge = ICurveGauge(_crvGaugeAddress);
+        curvePool = ICurve2Pool(platformAddress);
+        supportedAssetIndex = _supportedAssetIndex;
+        oracle = IOracle(_oracleAddr);
         InitializableAbstractStrategy._initialize(
             _platformAddress,
             _vaultAddress,
@@ -67,14 +71,11 @@ contract TwoPoolStrategy is InitializableAbstractStrategy {
             _assets,
             _pTokens
         );
-        curveGauge = ICurveGauge(_crvGaugeAddress);
-        curvePool = ICurve2Pool(platformAddress);
-        supportedAssetIndex = _supportedAssetIndex;
-        oracle = IOracle(_oracleAddr);
-        _abstractSetPToken(
-            assetsMapped[_supportedAssetIndex],
-            assetToPToken[assetsMapped[_supportedAssetIndex]]
-        );
+
+        // _abstractSetPToken(
+        //     assetsMapped[_supportedAssetIndex],
+        //     assetToPToken[assetsMapped[_supportedAssetIndex]]
+        // );
     }
 
     /**
