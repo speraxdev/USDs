@@ -638,42 +638,13 @@ def test_collect_interest_zero_interest(sperax, weth, accounts):
     strategy_proxy = strategy_proxies[2];
     interest = strategy_proxy.checkInterestEarned(
         weth.address, {'from': vault_proxy.address})
-<<<<<<< HEAD
-
-    print("interest: ", interest)
-    assert txn.events['Withdrawal']['_asset'] == weth.address
-    assert txn.events['Withdrawal']['_amount'] != 0
-
-    print("interest: ", interest)
-    assert txn.events['Withdrawal']['_asset'] == weth.address
-    assert txn.events['Withdrawal']['_amount'] != 0
-=======
     assert interest == 0
->>>>>>> dev
     with brownie.reverts("No interest earned"):
         strategy_proxy.collectInterest(
             vault_proxy.address,
             weth.address,
             {'from': vault_proxy.address}
         )
-<<<<<<< HEAD
-    if(interest > 0):
-        txn = strategy_proxy.collectInterest(
-            accounts[8],
-            weth.address,
-            {'from': vault_proxy.address}
-        )
-    else:
-     with brownie.reverts("No interest earned"):
-         txn = strategy_proxy.collectInterest(
-            accounts[8],
-            weth.address,
-            {'from': vault_proxy.address}
-        )
-
-
-=======
->>>>>>> dev
 
 def test_collect_interest(sperax, weth, invalid_collateral, accounts):
     (
@@ -730,16 +701,9 @@ def test_withdraw_to_vault_invalid_amount(sperax, weth, owner_l2):
     strategy_proxy = strategy_proxies[2];
     amount = int(0)
 
-<<<<<<< HEAD
-    zero_address = "0x0000000000000000000000000000000000000000"
-    with brownie.reverts("Invalid 3pool asset"):
-        txn = strategy_proxy.withdrawToVault(
-            zero_address,
-=======
     with brownie.reverts("Invalid amount"):
         txn = strategy_proxy.withdrawToVault(
             weth.address,
->>>>>>> dev
             (amount),
             {'from': owner_l2.address}
         )
@@ -758,7 +722,7 @@ def test_withdraw_to_vault_invalid_assets(sperax, invalid_collateral, owner_l2):
     strategy_proxy = strategy_proxies[2];
     amount = int(10005)
 
-    with brownie.reverts("Invalid 3pool asset"):
+    with brownie.reverts("Unsupported collateral"):
          strategy_proxy.withdrawToVault(
             invalid_collateral,
             (amount),
