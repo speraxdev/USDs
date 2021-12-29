@@ -151,7 +151,7 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
         );
         // Do the deposit to 3pool
         // triger to deposit LP tokens
-        curvePool.add_liquidity(_amounts, minMintAmount);
+        curvePool.add_liquidity(_amounts, 0); //TODO: change to minMintAmount
         allocatedAmt[_asset] = allocatedAmt[_asset].add(_amount);
         // Deposit into Gauge
         IERC20 pToken = IERC20(assetToPToken[_asset]);
