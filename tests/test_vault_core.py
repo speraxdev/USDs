@@ -106,7 +106,7 @@ def test_mint_usds(sperax, owner_l2, accounts, weth):
         two_hops_buyback,
         True, {'from': owner_l2}
     )
-    txn = vault_proxy.allocate({'from': owner_l2})
+
     txn = vault_proxy.allocate({'from': owner_l2})
 
     assert txn.events["CollateralAllocated"]["allocateAmount"] >  0
@@ -485,6 +485,27 @@ def test_reedem(sperax, accounts, owner_l2, weth):
         {'from': accounts[5]}
     )
 
+    (
+        usdt_strategy,
+        wbtc_strategy,
+        weth_strategy,
+    ) = strategy_proxies
+
+    (
+        two_hops_buyback, 
+        three_hops_buyback
+    ) = buybacks
+
+
+    vault_proxy.updateCollateralInfo(
+        weth,
+        weth_strategy,
+        True,
+        80,
+        two_hops_buyback,
+        True, {'from': owner_l2}
+    )
+
     amount  = 10000
     slippage_collateral = 10
     slippage_spa = 10
@@ -552,6 +573,27 @@ def test_reedem_collateral_from_strategy(sperax, accounts, owner_l2, weth):
         vault_proxy,
         True,
         {'from': owner_l2}
+    )
+
+    (
+        usdt_strategy,
+        wbtc_strategy,
+        weth_strategy,
+    ) = strategy_proxies
+
+    (
+        two_hops_buyback, 
+        three_hops_buyback
+    ) = buybacks
+
+
+    vault_proxy.updateCollateralInfo(
+        weth,
+        weth_strategy,
+        True,
+        80,
+        two_hops_buyback,
+        True, {'from': owner_l2}
     )
 
     with reverts():

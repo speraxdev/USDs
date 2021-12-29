@@ -158,7 +158,7 @@ def usdc(MockToken, owner_l2):
     token = MockToken.deploy(
         "USDc Token",
         "USDc",
-        int(6),
+        int(18),
         {'from': owner_l2}
     )
     print("USDC: ", token.address)
@@ -334,7 +334,10 @@ def sperax(
     # would suggest to use a mock token to mock USDC instead
     mintSPA(spa, amount, owner_l2, vault_proxy)
     deposit_weth(weth, owner_l2, accounts, amount)
-    spa_usdc_pool =  create_uniswap_v3_pool(spa, usdc, int(100 * 10**18), int(100 * 10**6), 3000, owner_l2)
+    create_uniswap_v3_pool(spa, usdc, int(100 * 10**18), int(10 * 10**18), 3000, owner_l2)
+    update_oracle_setting(oracle_proxy, usdc, owner_l2)
+    mintUSDs(usds_proxy, spa, vault_proxy, owner_l2, weth)
+   
 
     return (
         spa,
@@ -878,7 +881,40 @@ def mintSPA(
     assert txn.events['Transfer']['to'] == owner_l2
     assert txn.events['Transfer']['value'] == amount
 
-def update_oracle_setting(oracle_proxy, usdc, owner_l2, spa, usds_proxy):
+def mintUSDs(
+    usds_proxy,
+    spa,
+    vault_proxy,
+    owner,
+    weth
+    ):
+    deadline = 1637632800 + brownie.chain.time()
+    amount  = 100000
+    slippage_collateral = 1000000000000000000000000000000
+    slippage_spa = 1000000000000000000000000000000
+
+
+    spa.approve(vault_proxy.address, slippage_spa, {'from': owner})
+
+
+    weth_erc20 = brownie.interface.IERC20(weth.address)
+    print("WETH BAL",weth_erc20.balanceOf(owner))
+    print("SPA BAL", spa.balanceOf(owner))
+    weth_erc20.approve(vault_proxy.address, slippage_spa, {'from': owner})
+
+    txn = vault_proxy.mintBySpecifyingUSDsAmt(
+        weth.address,
+        int(amount),
+        slippage_collateral,
+        slippage_spa,
+        deadline,
+        {'from': owner}
+    )
+
+    assert usds_proxy.balanceOf(owner) == amount
+
+
+def update_oracle_setting(oracle_proxy, usdc, owner_l2):
     if brownie.network.show_active() in ['mainnet-fork', 'rinkeby']:
         print("NOTE: skip deploying contracts for Arbitrum (L2)")
         return
@@ -895,8 +931,7 @@ def deposit_weth(weth, owner_l2, accounts, amount):
     txn = weth.deposit({'from': owner_l2, 'amount': amount})
     weth_erc20 = brownie.interface.IERC20(weth.address)
     # transfer weth to strategy_proxy contract
-    txn = weth_erc20.transfer(accounts[5],
-                            amount, {'from': owner_l2})
+
 
 def lower_tick():
     return math.ceil(-887272 / 60) * 60
