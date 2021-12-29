@@ -193,7 +193,7 @@ def sperax(
     Oracle,
     VaultCore,
     usds1,
-    ThreePoolStrategy,
+    TwoPoolStrategy,
     BuybackTwoHops,
     BuybackThreeHops,
     chainlink_flags,
@@ -313,7 +313,7 @@ def sperax(
     if brownie.network.show_active() in ['arbitrum-main-fork', 'arbitrum-one']:
         (strategies, buybacks) = deploy_strategies(
             TransparentUpgradeableProxy,
-            ThreePoolStrategy,
+            TwoPoolStrategy,
             BuybackTwoHops,
             BuybackThreeHops,
             vault_proxy,
@@ -453,7 +453,7 @@ def deploy_usds(
 
 def deploy_strategies(
     TransparentUpgradeableProxy,
-    ThreePoolStrategy,
+    TwoPoolStrategy,
     BuybackTwoHops,
     BuybackThreeHops,
     vault_proxy,
@@ -486,7 +486,7 @@ def deploy_strategies(
 
     usdt_strategy = deploy_strategy(
         TransparentUpgradeableProxy,
-        ThreePoolStrategy,
+        TwoPoolStrategy,
         vault_proxy,
         oracle_proxy,
         Contract,
@@ -507,7 +507,7 @@ def deploy_strategies(
     )
     wbtc_strategy = deploy_strategy(
         TransparentUpgradeableProxy,
-        ThreePoolStrategy,
+        TwoPoolStrategy,
         vault_proxy,
         oracle_proxy,
         Contract,
@@ -528,7 +528,7 @@ def deploy_strategies(
     )
     weth_strategy = deploy_strategy(
         TransparentUpgradeableProxy,
-        ThreePoolStrategy,
+        TwoPoolStrategy,
         vault_proxy,
         oracle_proxy,
         Contract,
@@ -591,7 +591,7 @@ def deploy_strategies(
 
 def deploy_strategy(
     TransparentUpgradeableProxy,
-    ThreePoolStrategy,
+    TwoPoolStrategy,
     vault_proxy,
     oracle_proxy,
     Contract,
@@ -599,7 +599,7 @@ def deploy_strategy(
     admin,
     owner_l2,
 ):
-    strategy = ThreePoolStrategy.deploy(
+    strategy = TwoPoolStrategy.deploy(
         {'from': owner_l2}
     )
     proxy = TransparentUpgradeableProxy.deploy(
@@ -609,9 +609,9 @@ def deploy_strategy(
         {'from': admin}
     )
     strategy_proxy = Contract.from_abi(
-        "ThreePoolStrategy",
+        "TwoPoolStrategy",
         proxy.address,
-        ThreePoolStrategy.abi
+        TwoPoolStrategy.abi
     )
 
     return strategy_proxy

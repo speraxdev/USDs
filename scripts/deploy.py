@@ -9,7 +9,8 @@ from brownie import (
     SperaxTokenL2,
     USDsL2,
     VaultCore,
-    ThreePoolStrategy,
+    TwoPoolStrategy,
+    BuybackSingle,
     BuybackTwoHops,
     BuybackThreeHops,
     accounts,
@@ -37,7 +38,7 @@ def main():
     signal.signal(signal.SIGINT, signal_handler)
 
     print("\nDeploying essential components of USDs")
-    print("On testnet excluding ThreePoolStrategy and Buyback")
+    print("On testnet excluding TwoPoolStrategy and Buyback")
 
     #if not os.environ.get('WEB3_INFURA_PROJECT_ID'):
     #    print("\nEnvironment variable WEB3_INFURA_PROJECT_ID is not set\n")
@@ -305,6 +306,7 @@ def deploy_strategies(
 ):
     usdc_address = '0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8'
     usdt_address = '0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9'
+    weth_address = '0x82af49447d8a07e3bd95bd0d56f35241523fbab1'
     crv_address = '0x11cdb42b0eb46d95f990bedd4695a6e3fa034978'
     # deploy strategy contracts for usdt, wbtc and weth
     strategy_proxy_addr_usdc = deploy_strategy(0, admin, owner, vault_proxy, oracle_proxy)
@@ -391,15 +393,15 @@ def deploy_strategies(
         {'from': owner},
     )
 
-    print(f"\nThreePoolStrategy for USDC deployed at address: {strategy_proxy_addr_usdc}")
-    print(f"ThreePoolStrategy for USDT deployed at address: {strategy_proxy_addr_usdt}")
-    print(f"\nBuybackTwoHops (usdc) deployed at address: {buybackSingle.address}")
-    print(f"\nBuybackTwoHops (usdt) deployed at address: {buybackTwoHops.address}")
+    print(f"\nTwoPoolStrategy for USDC deployed at address: {strategy_proxy_addr_usdc}")
+    print(f"TwoPoolStrategy for USDT deployed at address: {strategy_proxy_addr_usdt}")
+    print(f"\nBuybackSingle (usdc) deployed at address: {buybackSingle.address}")
+    print(f"BuybackTwoHops (usdt) deployed at address: {buybackTwoHops.address}")
     print(f"BuybackThreeHops (crv) deployed at address: {buybackThreeHops.address}")
 
 def deploy_strategy(index, admin, owner, vault_proxy, oracle_proxy):
-    strategy = ThreePoolStrategy.deploy(
-        {'from': owner, 'gas_limit': 1500000000},
+    strategy = TwoPoolStrategy.deploy(
+        {'from': owner},
     )
     proxy_admin = ProxyAdmin.deploy(
         {'from': admin},
@@ -412,9 +414,9 @@ def deploy_strategy(index, admin, owner, vault_proxy, oracle_proxy):
 #        publish_source=True,
     )
     strategy_proxy = Contract.from_abi(
-        "ThreePoolStrategy",
+        "TwoPoolStrategy",
         proxy.address,
-        ThreePoolStrategy.abi
+        TwoPoolStrategy.abi
     )
 
     strategy_vars_base.vault_proxy_address = vault_proxy.address
@@ -428,6 +430,7 @@ def deploy_strategy(index, admin, owner, vault_proxy, oracle_proxy):
         strategy_vars_base.lp_tokens,
         strategy_vars_base.crv_gauge_address,
         strategy_vars_base.index,
-        {'from': owner, 'gas_limit': 1500000000},
+        strategy_vars_base.oralce_proxy_address,
+        {'from': owner},
     )
     return strategy_proxy.address
