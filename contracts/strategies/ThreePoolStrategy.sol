@@ -60,6 +60,9 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
         require(_supportedAssetIndex < 3, "_supportedAssetIndex exceeds 2");
         // Should be set prior to abstract initialize call otherwise
         // abstractSetPToken calls will fail
+        curveGauge = ICurveGauge(_crvGaugeAddress);
+        supportedAssetIndex = _supportedAssetIndex;
+        oracle = IOracle(_oracleAddr);
         InitializableAbstractStrategy._initialize(
             _platformAddress,
             _vaultAddress,
@@ -67,14 +70,7 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
             _assets,
             _pTokens
         );
-        curveGauge = ICurveGauge(_crvGaugeAddress);
         curvePool = ICurve3Pool(platformAddress);
-        supportedAssetIndex = _supportedAssetIndex;
-        oracle = IOracle(_oracleAddr);
-        _abstractSetPToken(
-            assetsMapped[_supportedAssetIndex],
-            assetToPToken[assetsMapped[_supportedAssetIndex]]
-        );
     }
 
     /**
