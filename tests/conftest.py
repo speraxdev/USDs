@@ -336,7 +336,6 @@ def sperax(
     deposit_weth(weth, owner_l2, accounts, amount)
     create_uniswap_v3_pool(spa, usdc, int(100 * 10**18), int(10 * 10**6), 3000, owner_l2)
     mintUSDs(usds_proxy, spa, vault_proxy, owner_l2, weth)
-    weth_erc20 = brownie.interface.IERC20(weth.address)
     create_uniswap_v3_pool(usdc, usds_proxy, int(100 * 10**6), int(10 * 10**18), 500, owner_l2)
 
     return (
