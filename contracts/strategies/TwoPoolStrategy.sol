@@ -189,7 +189,7 @@ contract TwoPoolStrategy is InitializableAbstractStrategy {
         require(_recipient != address(0), "Invalid recipient");
         require(supportsCollateral(_asset), "Unsupported collateral");
         (uint256 contractPTokens, , uint256 totalPTokens) = _getTotalPTokens();
-        uint256 poolCoinIndex = _getPoolCoinIndex(_asset);
+        int128 poolCoinIndex = int128(_getPoolCoinIndex(_asset));
         uint256 assetInterest = checkInterestEarned(_asset);
         require(assetInterest > 0, "No interest earned");
         uint256 maxAmount = curvePool.calc_withdraw_one_coin(
@@ -216,7 +216,7 @@ contract TwoPoolStrategy is InitializableAbstractStrategy {
         uint256 balance_before = IERC20(_asset).balanceOf(address(this));
         curvePool.remove_liquidity_one_coin(
             maxBurnedPTokens,
-            _getPoolCoinIndex(_asset),
+            int128(_getPoolCoinIndex(_asset)),
             minRedeemAmount
         );
         uint256 _amount_received = IERC20(_asset).balanceOf(address(this))
@@ -264,17 +264,15 @@ contract TwoPoolStrategy is InitializableAbstractStrategy {
         returns (uint256 balance)
     {
         require(supportsCollateral(_asset), "Unsupported collateral");
-        // LP tokens in this contract. This should generally be nothing as we
-        // should always stake the full balance in the Gauge, but include for
-        // safety
+        // Calculate how many platform tokens we need to withdraw the asset
+        // amount in the worst case (i.e withdrawing all LP tokens)
         (, , uint256 totalPTokens) = _getTotalPTokens();
-        uint256 pTokenTotalSupply = IERC20(assetToPToken[_asset]).totalSupply();
-        if (pTokenTotalSupply > 0) {
-            uint256 poolCoinIndex = _getPoolCoinIndex(_asset);
-            uint256 curveBalance = curvePool.balances(poolCoinIndex);
-            if (curveBalance > 0) {
-                balance = totalPTokens.mul(curveBalance).div(pTokenTotalSupply);
-            }
+        uint256 poolCoinIndex = _getPoolCoinIndex(_asset);
+        if (totalPTokens > lpAssetThreshold) {
+            balance = curvePool.calc_withdraw_one_coin(
+                totalPTokens,
+                int128(poolCoinIndex)
+            );
         }
     }
 
@@ -293,13 +291,13 @@ contract TwoPoolStrategy is InitializableAbstractStrategy {
         require(supportsCollateral(_asset), "Unsupported collateral");
         // Calculate how many platform tokens we need to withdraw the asset
         // amount in the worst case (i.e withdrawing all LP tokens)
-        (uint256 contractPTokens, , uint256 totalPTokens) = _getTotalPTokens();
+        (, , uint256 totalPTokens) = _getTotalPTokens();
         uint256 poolCoinIndex = _getPoolCoinIndex(_asset);
         uint256 maxAmount;
         if (totalPTokens > lpAssetThreshold) {
             maxAmount = curvePool.calc_withdraw_one_coin(
                 totalPTokens,
-                poolCoinIndex
+                int128(poolCoinIndex)
             );
         }
         uint256 assetInterest;
@@ -332,7 +330,7 @@ contract TwoPoolStrategy is InitializableAbstractStrategy {
         if (totalPTokens > lpAssetThreshold) {
             maxAmount = curvePool.calc_withdraw_one_coin(
                 totalPTokens,
-                _getPoolCoinIndex(_asset)
+                int128(_getPoolCoinIndex(_asset))
             );
         }
         uint256 maxBurnedPTokens = totalPTokens.mul(_amount).div(maxAmount);
@@ -353,7 +351,7 @@ contract TwoPoolStrategy is InitializableAbstractStrategy {
         uint256 balance_before = IERC20(_asset).balanceOf(address(this));
         curvePool.remove_liquidity_one_coin(
             maxBurnedPTokens,
-            _getPoolCoinIndex(_asset),
+            int128(_getPoolCoinIndex(_asset)),
             minRedeemAmount
         );
         uint256 _amount_received = IERC20(_asset).balanceOf(address(this))
