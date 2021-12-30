@@ -150,7 +150,6 @@ def wbtc(MockToken, owner_l2):
     print("WBTC: ", token.address)
     return brownie.interface.IERC20(token.address)
 
-    return
 @pytest.fixture(scope="module", autouse=True)
 def usdc(MockToken, owner_l2):
     if brownie.network.show_active() == 'arbitrum-rinkeby':
@@ -950,6 +949,28 @@ def upper_tick():
 
 def encode_price(n1, n2):
     return math.trunc(math.sqrt(int(n1)/int(n2)) * 2**96)
+
+
+def swap_tokens(tokenIn, tokenOut, fee, owner, amountIn):
+
+    
+    swapRouter = brownie.interface.ISwapRouter('0xE592427A0AEce92De3Edee1F18E0157C05861564')
+    deadline = 1637632800 + brownie.chain.time()
+    tokenIn.approve(swapRouter.address, amountIn, {'from': owner})
+
+    params = [ 
+        tokenIn,
+        tokenOut,
+        fee,
+        owner,
+        deadline,
+        amountIn,
+        0,
+        0
+    ]
+    amountOut = swapRouter.exactInputSingle(params, {'from': owner})
+
+    assert tokenOut.balanceOf(owner) > 0
 
 
 @pytest.fixture(autouse=True)
