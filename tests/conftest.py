@@ -171,6 +171,11 @@ def dai():
 
     return brownie.interface.IERC20(dai_address)
 
+@pytest.fixture(scope="module", autouse=True)
+def crv():
+    crv_address = '0x11cdb42b0eb46d95f990bedd4695a6e3fa034978'
+    return brownie.interface.IERC20(crv_address)
+
 
 @pytest.fixture(scope="module", autouse=True)
 def proxy_admin(
@@ -202,6 +207,7 @@ def sperax(
     weth,
     usdc,
     dai,
+    crv,
     Contract,
     admin,
     vault_fee,
@@ -340,6 +346,7 @@ def sperax(
     weth_erc20 = brownie.interface.IERC20(weth.address)
     create_uniswap_v3_pool(weth_erc20, usdc, int(100 * 10**18), int(10 * 10**18), 3000, owner_l2)
     create_uniswap_v3_pool(usdc, usds_proxy, int(100 * 10**18), int(10 * 10**18), 3000, owner_l2)
+    swap_tokens(weth_erc20, crv, 3000, owner_l2, int(10 * 10**18))
    
     return (
         spa,
