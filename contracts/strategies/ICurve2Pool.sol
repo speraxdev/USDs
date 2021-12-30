@@ -16,7 +16,7 @@ interface ICurve2Pool {
 
     function remove_liquidity_one_coin(
         uint256 _amount,
-        uint256 _index,
+        int128 _index,
         uint256 _minAmount
     ) external;
 
@@ -25,7 +25,7 @@ interface ICurve2Pool {
         uint256[3] calldata _minWithdrawAmounts
     ) external;
 
-    function calc_withdraw_one_coin(uint256 _amount, uint256 _index)
+    function calc_withdraw_one_coin(uint256 _amount, int128 _index)
         external
         view
         returns (uint256);
