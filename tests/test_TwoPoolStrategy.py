@@ -4,7 +4,6 @@ import time
 import brownie
 
 
-
 @pytest.fixture(scope="module", autouse=True)
 def invalid_collateral(usdt):
     return usdt.address
@@ -12,7 +11,7 @@ def invalid_collateral(usdt):
 
 def user(accounts):
     return accounts[9]
-def test_collect_interest_pTokens(sperax, usdt, accounts,owner_l2):
+def test_collect_interest_pTokens(sperax, usdt,owner_l2):
     (
         spa,
         usds_proxy,
@@ -27,30 +26,21 @@ def test_collect_interest_pTokens(sperax, usdt, accounts,owner_l2):
     # manually get some LP tokens (3CRV) and transfer them to strategy_proxy;
     # strategy_proxy will mistake these LP tokens (after being covert back to
     # collertal) as earned interest
-    amount = int(999)
-    # txn = usdt.deposit(
-    #     {'from': accounts[9].address, 'amount': amount}
-    # )
+    amount = int(1000000)
     curvePool = brownie.interface.ICurve3Pool(
-        '0x960ea3e3C7FB317332d990873d354E18d7645590')
-    amounts = [0, 0, amount]
-    brownie.interface.IERC20(usdt.address).approve(
+        '0x7f90122BF0700F9E7e1F688fe926940E8839F353')
+    amounts = [0, amount]
+    usdt.approve(
         curvePool.address, amount, {'from': owner_l2})
     curvePool.add_liquidity(amounts, 0, {'from': owner_l2})
     lpToken = brownie.interface.IERC20(
-        '0x8e0B8c8BB9db49a46697F3a5Bb8A308e744821D2')
-    weth_erc20 = brownie.interface.IERC20(usdt.address)
+        '0x7f90122bf0700f9e7e1f688fe926940e8839f353')
     print("lp token balance: ",lpToken.balanceOf(owner_l2))
     tx = lpToken.transfer(
-        strategy_proxy, 500,  {'from': owner_l2})
+        strategy_proxy, lpToken.balanceOf(owner_l2),  {'from': owner_l2})
     print("lp tx:", tx.events)
 
-    txn = weth_erc20.transfer(strategy_proxy.address, amount/10, {'from': owner_l2})
-    txn = strategy_proxy.deposit(
-        usdt.address,
-        amount/10,
-        {'from': vault_proxy.address}
-    )
+    txn = usdt.transfer(strategy_proxy.address, amount/10, {'from': owner_l2})
     txn = strategy_proxy._getTotalPTokens({'from': vault_proxy.address})
     print("contract ptokens: ", txn)
     interest = strategy_proxy.checkInterestEarned(
@@ -65,9 +55,9 @@ def test_collect_interest_pTokens(sperax, usdt, accounts,owner_l2):
         {'from': vault_proxy.address}
     )
     assert strategy_proxy.allocatedAmt(usdt.address) == 0
-    assert weth_erc20.balanceOf(vault_proxy.address) > 0
+    assert usdt_erc20.balanceOf(vault_proxy.address) > 0
 
-def test_collect_interest(sperax, weth, accounts,owner_l2):
+def test_collect_interest(sperax, weth, accounts):
     (
         spa,
         usds_proxy,
@@ -96,7 +86,7 @@ def test_collect_interest(sperax, weth, accounts,owner_l2):
         '0x8e0B8c8BB9db49a46697F3a5Bb8A308e744821D2')
     weth_erc20 = brownie.interface.IERC20(weth.address)
     tx = lpToken.transfer(
-        strategy_proxy, lpToken.balanceOf(owner_l2),  {'from': accounts[9]})
+        strategy_proxy, lpToken.balanceOf(owner_l2),  {'from': owner_l2})
     print("lp tx:", tx.events)
     txn = strategy_proxy._getTotalPTokens({'from': vault_proxy.address})
     print("contract ptokens: ", txn)
@@ -131,26 +121,26 @@ def test_total_pTokens_withdraw(sperax, weth, usdt, wbtc, owner_l2, accounts):
     strategy_proxy = strategy_proxies[1]
     amount = int(1000000000)
     txn = weth.deposit(
-        {'from': accounts[9].address, 'amount': amount}
+        {'from': owner_l2.address, 'amount': amount}
     )
     curvePool = brownie.interface.ICurve3Pool(
         '0x960ea3e3C7FB317332d990873d354E18d7645590')
     amounts = [0, 0, amount]
     brownie.interface.IERC20(weth.address).approve(
-        curvePool.address, amount, {'from': accounts[9]})
-    curvePool.add_liquidity(amounts, 0, {'from': accounts[9]})
+        curvePool.address, amount, {'from': owner_l2})
+    curvePool.add_liquidity(amounts, 0, {'from': owner_l2})
     lpToken = brownie.interface.IERC20(
         '0x8e0B8c8BB9db49a46697F3a5Bb8A308e744821D2')
     weth_erc20 = brownie.interface.IERC20(weth.address)
     tx = lpToken.transfer(
-        strategy_proxy, lpToken.balanceOf(accounts[9]),  {'from': accounts[9]})
+        strategy_proxy, lpToken.balanceOf(owner_l2),  {'from': owner_l2})
     print("lp tx:", tx.events)
     txn = strategy_proxy._getTotalPTokens({'from': vault_proxy.address})
     print("contract ptokens: ", txn)
     strategy_proxy.checkBalance(weth, {'from': vault_proxy.address})
     # withdraw 1/10 of the previous deposit
     txn = strategy_proxy.withdraw(
-        accounts[9],
+        owner_l2,
         weth.address,
         (amount/10),
         {'from': vault_proxy.address}
