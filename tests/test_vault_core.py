@@ -48,13 +48,11 @@ def test_mint_usds(sperax, owner_l2, accounts, weth):
     amount  = 100000
     slippage_collateral = 1000000000000000000000000000000
     slippage_spa = 1000000000000000000000000000000
-    spa.approve(accounts[5].address, amount, {'from': owner_l2})
-    spa.transfer(accounts[5].address, amount, {'from': owner_l2})
 
-    spa.approve(vault_proxy.address, slippage_spa, {'from': accounts[5] })
+    spa.approve(vault_proxy.address, slippage_spa, {'from': owner_l2 })
 
     weth_erc20 = brownie.interface.IERC20(weth.address)
-    weth_erc20.approve(vault_proxy.address, slippage_spa, {'from': accounts[5]})
+    weth_erc20.approve(vault_proxy.address, slippage_spa, {'from': owner_l2})
 
     #collateral not addedd
     with reverts():
@@ -64,7 +62,7 @@ def test_mint_usds(sperax, owner_l2, accounts, weth):
             slippage_collateral,
             slippage_spa,
             deadline,
-            {'from': accounts[5]}
+            {'from': owner_l2}
         )
 
     #zero amount
@@ -75,7 +73,7 @@ def test_mint_usds(sperax, owner_l2, accounts, weth):
             slippage_collateral,
             slippage_spa,
             deadline,
-            {'from': accounts[5]}
+            {'from': owner_l2}
         )
 
     with reverts('Deadline expired'):
@@ -85,7 +83,7 @@ def test_mint_usds(sperax, owner_l2, accounts, weth):
             slippage_collateral,
             slippage_spa,
             0,
-            {'from': accounts[5]}
+            {'from': owner_l2}
         )
 
     txn = vault_proxy.mintBySpecifyingUSDsAmt(
@@ -94,19 +92,11 @@ def test_mint_usds(sperax, owner_l2, accounts, weth):
         slippage_collateral,
         slippage_spa,
         deadline,
-        {'from': accounts[5]}
+        {'from': owner_l2}
     )
 
     txn = vault_proxy.updateAllocationPermission(True, {'from': owner_l2})
-    vault_proxy.updateCollateralInfo(
-        weth,
-        weth_strategy,
-        True,
-        80,
-        two_hops_buyback,
-        True, {'from': owner_l2}
-    )
-    txn = vault_proxy.allocate({'from': owner_l2})
+
     txn = vault_proxy.allocate({'from': owner_l2})
 
     assert txn.events["CollateralAllocated"]["allocateAmount"] >  0
@@ -172,12 +162,9 @@ def test_mint_spa(sperax, weth, owner_l2, accounts):
     slippage_collateral = 1000000000000000000000000000000
     slippage_usds = 10
 
-    spa.approve(accounts[5].address, amount, {'from': owner_l2})
-    spa.transfer(accounts[5].address, amount, {'from': owner_l2})
-
-    spa.approve(vault_proxy.address, slippage_collateral, {'from': accounts[5] })
+    spa.approve(vault_proxy.address, slippage_collateral, {'from': owner_l2 })
     weth_erc20 = brownie.interface.IERC20(weth.address)
-    weth_erc20.approve(vault_proxy.address, slippage_collateral, {'from': accounts[5]})
+    weth_erc20.approve(vault_proxy.address, slippage_collateral, {'from': owner_l2})
 
     with reverts():
         vault_proxy.mintBySpecifyingSPAamt(
@@ -186,7 +173,7 @@ def test_mint_spa(sperax, weth, owner_l2, accounts):
             slippage_usds,
             slippage_collateral,
             deadline,
-            {'from': accounts[5]}
+            {'from': owner_l2}
         )
 
     with reverts("Amount needs to be greater than 0"):
@@ -196,7 +183,7 @@ def test_mint_spa(sperax, weth, owner_l2, accounts):
             slippage_usds,
             slippage_collateral,
             deadline,
-            {'from': accounts[5]}
+            {'from': owner_l2}
         )
 
     vault_proxy.mintBySpecifyingSPAamt(
@@ -205,7 +192,7 @@ def test_mint_spa(sperax, weth, owner_l2, accounts):
         slippage_usds,
         slippage_collateral,
         deadline,
-        {'from': accounts[5]}
+        {'from': owner_l2}
     )
 
 
@@ -226,12 +213,9 @@ def test_mint_collateral(sperax, weth, owner_l2, accounts):
     slippage_collateral = 10
     slippage_coll = 1000000000000000000000000000000
 
-    spa.approve(accounts[5].address, amount, {'from': owner_l2})
-    spa.transfer(accounts[5].address, amount, {'from': owner_l2})
-
-    spa.approve(vault_proxy.address, slippage_coll, {'from': accounts[5] })
+    spa.approve(vault_proxy.address, slippage_coll, {'from': owner_l2})
     weth_erc20 = brownie.interface.IERC20(weth.address)
-    weth_erc20.approve(vault_proxy.address, slippage_coll, {'from': accounts[5]})
+    weth_erc20.approve(vault_proxy.address, slippage_coll, {'from': owner_l2})
 
     with reverts():
         vault_proxy.mintBySpecifyingCollateralAmt(
@@ -240,7 +224,7 @@ def test_mint_collateral(sperax, weth, owner_l2, accounts):
             slippage_collateral,
             slippage_coll,
             deadline,
-            {'from': accounts[5]}
+            {'from': owner_l2}
         )
 
     with reverts("Amount needs to be greater than 0"):
@@ -250,7 +234,7 @@ def test_mint_collateral(sperax, weth, owner_l2, accounts):
             slippage_collateral,
             slippage_coll,
             deadline,
-            {'from': accounts[5]}
+            {'from': owner_l2}
         )
 
     vault_proxy.mintBySpecifyingCollateralAmt(
@@ -259,7 +243,7 @@ def test_mint_collateral(sperax, weth, owner_l2, accounts):
         slippage_collateral,
         slippage_coll,
         deadline,
-        {'from': accounts[5]}
+        {'from': owner_l2}
     )
 
 
@@ -465,34 +449,35 @@ def test_reedem(sperax, accounts, owner_l2, weth):
     amount  = 1000000
     invalid_coll = brownie.convert.to_address('0x0000000000000000000000000000000000000000')
 
-    slippage_collateral_mint = 1000000000000000000000000000000
-    slippage_spa_mint = 1000000000000000000000000000000
+    (
+        usdt_strategy,
+        wbtc_strategy,
+        weth_strategy,
+    ) = strategy_proxies
 
-    spa.approve(accounts[5].address, amount, {'from': owner_l2})
-    spa.transfer(accounts[5].address, amount, {'from': owner_l2})
+    (
+        two_hops_buyback, 
+        three_hops_buyback
+    ) = buybacks
 
-    spa.approve(vault_proxy.address, slippage_collateral_mint, {'from': accounts[5] })
 
-    weth_erc20 = brownie.interface.IERC20(weth.address)
-    weth_erc20.approve(vault_proxy.address, slippage_collateral_mint, {'from': accounts[5]})
-
-    txn = vault_proxy.mintBySpecifyingUSDsAmt(
-        weth.address,
-        int(amount),
-        slippage_collateral_mint,
-        slippage_spa_mint,
-        deadline,
-        {'from': accounts[5]}
+    vault_proxy.updateCollateralInfo(
+        weth,
+        weth_strategy,
+        True,
+        80,
+        two_hops_buyback,
+        True, {'from': owner_l2}
     )
 
-    amount  = 10000
+    amount  = 100000
     slippage_collateral = 10
     slippage_spa = 10
     with reverts('Amount needs to be greater than 0'):
-        vault_proxy.redeem(weth.address, 0, slippage_collateral, slippage_spa, deadline, {'from': accounts[5]})
+        vault_proxy.redeem(weth.address, 0, slippage_collateral, slippage_spa, deadline, {'from': owner_l2})
 
     with reverts():
-        vault_proxy.redeem(invalid_coll, amount, slippage_collateral, slippage_spa, deadline, {'from': accounts[5]})
+        vault_proxy.redeem(invalid_coll, amount, slippage_collateral, slippage_spa, deadline, {'from': owner_l2})
 
 
     txn = spa.setMintable(
@@ -504,9 +489,9 @@ def test_reedem(sperax, accounts, owner_l2, weth):
     expired_deadline = brownie.chain.time() - 200
 
     with reverts('Deadline expired'):
-       vault_proxy.redeem(weth.address, amount, slippage_collateral, slippage_spa, expired_deadline, {'from': accounts[5]})
+       vault_proxy.redeem(weth.address, amount, slippage_collateral, slippage_spa, expired_deadline, {'from': owner_l2})
 
-    txn = vault_proxy.redeem(weth.address, amount, slippage_collateral, slippage_spa, deadline, {'from': accounts[5]})
+    txn = vault_proxy.redeem(weth.address, amount, slippage_collateral, slippage_spa, deadline, {'from': owner_l2})
 
 
 def test_reedem_collateral_from_strategy(sperax, accounts, owner_l2, weth):
@@ -521,28 +506,6 @@ def test_reedem_collateral_from_strategy(sperax, accounts, owner_l2, weth):
     ) = sperax
 
     deadline = brownie.chain.time() + 2000
-    amount  = 10000
-
-    slippage_collateral_mint = 1000000000000000000000000000000
-    slippage_spa_mint = 1000000000000000000000000000000
-
-    spa.approve(accounts[5].address, amount, {'from': owner_l2})
-    spa.transfer(accounts[5].address, amount, {'from': owner_l2})
-
-    spa.approve(vault_proxy.address, slippage_collateral_mint, {'from': accounts[5] })
-
-
-    weth_erc20 = brownie.interface.IERC20(weth.address)
-    weth_erc20.approve(vault_proxy.address, slippage_collateral_mint, {'from': accounts[5]})
-
-    txn = vault_proxy.mintBySpecifyingUSDsAmt(
-        weth.address,
-        int(amount),
-        slippage_collateral_mint,
-        slippage_spa_mint,
-        deadline,
-        {'from': accounts[5]}
-    )
 
     amount  = 100000
     slippage_collateral = 10
@@ -554,8 +517,28 @@ def test_reedem_collateral_from_strategy(sperax, accounts, owner_l2, weth):
         {'from': owner_l2}
     )
 
-    with reverts():
-        txn = vault_proxy.redeem(weth.address, amount, slippage_collateral, slippage_spa, deadline, {'from': accounts[5]})
+    (
+        usdt_strategy,
+        wbtc_strategy,
+        weth_strategy,
+    ) = strategy_proxies
+
+    (
+        two_hops_buyback, 
+        three_hops_buyback
+    ) = buybacks
+
+
+    vault_proxy.updateCollateralInfo(
+        weth,
+        weth_strategy,
+        True,
+        80,
+        two_hops_buyback,
+        True, {'from': owner_l2}
+    )
+
+    txn = vault_proxy.redeem(weth.address, amount, slippage_collateral, slippage_spa, deadline, {'from': owner_l2})
 
 def test_vault_core_allocate(sperax, owner_l2):
     (
@@ -590,10 +573,10 @@ def test_vault_core_tools_spa_amount_calculator(sperax, owner_l2):
         txn = core_proxy.SPAAmountCalculator(1, 10000, vault_proxy, 3000,{'from': owner_l2})
 
     amount = core_proxy.SPAAmountCalculator.call(0, 10000, vault_proxy, 3000,{'from': owner_l2})
-    assert amount  == 0
+    assert amount  > 0
 
     amount = core_proxy.SPAAmountCalculator.call(0, 10000, vault_proxy, 0,{'from': owner_l2})
-    assert amount == 0 
+    assert amount > 0 
 
 
 def test_usds_amount_calculator(sperax, owner_l2, weth):
