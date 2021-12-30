@@ -345,12 +345,11 @@ def sperax(
     deposit_weth(weth, owner_l2, accounts, amount)
     mintUSDs(usds_proxy, spa, vault_proxy, owner_l2, weth)
     weth_erc20 = brownie.interface.IERC20(weth.address)
-    swap_tokens(weth_erc20, crv, 3000, owner_l2, int(10 * 10**18))
-    # create_uniswap_v3_pool(usdt, usdc, int(100 * 10**6), int(10 * 10**6), 500, owner_l2)
-    # create_uniswap_v3_pool(usdc, usds_proxy, int(100 * 10**18), int(10 * 10**6), 500, owner_l2)
-    create_uniswap_v3_pool(usdc, usds_proxy, int(10 * 10**18), int(10 * 10**6), 3000, owner_l2)
-    create_uniswap_v3_pool(usdc, weth_erc20, int(10 * 10**18), int(10 * 10**6), 3000, owner_l2)
-    create_uniswap_v3_pool(crv, weth_erc20, int(10 * 10**18), int(10 * 10**6), 3000, owner_l2)
+    swap_tokens(weth_erc20, crv, 3000, owner_l2, int(1 * 10**18))
+    #create_uniswap_v3_pool(usdt, usdc, int(100 * 10**6), int(10 * 10**6), 500, owner_l2)
+    create_uniswap_v3_pool(usdc, usds_proxy, int(100 * 10**6), int(10 * 10**18), 500, owner_l2)
+    # create_uniswap_v3_pool(usdc, usds_proxy, int(10 * 10**18), int(10 * 10**6), 3000, owner_l2)
+    # create_uniswap_v3_pool(usdc, weth_erc20, int(10 * 10**18), int(10 * 10**6), 3000, owner_l2)
 
     
     
@@ -680,8 +679,8 @@ def deploy_buyback_three_hops(
         weth,
         usdc,
         3000,
-        3000,
-        3000,
+        500,
+        500,
         {'from': owner_l2}
     )
     return buyback
