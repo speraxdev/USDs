@@ -158,7 +158,7 @@ def usdc(MockToken, owner_l2):
     token = MockToken.deploy(
         "USDc Token",
         "USDc",
-        int(18),
+        int(6),
         {'from': owner_l2}
     )
     print("USDC: ", token.address)
@@ -334,13 +334,11 @@ def sperax(
     # would suggest to use a mock token to mock USDC instead
     mintSPA(spa, amount, owner_l2, vault_proxy)
     deposit_weth(weth, owner_l2, accounts, amount)
-    create_uniswap_v3_pool(spa, usdc, int(100 * 10**18), int(10 * 10**18), 3000, owner_l2) 
-    update_oracle_setting(oracle_proxy, usdc, owner_l2)
+    create_uniswap_v3_pool(spa, usdc, int(100 * 10**18), int(10 * 10**6), 3000, owner_l2)
     mintUSDs(usds_proxy, spa, vault_proxy, owner_l2, weth)
     weth_erc20 = brownie.interface.IERC20(weth.address)
-    create_uniswap_v3_pool(weth_erc20, usdc, int(100 * 10**18), int(10 * 10**18), 3000, owner_l2)
-    create_uniswap_v3_pool(usdc, usds_proxy, int(100 * 10**18), int(10 * 10**18), 3000, owner_l2)
-   
+    create_uniswap_v3_pool(usdc, usds_proxy, int(100 * 10**6), int(10 * 10**18), 500, owner_l2)
+
     return (
         spa,
         usds_proxy,
