@@ -169,6 +169,11 @@ def dai(MockToken, owner_l2):
     print("DAI: ", token.address)
     return brownie.interface.IERC20(token.address)
 
+@pytest.fixture(scope="module", autouse=True)
+def crv():
+    crv_address = '0x11cdb42b0eb46d95f990bedd4695a6e3fa034978'
+    return brownie.interface.IERC20(crv_address)
+
 
 @pytest.fixture(scope="module", autouse=True)
 def proxy_admin(
@@ -201,6 +206,7 @@ def sperax(
     weth,
     usdc,
     dai,
+    crv,
     Contract,
     admin,
     vault_fee,
@@ -330,12 +336,16 @@ def sperax(
         )
 
     amount = 10 * 10**18
-    # here it's temporarily change Oralce for SPA from SPA-USDC to SPA-ETH
+    # here it's temporarily change Oracle for SPA from SPA-USDC to SPA-ETH
     # would suggest to use a mock token to mock USDC instead
     mintSPA(spa, amount, owner_l2, vault_proxy)
     create_uniswap_v3_pool(spa, usdc, int(100 * 10**18), int(10 * 10**6), 3000, owner_l2)
+    update_oracle_setting(oracle_proxy, usdc, owner_l2)
+    deposit_weth(weth, owner_l2, accounts, amount)    
     mintUSDs(usds_proxy, spa, vault_proxy, owner_l2, weth)
-    create_uniswap_v3_pool(usdc, usds_proxy, int(100 * 10**6), int(10 * 10**18), 500, owner_l2)
+    # create_uniswap_v3_pool(usdc, usds_proxy, int(100 * 10**6), int(10 * 10**18), 500, owner_l2)
+    weth_erc20 = brownie.interface.IERC20(weth.address)
+   # swap_tokens(weth_erc20, crv, 3000, owner_l2, int(10 * 10**18))
 
     return (
         spa,
@@ -906,6 +916,26 @@ def upper_tick():
 
 def encode_price(n1, n2):
     return math.trunc(math.sqrt(int(n1)/int(n2)) * 2**96)
+
+def swap_tokens(tokenIn, tokenOut, fee, owner, amountIn):
+    swapRouter = brownie.interface.ISwapRouter('0xE592427A0AEce92De3Edee1F18E0157C05861564')
+    deadline = 1637632800 + brownie.chain.time()
+    tokenIn.approve(swapRouter.address, amountIn, {'from': owner})
+
+    params = [ 
+        tokenIn,
+        tokenOut,
+        fee,
+        owner,
+        deadline,
+        amountIn,
+        0,
+        0
+    ]
+    amountOut = swapRouter.exactInputSingle(params, {'from': owner})
+
+    assert tokenOut.balanceOf(owner) > 0
+
 
 
 @pytest.fixture(autouse=True)
