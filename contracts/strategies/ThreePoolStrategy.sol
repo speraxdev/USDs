@@ -396,7 +396,7 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
      * amount platform tokens we own).
      */
     function _getTotalPTokens()
-        internal
+        public
         view
         returns (
             uint256 contractPTokens,
@@ -414,7 +414,7 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
     /**
      * @dev Get the index of the coin in 3pool
      */
-    function _getPoolCoinIndex(address _asset) internal view returns (uint256) {
+    function _getPoolCoinIndex(address _asset) public view returns (uint256) {
         for (uint256 i = 0; i < 3; i++) {
             if (assetsMapped[i] == _asset) return i;
         }
