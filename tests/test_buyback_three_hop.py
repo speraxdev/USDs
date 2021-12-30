@@ -17,24 +17,24 @@ def test_swap(sperax, owner_l2, crv):
 
     (
         single_hop_buyback,
-        two_hops_buyback, 
+        two_hops_buyback,
         three_hops_buyback
     ) = buybacks
-    
-    amount = 100000
+
+    amount = 10*10**18
     balance1 = usds_proxy.balanceOf(vault_proxy.address)
-   
+
     crv.approve(vault_proxy.address, amount, {'from': owner_l2})
     crv.transfer(vault_proxy.address, amount, {'from': owner_l2})
 
     crv.transfer(
-        three_hops_buyback.address, 
+        three_hops_buyback.address,
         amount, {'from': vault_proxy}
     )
 
     three_hops_buyback.swap(
-        crv.address, 
-        amount, 
+        crv.address,
+        amount,
         {'from': vault_proxy}
     )
 
@@ -58,7 +58,7 @@ def test_swap_unsuccesful_call_not_vault(sperax, owner_l2, weth):
     ) = sperax
     (
         single_hop_buyback,
-        two_hops_buyback, 
+        two_hops_buyback,
         three_hops_buyback
     ) = buybacks
 
@@ -68,8 +68,8 @@ def test_swap_unsuccesful_call_not_vault(sperax, owner_l2, weth):
 
     with reverts("Caller is not the Vault"):
         three_hops_buyback.swap(
-            weth_erc20.address, 
-            amount, 
+            weth_erc20.address,
+            amount,
             {'from': owner_l2}
             )
 
@@ -87,14 +87,14 @@ def test_swap_unsuccesful_call_token_not_supported(sperax):
     ) = sperax
     (
         single_hop_buyback,
-        two_hops_buyback, 
+        two_hops_buyback,
         three_hops_buyback
     ) = buybacks
 
     amount = 10000
     with reverts("inputToken not supported"):
         three_hops_buyback.swap(
-            spa.address, 
-            amount, 
+            spa.address,
+            amount,
             {'from': vault_proxy}
             )
