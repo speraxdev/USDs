@@ -22,89 +22,29 @@ def test_collect_interest_pTokens(sperax, usdt,owner_l2):
         buybacks,
         bancor
     ) = sperax
-    strategy_proxy = strategy_proxies[1]
-    # manually get some LP tokens (3CRV) and transfer them to strategy_proxy;
+    strategy_proxy = strategy_proxies[1];
+    # manually get some LP tokens (2CRV) and transfer them to strategy_proxy;
     # strategy_proxy will mistake these LP tokens (after being covert back to
     # collertal) as earned interest
-    amount = int(1000000)
-    curvePool = brownie.interface.ICurve3Pool(
-        '0x7f90122BF0700F9E7e1F688fe926940E8839F353')
+    amount = int(1000000000)
+    curvePool = brownie.interface.ICurve2Pool('0x7f90122BF0700F9E7e1F688fe926940E8839F353')
     amounts = [0, amount]
-    usdt.approve(
-        curvePool.address, amount, {'from': owner_l2})
+    usdt.approve(curvePool.address, amount, {'from': owner_l2})
     curvePool.add_liquidity(amounts, 0, {'from': owner_l2})
-    lpToken = brownie.interface.IERC20(
-        '0x7f90122bf0700f9e7e1f688fe926940e8839f353')
-    print("lp token balance: ",lpToken.balanceOf(owner_l2))
-    tx = lpToken.transfer(
+    lpToken = brownie.interface.IERC20('0x7f90122bf0700f9e7e1f688fe926940e8839f353')
+    lpToken.transfer(
         strategy_proxy, lpToken.balanceOf(owner_l2),  {'from': owner_l2})
-    print("lp tx:", tx.events)
-
-    txn = usdt.transfer(strategy_proxy.address, amount/10, {'from': owner_l2})
-    txn = strategy_proxy._getTotalPTokens({'from': vault_proxy.address})
-    print("contract ptokens: ", txn)
     interest = strategy_proxy.checkInterestEarned(
         usdt.address, {'from': vault_proxy.address})
-    print("interest: ", interest)
     assert interest > 0
     assert strategy_proxy.allocatedAmt(usdt.address) == 0
-    
     strategy_proxy.collectInterest(
         vault_proxy.address,
         usdt.address,
         {'from': vault_proxy.address}
     )
     assert strategy_proxy.allocatedAmt(usdt.address) == 0
-    assert usdt_erc20.balanceOf(vault_proxy.address) > 0
-
-def test_collect_interest(sperax, weth, accounts):
-    (
-        spa,
-        usds_proxy,
-        vault_core_tools,
-        vault_proxy,
-        oracle_proxy,
-        strategy_proxies,
-        buybacks,
-        bancor
-    ) = sperax
-    strategy_proxy = strategy_proxies[1]
-    # manually get some LP tokens (3CRV) and transfer them to strategy_proxy;
-    # strategy_proxy will mistake these LP tokens (after being covert back to
-    # collertal) as earned interest
-    amount = int(1000000000)
-    txn = weth.deposit(
-        {'from': owner_l2.address, 'amount': amount}
-    )
-    curvePool = brownie.interface.ICurve3Pool(
-        '0x960ea3e3C7FB317332d990873d354E18d7645590')
-    amounts = [0, 0, amount]
-    brownie.interface.IERC20(weth.address).approve(
-        curvePool.address, amount, {'from': owner_l2})
-    curvePool.add_liquidity(amounts, 0, {'from': owner_l2})
-    lpToken = brownie.interface.IERC20(
-        '0x8e0B8c8BB9db49a46697F3a5Bb8A308e744821D2')
-    weth_erc20 = brownie.interface.IERC20(weth.address)
-    tx = lpToken.transfer(
-        strategy_proxy, lpToken.balanceOf(owner_l2),  {'from': owner_l2})
-    print("lp tx:", tx.events)
-    txn = strategy_proxy._getTotalPTokens({'from': vault_proxy.address})
-    print("contract ptokens: ", txn)
-    interest = strategy_proxy.checkInterestEarned(
-        weth.address, {'from': vault_proxy.address})
-    print("interest: ", interest)
-    assert interest > 0
-    assert strategy_proxy.allocatedAmt(weth.address) == 0
-
-    strategy_proxy.collectInterest(
-        vault_proxy.address,
-        weth.address,
-        {'from': vault_proxy.address}
-    )
-    assert strategy_proxy.allocatedAmt(weth.address) == 0
-    assert weth_erc20.balanceOf(vault_proxy.address) > 0
-
-
+    assert usdt.balanceOf(vault_proxy.address) > 0
 
 
 def test_total_pTokens_withdraw(sperax, weth, usdt, wbtc, owner_l2, accounts):
@@ -118,35 +58,34 @@ def test_total_pTokens_withdraw(sperax, weth, usdt, wbtc, owner_l2, accounts):
         buybacks,
         bancor
     ) = sperax
-    strategy_proxy = strategy_proxies[1]
+    strategy_proxy = strategy_proxies[1];
+    # manually get some LP tokens (2CRV) and transfer them to strategy_proxy;
+    # strategy_proxy will mistake these LP tokens (after being covert back to
+    # collertal) as earned interest
     amount = int(1000000000)
-    txn = weth.deposit(
-        {'from': owner_l2.address, 'amount': amount}
-    )
-    curvePool = brownie.interface.ICurve3Pool(
-        '0x960ea3e3C7FB317332d990873d354E18d7645590')
-    amounts = [0, 0, amount]
-    brownie.interface.IERC20(weth.address).approve(
-        curvePool.address, amount, {'from': owner_l2})
+    curvePool = brownie.interface.ICurve2Pool('0x7f90122BF0700F9E7e1F688fe926940E8839F353')
+    amounts = [0, amount]
+    usdt.approve(curvePool.address, amount, {'from': owner_l2})
     curvePool.add_liquidity(amounts, 0, {'from': owner_l2})
-    lpToken = brownie.interface.IERC20(
-        '0x8e0B8c8BB9db49a46697F3a5Bb8A308e744821D2')
-    weth_erc20 = brownie.interface.IERC20(weth.address)
-    tx = lpToken.transfer(
+    lpToken = brownie.interface.IERC20('0x7f90122bf0700f9e7e1f688fe926940e8839f353')
+    lpToken.transfer(
         strategy_proxy, lpToken.balanceOf(owner_l2),  {'from': owner_l2})
-    print("lp tx:", tx.events)
     txn = strategy_proxy._getTotalPTokens({'from': vault_proxy.address})
-    print("contract ptokens: ", txn)
-    strategy_proxy.checkBalance(weth, {'from': vault_proxy.address})
+    print("contract ptokens: ", txn[0])
+    checkbalance=strategy_proxy.checkBalance(usdt, {'from': vault_proxy.address})
     # withdraw 1/10 of the previous deposit
     txn = strategy_proxy.withdraw(
-        owner_l2,
-        weth.address,
+        accounts[9],
+        usdt.address,
         (amount/10),
         {'from': vault_proxy.address}
     )
 
-
+    txn = strategy_proxy.collectInterest(
+            accounts[8],
+            usdt,
+            {'from': vault_proxy.address}
+        )
 
 
 def test_withdraw(sperax, usdt, owner_l2, accounts):
@@ -234,7 +173,7 @@ def test_check_balance(sperax, weth, usdt):
     balance = strategy_proxy.checkBalance(usdt.address, {'from': vault_proxy.address})
     with brownie.reverts("Unsupported collateral"):
         balance = strategy_proxy.checkBalance(
-            usdt, {'from': vault_proxy.address})
+            weth, {'from': vault_proxy.address})
 
     assert balance == 0
     with brownie.reverts("Unsupported collateral"):
@@ -533,7 +472,7 @@ def test_deposit_invalid_amount(sperax, usdt):
         )
 
 
-def test_deposit_invalid_assets(sperax, invalid_collateral):
+def test_deposit_invalid_assets(sperax,weth, invalid_collateral):
     (
         spa,
         usds_proxy,
@@ -549,13 +488,13 @@ def test_deposit_invalid_assets(sperax, invalid_collateral):
 
     with brownie.reverts("Unsupported collateral"):
         strategy_proxy.deposit(
-            invalid_collateral,
+            weth,
             amount,
             {'from': vault_proxy.address}
         )
 
 
-def test_withdraw_invalid_assets(sperax, invalid_collateral, accounts):
+def test_withdraw_invalid_assets(sperax, weth, accounts):
     (
         spa,
         usds_proxy,
@@ -572,7 +511,7 @@ def test_withdraw_invalid_assets(sperax, invalid_collateral, accounts):
     with brownie.reverts("Unsupported collateral"):
         txn = strategy_proxy.withdraw(
             accounts[8],
-            invalid_collateral,
+            weth,
             (amount/10),
             {'from': vault_proxy.address})
 
@@ -600,7 +539,7 @@ def test_withdraw_invalid_amount(sperax, usdt, accounts):
         )
 
 
-def test_collect_interest_invalid(sperax, usdt, invalid_collateral, accounts, owner_l2):
+def test_collect_interest_invalid(sperax, usdt, weth, accounts, owner_l2):
     (
         spa,
         usds_proxy,
@@ -616,10 +555,20 @@ def test_collect_interest_invalid(sperax, usdt, invalid_collateral, accounts, ow
     # testing invalid cases
     zero_address = "0x0000000000000000000000000000000000000000"
 
+    txn = strategy_proxy.supportsCollateral(
+            weth,
+            {'from': vault_proxy.address}
+        )
+    with brownie.reverts("Unsupported collateral"):
+        txn = strategy_proxy._getPoolCoinIndex(
+            zero_address,
+            {'from': vault_proxy.address}
+        )
+
     with brownie.reverts("Unsupported collateral"):
         txn = strategy_proxy.collectInterest(
             accounts[8],
-            invalid_collateral,
+            weth,
             {'from': vault_proxy.address}
         )
 
@@ -632,7 +581,7 @@ def test_collect_interest_invalid(sperax, usdt, invalid_collateral, accounts, ow
 
     with brownie.reverts("Unsupported collateral"):
         strategy_proxy.checkInterestEarned(
-            invalid_collateral, {'from': vault_proxy.address})
+            weth, {'from': vault_proxy.address})
 
     with brownie.reverts():
         strategy_proxy.collectInterest(
@@ -732,7 +681,7 @@ def test_withdraw_to_vault_invalid_amount(sperax, usdt, owner_l2):
         )
 
 
-def test_withdraw_to_vault_invalid_assets(sperax, invalid_collateral, owner_l2):
+def test_withdraw_to_vault_invalid_assets(sperax, weth, owner_l2):
     (
         spa,
         usds_proxy,
@@ -748,7 +697,7 @@ def test_withdraw_to_vault_invalid_assets(sperax, invalid_collateral, owner_l2):
 
     with brownie.reverts("Unsupported collateral"):
         strategy_proxy.withdrawToVault(
-            invalid_collateral,
+            weth,
             (amount),
             {'from': owner_l2.address})
 
