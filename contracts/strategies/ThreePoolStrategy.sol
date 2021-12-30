@@ -60,6 +60,9 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
         require(_supportedAssetIndex < 3, "_supportedAssetIndex exceeds 2");
         // Should be set prior to abstract initialize call otherwise
         // abstractSetPToken calls will fail
+        curveGauge = ICurveGauge(_crvGaugeAddress);
+        supportedAssetIndex = _supportedAssetIndex;
+        oracle = IOracle(_oracleAddr);
         InitializableAbstractStrategy._initialize(
             _platformAddress,
             _vaultAddress,
@@ -67,14 +70,7 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
             _assets,
             _pTokens
         );
-        curveGauge = ICurveGauge(_crvGaugeAddress);
         curvePool = ICurve3Pool(platformAddress);
-        supportedAssetIndex = _supportedAssetIndex;
-        oracle = IOracle(_oracleAddr);
-        _abstractSetPToken(
-            assetsMapped[_supportedAssetIndex],
-            assetToPToken[assetsMapped[_supportedAssetIndex]]
-        );
     }
 
     /**
@@ -268,17 +264,15 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
         returns (uint256 balance)
     {
         require(supportsCollateral(_asset), "Unsupported collateral");
-        // LP tokens in this contract. This should generally be nothing as we
-        // should always stake the full balance in the Gauge, but include for
-        // safety
+        // Calculate how many asset we get in return after withdrawing
+        // all LP tokens
         (, , uint256 totalPTokens) = _getTotalPTokens();
-        uint256 pTokenTotalSupply = IERC20(assetToPToken[_asset]).totalSupply();
-        if (pTokenTotalSupply > 0) {
-            uint256 poolCoinIndex = _getPoolCoinIndex(_asset);
-            uint256 curveBalance = curvePool.balances(poolCoinIndex);
-            if (curveBalance > 0) {
-                balance = totalPTokens.mul(curveBalance).div(pTokenTotalSupply);
-            }
+        uint256 poolCoinIndex = _getPoolCoinIndex(_asset);
+        if (totalPTokens > lpAssetThreshold) {
+            balance = curvePool.calc_withdraw_one_coin(
+                totalPTokens,
+                poolCoinIndex
+            );
         }
     }
 
