@@ -411,6 +411,7 @@ def test_update_strategy_rwd_buyback_addr(sperax, owner_l2):
     ) = strategy_proxies
 
     (
+        single_hop_buyback,
         two_hops_buyback, 
         three_hops_buyback
     ) = buybacks
