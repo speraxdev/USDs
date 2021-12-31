@@ -19,7 +19,7 @@ import "./VaultCoreTools.sol";
  * @author Sperax Foundation
  */
 contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeable, ReentrancyGuardUpgradeable, IVaultCore {
-	using SafeERC20Upgradeable for ;
+	using SafeERC20Upgradeable for IERC20Upgradeable;
 	using SafeMathUpgradeable for uint;
 	using StableMath for uint;
 
