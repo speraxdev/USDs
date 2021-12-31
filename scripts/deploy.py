@@ -421,7 +421,7 @@ def deploy_strategy(index, admin, owner, vault_proxy, oracle_proxy):
 
     strategy_vars_base.vault_proxy_address = vault_proxy.address
     strategy_vars_base.index = index
-    strategy_vars_base.oralce_proxy_address = oracle_proxy.address
+    strategy_vars_base.oracle_proxy_address = oracle_proxy.address
     strategy_proxy.initialize(
         strategy_vars_base.platform_address,
         strategy_vars_base.vault_proxy_address,
@@ -430,7 +430,7 @@ def deploy_strategy(index, admin, owner, vault_proxy, oracle_proxy):
         strategy_vars_base.lp_tokens,
         strategy_vars_base.crv_gauge_address,
         strategy_vars_base.index,
-        strategy_vars_base.oralce_proxy_address,
+        strategy_vars_base.oracle_proxy_address,
         {'from': owner},
     )
     return strategy_proxy.address
