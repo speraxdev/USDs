@@ -546,7 +546,7 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 					uint amtInStrategy_optimal = amtInStrategy.add(amtInVault).mul(collateral.allocatePercentage).div(allocatePercentage_prec);
 					if (amtInStrategy_optimal > amtInStrategy) {
 						uint amtToAllocate = amtInStrategy_optimal.sub(amtInStrategy);
-						(collateral.collateralAddr).safeTransfer(collateral.defaultStrategyAddr, amtToAllocate);
+						IERC20Upgradeable(collateral.collateralAddr).safeTransfer(collateral.defaultStrategyAddr, amtToAllocate);
 						strategy.deposit(collateral.collateralAddr, amtToAllocate);
 						emit CollateralAllocated(collateral.collateralAddr, collateral.defaultStrategyAddr, amtToAllocate);
 					}
@@ -562,7 +562,7 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 	 */
 	function collateralRatio() public view override returns (uint ratio) {
 		uint totalValueLocked = totalValueLocked();
-		uint USDsSupply = (USDsAddr).totalSupply();
+		uint USDsSupply = IERC20Upgradeable(USDsAddr).totalSupply();
 		uint priceUSDs = uint(IOracle(oracleAddr).getUSDsPrice());
 		uint precisionUSDs = IOracle(oracleAddr).getUSDsPrice_prec();
 		uint USDsValue = USDsSupply.mul(priceUSDs).div(precisionUSDs);
@@ -594,7 +594,7 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 		uint priceColla = IOracle(oracleAddr).getCollateralPrice(collateral.collateralAddr);
 		uint precisionColla = IOracle(oracleAddr).getCollateralPrice_prec(collateral.collateralAddr);
 		uint collateralAddrDecimal = uint(ERC20Upgradeable(collateral.collateralAddr).decimals());
-		uint collateralTotalValueInVault = (collateral.collateralAddr).balanceOf(address(this)).mul(priceColla).div(precisionColla);
+		uint collateralTotalValueInVault = IERC20Upgradeable(collateral.collateralAddr).balanceOf(address(this)).mul(priceColla).div(precisionColla);
 		uint collateralTotalValueInVault_18 = collateralTotalValueInVault.mul(10**(uint(18).sub(collateralAddrDecimal)));
 		value = collateralTotalValueInVault_18;
 	}
