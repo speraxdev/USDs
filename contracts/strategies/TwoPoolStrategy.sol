@@ -249,7 +249,7 @@ contract TwoPoolStrategy is InitializableAbstractStrategy {
     /**
      * @dev Get the total asset value held in the platform
      * @param _asset      Address of the asset
-     * @return balance    Total value of the asset in the platform
+     * @return balance    Total amount of the asset in the platform
      */
     function checkBalance(address _asset)
         public

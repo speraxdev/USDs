@@ -19,7 +19,7 @@ import "./VaultCoreTools.sol";
  * @author Sperax Foundation
  */
 contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeable, ReentrancyGuardUpgradeable, IVaultCore {
-	using SafeERC20Upgradeable for IERC20Upgradeable;
+	using SafeERC20Upgradeable for ;
 	using SafeMathUpgradeable for uint;
 	using StableMath for uint;
 
@@ -541,12 +541,12 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 			if (collateral.defaultStrategyAddr != address(0)) {
 				strategy = IStrategy(collateral.defaultStrategyAddr);
 				if (collateral.allocationAllowed && strategy.supportsCollateral(collateral.collateralAddr)) {
-					uint valueInStrategy = _valueInStrategy(collateral.collateralAddr);
-					uint valueInVault = _valueInVault(collateral.collateralAddr);
-					uint valueInStrategy_optimal = valueInStrategy.add(valueInVault).mul(collateral.allocatePercentage).div(allocatePercentage_prec);
-					if (valueInStrategy_optimal > valueInStrategy) {
-						uint amtToAllocate = valueInStrategy_optimal.sub(valueInStrategy);
-						IERC20Upgradeable(collateral.collateralAddr).safeTransfer(collateral.defaultStrategyAddr, amtToAllocate);
+					uint amtInStrategy = strategy.checkBalance(collateral.collateralAddr);
+					uint amtInVault = IERC20Upgradeable(collateral.collateralAddr).balanceOf(address(this));
+					uint amtInStrategy_optimal = amtInStrategy.add(amtInVault).mul(collateral.allocatePercentage).div(allocatePercentage_prec);
+					if (amtInStrategy_optimal > amtInStrategy) {
+						uint amtToAllocate = amtInStrategy_optimal.sub(amtInStrategy);
+						(collateral.collateralAddr).safeTransfer(collateral.defaultStrategyAddr, amtToAllocate);
 						strategy.deposit(collateral.collateralAddr, amtToAllocate);
 						emit CollateralAllocated(collateral.collateralAddr, collateral.defaultStrategyAddr, amtToAllocate);
 					}
@@ -562,7 +562,7 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 	 */
 	function collateralRatio() public view override returns (uint ratio) {
 		uint totalValueLocked = totalValueLocked();
-		uint USDsSupply = IERC20Upgradeable(USDsAddr).totalSupply();
+		uint USDsSupply = (USDsAddr).totalSupply();
 		uint priceUSDs = uint(IOracle(oracleAddr).getUSDsPrice());
 		uint precisionUSDs = IOracle(oracleAddr).getUSDsPrice_prec();
 		uint USDsValue = USDsSupply.mul(priceUSDs).div(precisionUSDs);
@@ -594,7 +594,7 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 		uint priceColla = IOracle(oracleAddr).getCollateralPrice(collateral.collateralAddr);
 		uint precisionColla = IOracle(oracleAddr).getCollateralPrice_prec(collateral.collateralAddr);
 		uint collateralAddrDecimal = uint(ERC20Upgradeable(collateral.collateralAddr).decimals());
-		uint collateralTotalValueInVault = IERC20Upgradeable(collateral.collateralAddr).balanceOf(address(this)).mul(priceColla).div(precisionColla);
+		uint collateralTotalValueInVault = (collateral.collateralAddr).balanceOf(address(this)).mul(priceColla).div(precisionColla);
 		uint collateralTotalValueInVault_18 = collateralTotalValueInVault.mul(10**(uint(18).sub(collateralAddrDecimal)));
 		value = collateralTotalValueInVault_18;
 	}
@@ -612,7 +612,7 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 	/**
 	 * @dev the value of collateral of _collateralAddr in its strategy
 	 */
-	function _valueInStrategy(address _collateralAddr) internal view returns (uint) {
+	function _valueInStrategy(address _collateralAddr) public view returns (uint) {
 		collateralStruct memory collateral = collateralsInfo[_collateralAddr];
 		if (collateral.defaultStrategyAddr == address(0)) {
 			return 0;
