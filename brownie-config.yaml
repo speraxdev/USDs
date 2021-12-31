@@ -6,6 +6,8 @@ dependencies:
   - OpenZeppelin/openzeppelin-contracts@3.4.0
   - Uniswap/uniswap-v3-core@1.0.0
   - smartcontractkit/chainlink-brownie-contracts@0.2.2
+  - OffchainLabs/arb-os@0.9.0
+  - OffchainLabs/arbitrum@1.2.0
 pytest:
     # these settings replace the defaults when running pytest
     default_contract_owner: true
@@ -24,9 +26,9 @@ compiler:
 #          - "@openzeppelin/contracts=/Users/maximo/.brownie/packages/OpenZeppelin/openzeppelin-contracts@3.4.0/contracts"
           - "@uniswap/v3-core/contracts=Uniswap/uniswap-v3-core@1.0.0/contracts"
           - "@chainlink=smartcontractkit/chainlink-brownie-contracts@0.2.2"
-          - "arbos-contracts=packages/arbos-contracts"
-          - "arb-bridge-peripherals/contracts=packages/arb-bridge-peripherals/contracts"
-          - "arb-bridge-eth/contracts=packages/arb-bridge-eth/contracts"
+          - "arbos-contracts=/Users/dan/.brownie/packages/OffchainLabs/arb-os@0.9.0/contracts"
+          - "arb-bridge-peripherals/contracts=/Users/dan/.brownie/packages/OffchainLabs/arbitrum@1.2.0/packages/arb-bridge-peripherals/contracts"
+          - "arb-bridge-eth/contracts=/Users/dan/.brownie/packages/OffchainLabs/arbitrum@1.2.0/packages/arb-bridge-eth/contracts"
 # automatically fetch contract sources from Etherscan
 autofetch_sources: True
 dotenv: .env
