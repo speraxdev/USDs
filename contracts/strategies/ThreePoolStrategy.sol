@@ -4,6 +4,7 @@
  * @notice Investment strategy for investing stablecoins via Curve 3Pool
  * @author Sperax Inc
  */
+ //TODO: fix slippage problem
  pragma solidity ^0.6.12;
 
 import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
