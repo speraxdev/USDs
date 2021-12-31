@@ -18,7 +18,6 @@ contract TwoPoolStrategy is InitializableAbstractStrategy {
     using StableMath for uint256;
     using SafeERC20 for IERC20;
 
-    event RewardTokenCollected(address recipient, uint256 amount);
     event SlippageChanged(uint256 newSlippage);
     event ThresholdChanged(uint256 newThreshold);
 
@@ -29,9 +28,6 @@ contract TwoPoolStrategy is InitializableAbstractStrategy {
     ICurveGauge public curveGauge;
     ICurve2Pool public curvePool;
     IOracle public oracle;
-
-    receive() external payable {}
-    fallback() external payable {}
 
     /**
      * Initializer for setting up strategy internal state. This overrides the
