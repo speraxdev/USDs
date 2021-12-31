@@ -22,7 +22,6 @@ from .constants import (
 from .utils import (
     confirm,
     signal_handler,
-    editAddressFile
 )
 import json
 
