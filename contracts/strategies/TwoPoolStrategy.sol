@@ -18,20 +18,16 @@ contract TwoPoolStrategy is InitializableAbstractStrategy {
     using StableMath for uint256;
     using SafeERC20 for IERC20;
 
-    event RewardTokenCollected(address recipient, uint256 amount);
     event SlippageChanged(uint256 newSlippage);
     event ThresholdChanged(uint256 newThreshold);
 
     uint256 public lpAssetThreshold = 3000;
-    uint256 public lpAssetSlippage = 1e16; // 1%, same as the Curve UI
+    uint256 public lpAssetSlippage = 9800000;
     uint256 internal supportedAssetIndex;
 
     ICurveGauge public curveGauge;
     ICurve2Pool public curvePool;
     IOracle public oracle;
-
-    receive() external payable {}
-    fallback() external payable {}
 
     /**
      * Initializer for setting up strategy internal state. This overrides the
@@ -75,12 +71,14 @@ contract TwoPoolStrategy is InitializableAbstractStrategy {
 
     /**
      * @dev change to a new lpAssetSlippage
-     * @dev lpAssetSlippage set to 1e16 means the slippage is 1% (overall precision
-            is 1e18); it is the slippage on the conversion between LP token
-            and underlying collateral/asset
+     * @dev lpAssetSlippage set to 9900000 means the slippage is 1%;
+            overall precision is 10000000;
+            it is the slippage on the conversion between LP token and underlying
+            collateral/asset
      * @param _lpAssetSlippage new slippage setting
      */
     function changeSlippage(uint256 _lpAssetSlippage) external onlyOwner {
+        require(_lpAssetSlippage <= 10000000, 'Slippage exceeds 100%');
         lpAssetSlippage = _lpAssetSlippage;
         emit SlippageChanged(lpAssetSlippage);
     }
@@ -134,20 +132,13 @@ contract TwoPoolStrategy is InitializableAbstractStrategy {
         uint256 poolCoinIndex = _getPoolCoinIndex(_asset);
         // Set the amount on the asset we want to deposit
         _amounts[poolCoinIndex] = _amount;
-        uint256 assetDecimals = ERC20(_asset).decimals();
-        uint256 assetPrice =  oracle.getCollateralPrice(_asset);
-        uint256 assetPrice_prec = oracle.getCollateralPrice_prec(_asset);
-        uint256 depositValue = _amount
-            .scaleBy(int8(18 - assetDecimals))
-            .mul(assetPrice)
-            .divPrecisely(curvePool.get_virtual_price())
-            .div(assetPrice_prec);
-        uint256 minMintAmount = depositValue.mulTruncate(
-            uint256(1e18).sub(lpAssetSlippage)
-        );
+        uint256 expectedPtokenAmt = _getExpectedPtokenAmt(_amount, _asset);
+        uint256 minMintAmount = expectedPtokenAmt
+            .mul(lpAssetSlippage)
+            .div(10000000);
         // Do the deposit to 2Pool
         // triger to deposit LP tokens
-        curvePool.add_liquidity(_amounts, 0);
+        curvePool.add_liquidity(_amounts, minMintAmount);
         allocatedAmt[_asset] = allocatedAmt[_asset].add(_amount);
         // Deposit into Gauge
         IERC20 pToken = IERC20(assetToPToken[_asset]);
@@ -212,7 +203,10 @@ contract TwoPoolStrategy is InitializableAbstractStrategy {
         (contractPTokens, , ) = _getTotalPTokens();
         maxBurnedPTokens = maxBurnedPTokens < contractPTokens ?
                            maxBurnedPTokens : contractPTokens;
-        uint256 minRedeemAmount = _getMinRedeemAmt(maxBurnedPTokens, _asset);
+        uint256 expectedAssetAmt = _getExpectedAssetAmt(maxBurnedPTokens, _asset);
+        uint256 minRedeemAmount = expectedAssetAmt
+            .mul(lpAssetSlippage)
+            .div(10000000);
         uint256 balance_before = IERC20(_asset).balanceOf(address(this));
         curvePool.remove_liquidity_one_coin(
             maxBurnedPTokens,
@@ -255,7 +249,7 @@ contract TwoPoolStrategy is InitializableAbstractStrategy {
     /**
      * @dev Get the total asset value held in the platform
      * @param _asset      Address of the asset
-     * @return balance    Total value of the asset in the platform
+     * @return balance    Total amount of the asset in the platform
      */
     function checkBalance(address _asset)
         public
@@ -347,7 +341,10 @@ contract TwoPoolStrategy is InitializableAbstractStrategy {
         (contractPTokens, , ) = _getTotalPTokens();
         maxBurnedPTokens = maxBurnedPTokens < contractPTokens ?
                            maxBurnedPTokens : contractPTokens;
-        uint256 minRedeemAmount = _getMinRedeemAmt(maxBurnedPTokens, _asset);
+        uint256 expectedAssetAmt = _getExpectedAssetAmt(maxBurnedPTokens, _asset);
+        uint256 minRedeemAmount = expectedAssetAmt
+            .mul(lpAssetSlippage)
+            .div(10000000);
         uint256 balance_before = IERC20(_asset).balanceOf(address(this));
         curvePool.remove_liquidity_one_coin(
             maxBurnedPTokens,
@@ -419,20 +416,40 @@ contract TwoPoolStrategy is InitializableAbstractStrategy {
      * @dev Get the expected amount of asset/collateral when redeeming LP tokens
      * @param lpTokenAmt  Amount of LP token to redeem
      * @param _asset  Address of the asset
-     * @return interestEarned
-               The amount of asset/collateral earned as interest
+     * @return expectedAssetAmt
+                the expected amount of asset/collateral token received
      */
-    function _getMinRedeemAmt(
+    function _getExpectedAssetAmt(
         uint256 lpTokenAmt,
         address _asset
-    ) internal returns (uint256) {
+    ) internal view returns (uint256 expectedAssetAmt) {
         uint256 assetPrice_prec = oracle.getCollateralPrice_prec(_asset);
         uint256 assetPrice = oracle.getCollateralPrice(_asset);
-        uint256 minRedeemAmount = lpTokenAmt
+        expectedAssetAmt = lpTokenAmt
             .mul(curvePool.get_virtual_price())
             .mul(assetPrice_prec)
             .div(assetPrice)
             .div(1e18) //get_virtual_price()'s precsion
             .scaleBy(int8(ERC20(_asset).decimals() - 18));
+    }
+
+    /**
+     * @dev Get the expected amount of lp when adding liquidity
+     * @param assetAmt  Amount of asset/collateral
+     * @param _asset  Address of the asset
+     * @return expectedPtokenAmt the expected amount of lp token received
+     */
+    function _getExpectedPtokenAmt(
+        uint256 assetAmt,
+        address _asset
+    ) internal view returns (uint256 expectedPtokenAmt) {
+        uint256 assetPrice_prec = oracle.getCollateralPrice_prec(_asset);
+        uint256 assetPrice = oracle.getCollateralPrice(_asset);
+        expectedPtokenAmt = assetAmt
+            .scaleBy(int8(18 - ERC20(_asset).decimals()))
+            .mul(assetPrice)
+            .mul(1e18)
+            .div(curvePool.get_virtual_price())
+            .div(assetPrice_prec);
     }
 }

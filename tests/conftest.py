@@ -171,6 +171,14 @@ def dai(MockToken, owner_l2):
 
 
 @pytest.fixture(scope="module", autouse=True)
+def crv(owner_l2):
+    crv_source_address = '0x44407515a51cd8b69140d41d05b393bce8078b8a'
+    crv_erc20 = brownie.interface.IERC20("0x11cdb42b0eb46d95f990bedd4695a6e3fa034978")
+    crv_erc20.transfer(owner_l2, 10000*10**18, {'from': crv_source_address})
+    return crv_erc20
+
+
+@pytest.fixture(scope="module", autouse=True)
 def proxy_admin(
     ProxyAdmin,
     admin
@@ -201,6 +209,7 @@ def sperax(
     weth,
     usdc,
     dai,
+    crv,
     Contract,
     admin,
     vault_fee,
@@ -333,9 +342,14 @@ def sperax(
     # here it's temporarily change Oralce for SPA from SPA-USDC to SPA-ETH
     # would suggest to use a mock token to mock USDC instead
     mintSPA(spa, amount, owner_l2, vault_proxy)
-    create_uniswap_v3_pool(spa, usdc, int(100 * 10**18), int(10 * 10**6), 3000, owner_l2)
+    create_uniswap_v3_pool(spa, usdc, int(1000 * 10**18), int(100 * 10**6), 3000, owner_l2)
+    update_oracle_setting(oracle_proxy, usdc, owner_l2)
+    deposit_weth(weth, owner_l2, accounts, amount)
     mintUSDs(usds_proxy, spa, vault_proxy, owner_l2, weth)
-    create_uniswap_v3_pool(usdc, usds_proxy, int(100 * 10**6), int(10 * 10**18), 500, owner_l2)
+    #create_uniswap_v3_pool(usdt, usdc, int(100 * 10**6), int(10 * 10**6), 500, owner_l2)
+    # create_uniswap_v3_pool(usdc, usds_proxy, int(10000 * 10**6), int(10000 * 10**18), 500, owner_l2)
+    create_uniswap_v3_pool(usdc, usds_proxy, int(10 * 10**18), int(10 * 10**6), 500, owner_l2)
+    # create_uniswap_v3_pool(usdc, weth_erc20, int(10 * 10**18), int(10 * 10**6), 3000, owner_l2)
 
     return (
         spa,
@@ -663,8 +677,8 @@ def deploy_buyback_three_hops(
         weth,
         usdc,
         3000,
-        3000,
-        3000,
+        500,
+        500,
         {'from': owner_l2}
     )
     return buyback
@@ -854,7 +868,7 @@ def mintUSDs(
     weth
     ):
     deadline = 1637632800 + brownie.chain.time()
-    amount  = 10 * 10**18
+    amount  = 10000 * 10**18
     slippage_collateral = 1000000000000000000000000000000
     slippage_spa = 1000000000000000000000000000000
 
@@ -888,7 +902,7 @@ def update_oracle_setting(oracle_proxy, usdc, owner_l2):
         usdc.address,
         usdc.address,
         3000,
-        3000,
+        500,
     {'from': owner_l2} )
 
 
@@ -906,6 +920,26 @@ def upper_tick():
 
 def encode_price(n1, n2):
     return math.trunc(math.sqrt(int(n1)/int(n2)) * 2**96)
+
+
+# def swap_tokens(tokenIn, tokenOut, fee, owner, amountIn):
+#     swapRouter = brownie.interface.ISwapRouter('0xE592427A0AEce92De3Edee1F18E0157C05861564')
+#     deadline = 1637632800 + brownie.chain.time()
+#     tokenIn.approve(swapRouter.address, amountIn, {'from': owner})
+#
+#     params = [
+#         tokenIn,
+#         tokenOut,
+#         fee,
+#         owner,
+#         deadline,
+#         amountIn,
+#         0,
+#         0
+#     ]
+#     amountOut = swapRouter.exactInputSingle(params, {'from': owner})
+#
+#     assert tokenOut.balanceOf(owner) > 0
 
 
 @pytest.fixture(autouse=True)
