@@ -315,7 +315,7 @@ def sperax(
         owner_l2
     )
 
-    if brownie.network.show_active() in ['arbitrum-main-fork', 'arbitrum-one']:
+    if brownie.network.show_active() in ['arbitrum-main-fork', 'arbitrum-one','arbitrum-main-infura']:
         (strategies, buybacks) = deploy_strategies(
             TransparentUpgradeableProxy,
             TwoPoolStrategy,
