@@ -76,7 +76,6 @@ def spa_l1(SperaxToken, SperaxTokenL1, gatewayL1, owner_l1):
     )
     return (wspa, spa)
 
-@pytest.fixture(scope="module", autouse=True)
 def usds1(USDsL1, gatewayL1, owner_l1):
     usds1 = USDsL1.deploy(
         {'from': owner_l1}
@@ -172,9 +171,9 @@ def dai(MockToken, owner_l2):
 
 @pytest.fixture(scope="module", autouse=True)
 def crv(owner_l2):
-    crv_source_address = '0x44407515a51cd8b69140d41d05b393bce8078b8a'
+    crv_source_address = '0x97e2768e8e73511ca874545dc5ff8067eb19b787'
     crv_erc20 = brownie.interface.IERC20("0x11cdb42b0eb46d95f990bedd4695a6e3fa034978")
-    crv_erc20.transfer(owner_l2, 10000*10**18, {'from': crv_source_address})
+    crv_erc20.transfer(owner_l2, 100*10**18, {'from': crv_source_address})
     return crv_erc20
 
 
@@ -198,7 +197,6 @@ def sperax(
     SperaxTokenL2,
     Oracle,
     VaultCore,
-    usds1,
     TwoPoolStrategy,
     BuybackSingle,
     BuybackTwoHops,
@@ -260,7 +258,7 @@ def sperax(
         Contract,
         vault_proxy,
         l2_gateway,
-        usds1,
+        '0x0000000000000000000000000000000000000000',
         proxy_admin,
         admin,
         owner_l2
@@ -274,6 +272,12 @@ def sperax(
         l2_gateway,
         wrapper_spa1_address, # wrapper SPA L1
         {'from': owner_l2},
+    )
+
+    txn = spa.setMintable(
+        vault_proxy,
+        True,
+        {'from': owner_l2}
     )
 
     oracle_proxy.initialize(
@@ -461,7 +465,7 @@ def deploy_usds(
         'USDs2',
         vault_proxy.address,
         l2_gateway,
-        usds1.address,
+        usds1,
         {'from': owner_l2}
     )
     return usds_proxy
