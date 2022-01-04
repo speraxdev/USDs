@@ -70,7 +70,6 @@ def main():
     print(f"\nAssets: {strategy_vars_base.assets}\n")
     print(f"\nLP Tokens: {strategy_vars_base.lp_tokens}\n")
     print(f"\nCRV Gauge Index address: {strategy_vars_base.crv_gauge_address}\n")
-    print(f"\nIndex: {strategy_vars_base.index}\n")
     confirm("Are the above details correct?")
 
     # deploy strategy contracts for usdt, wbtc and weth
