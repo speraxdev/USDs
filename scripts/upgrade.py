@@ -62,15 +62,8 @@ def main():
     )
     print(f"contract owner account: {owner.address}\n")
 
-    # fee vault account
-    fee_vault = accounts.load(
-        click.prompt(
-            "fee_vault account",
-            type=click.Choice(accounts.load())
-        )
-    )
-    print(f"fee_vault account: {fee_vault.address}\n")
-
+    # TODO: create a separate wallet for fee_vault account
+    fee_vault = owner
 
     usds_proxy_address = getAddressFromNetwork(
         testnetAddresses.upgrade.USDs_l2_proxy,
@@ -122,12 +115,10 @@ def main():
 
     initial_balance = admin.balance()
 
-    # show network
-    print(f"\n{network.show_active()}:\n")
-
     # proxy admin contract
     proxy_admin = ProxyAdmin[-1]
-    print(f"\n proxy_admin address: {proxy_admin.address}\n")
+
+    print(f"\n{network.show_active()}:\n")
 
     if vault_tools_proxy_upgrade:
         confirm(f"Confirm that the {vault_core_tools}' proxy address is {vault_tools_proxy_address}")
@@ -164,7 +155,6 @@ def main():
 
         print(f"original {vault_core_tools} proxy address: {vault_tools_proxy.address}")
         print(f"upgraded {vault_core_tools} proxy address: {new_vault_tools_proxy.address}")
-        print(f"upgraded {vault_core_tools} implementation address: {new_vault_tools.address}")
         print(f"{vault_core_tools} version: {new_vault_tools_proxy.version()}")
 
     if vault_proxy_upgrade:
@@ -183,7 +173,7 @@ def main():
 
         print(f"upgrade {vault_core} contract:\n")
         new_vault = version_contract.deploy(
-            {'from': owner, 'gas_limit': 1500000000}
+            {'from': owner, 'gas_limit': 1000000000}
         )
 
         proxy_admin.upgrade(
@@ -192,8 +182,8 @@ def main():
             {'from': admin, 'gas_limit': 1000000000}
         )
         new_vault.initialize(
-            mainnetAddresses.deploy.L2_SPA,
-            vault_tools_proxy_address,
+            SperaxTokenL2[-1],
+            VaultCoreTools[-1],
             fee_vault,
             {'from': owner, 'gas_limit': 1000000000}
         )
@@ -205,7 +195,6 @@ def main():
         )
         print(f"original {vault_core} proxy address: {vault_proxy.address}")
         print(f"upgraded {vault_core} proxy address: {new_vault_proxy.address}")
-        print(f"upgraded {vault_core} implementation address: {new_vault.address}")
         print(f"{vault_core} version: {new_vault_proxy.version()}")
         onlyDevelopment(lambda: print(f"mintRedeemAllowed is still (should be false): {vault_proxy.mintRedeemAllowed()}\n"))
 
@@ -231,7 +220,7 @@ def main():
         onlyDevelopment(lambda: USDs_test_state_change(usds_proxy, owner))
 
         new_usds = version_contract.deploy(
-            {'from': owner, 'gas_limit': 1500000000}
+            {'from': owner, 'gas_limit': 1000000000}
         )
 
         proxy_admin.upgrade(
@@ -255,7 +244,6 @@ def main():
         )
         print(f"original {USDs} proxy address: {usds_proxy.address}")
         print(f"upgraded {USDs} proxy address: {new_usds_proxy.address}")
-        print(f"upgraded {USDs} implementation address: {new_usds.address}")
         print(f"{USDs} version: {new_usds_proxy.version()}")
         onlyDevelopment(lambda: print(f"vaultAddress is still (should be {vitalik_address}): {usds_proxy.vaultAddress()}\n"))
 
@@ -284,7 +272,7 @@ def main():
         )
         new_oracle.initialize(
             chainlink_usdc_price_feed,
-            mainnetAddresses.deploy.L2_SPA, 
+            "0x5575552988A3A80504bBaeB1311674fCFd40aD4B", # hardcoded SperaxTokenL2 Arbitrum mainnet address
             usdc_arbitrum,
             chainlink_flags,
             {'from': owner, 'gas_limit': 1500000000}
@@ -297,7 +285,16 @@ def main():
         )
         print(f"original {oracle} proxy address: {oracle_proxy.address}")
         print(f"upgraded {oracle} proxy address: {new_oracle_proxy.address}")
-        print(f"upgraded {oracle} implementation address: {new_oracle.address}")
         print(f"{oracle}  version: {new_oracle_proxy.version()}")
         onlyDevelopment(lambda: print(f"VaultAddr is still (should be {vitalik_address}): {oracle_proxy.VaultAddr()}\n"))
 
+
+    if vault_proxy_upgrade and oracle_proxy_upgrade:
+        new_vault_proxy.updateOracleAddress(
+            new_oracle_proxy.address,
+            {'from': owner, 'gas_limit': 1000000000}
+        )
+        new_oracle_proxy.updateVaultAddress(
+            new_vault_proxy.address,
+            {'from': owner, 'gas_limit': 1000000000}
+        )

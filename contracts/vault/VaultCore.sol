@@ -541,11 +541,11 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 			if (collateral.defaultStrategyAddr != address(0)) {
 				strategy = IStrategy(collateral.defaultStrategyAddr);
 				if (collateral.allocationAllowed && strategy.supportsCollateral(collateral.collateralAddr)) {
-					uint amtInStrategy = strategy.checkBalance(collateral.collateralAddr);
-					uint amtInVault = IERC20Upgradeable(collateral.collateralAddr).balanceOf(address(this));
-					uint amtInStrategy_optimal = amtInStrategy.add(amtInVault).mul(collateral.allocatePercentage).div(allocatePercentage_prec);
-					if (amtInStrategy_optimal > amtInStrategy) {
-						uint amtToAllocate = amtInStrategy_optimal.sub(amtInStrategy);
+					uint valueInStrategy = _valueInStrategy(collateral.collateralAddr);
+					uint valueInVault = _valueInVault(collateral.collateralAddr);
+					uint valueInStrategy_optimal = valueInStrategy.add(valueInVault).mul(collateral.allocatePercentage).div(allocatePercentage_prec);
+					if (valueInStrategy_optimal > valueInStrategy) {
+						uint amtToAllocate = valueInStrategy_optimal.sub(valueInStrategy);
 						IERC20Upgradeable(collateral.collateralAddr).safeTransfer(collateral.defaultStrategyAddr, amtToAllocate);
 						strategy.deposit(collateral.collateralAddr, amtToAllocate);
 						emit CollateralAllocated(collateral.collateralAddr, collateral.defaultStrategyAddr, amtToAllocate);
@@ -612,7 +612,7 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 	/**
 	 * @dev the value of collateral of _collateralAddr in its strategy
 	 */
-	function _valueInStrategy(address _collateralAddr) public view returns (uint) {
+	function _valueInStrategy(address _collateralAddr) internal view returns (uint) {
 		collateralStruct memory collateral = collateralsInfo[_collateralAddr];
 		if (collateral.defaultStrategyAddr == address(0)) {
 			return 0;
