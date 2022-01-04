@@ -264,6 +264,7 @@ contract VaultCoreV2 is Initializable, OwnableUpgradeable, AccessControlUpgradea
 		updatedCollateral.collateralAddr = _collateralAddr;
 		updatedCollateral.defaultStrategyAddr = _defaultStrategyAddr;
 		updatedCollateral.allocationAllowed = _allocationAllowed;
+		updatedCollateral.allocatePercentage = _allocatePercentage;
 		updatedCollateral.buyBackAddr = _buyBackAddr;
 		updatedCollateral.rebaseAllowed = _rebaseAllowed;
 		emit CollateralChanged(_collateralAddr, updatedCollateral.added, _defaultStrategyAddr, _allocationAllowed, _allocatePercentage, _buyBackAddr, _rebaseAllowed);
