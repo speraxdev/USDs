@@ -185,12 +185,9 @@ def deploy_strategy(index, admin, owner, vault_proxy, oracle_proxy):
     strategy = TwoPoolStrategy.deploy(
         {'from': owner},
     )
-    proxy_admin = ProxyAdmin.deploy(
-        {'from': admin},
-    )
     proxy = TransparentUpgradeableProxy.deploy(
         strategy.address,
-        proxy_admin.address,
+        '0x3E49925A79CbFb68BAa5bc9DFb4f7D955D1ddF25',
         eth_utils.to_bytes(hexstr="0x"),
         {'from': admin},
     #        publish_source=True,
