@@ -203,6 +203,10 @@ def main():
             vault_proxy.address,
             version_contract.abi
         )
+        new_vault_proxy.alignUpArray(
+            {'from': owner, 'gas_limit': 1000000000}
+        )
+        
         print(f"original {vault_core} proxy address: {vault_proxy.address}")
         print(f"upgraded {vault_core} proxy address: {new_vault_proxy.address}")
         print(f"upgraded {vault_core} implementation address: {new_vault.address}")
