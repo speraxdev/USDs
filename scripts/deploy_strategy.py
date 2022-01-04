@@ -150,7 +150,7 @@ def main():
         True,
         1,
         buybackSingle.address,
-        True,
+        False,
         {'from': owner},
     )
     vault_proxy.updateCollateralInfo(
@@ -159,7 +159,7 @@ def main():
         True,
         1,
         buybackTwoHops.address,
-        True,
+        False,
         {'from': owner},
     )
 
