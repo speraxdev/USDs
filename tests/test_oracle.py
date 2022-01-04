@@ -32,7 +32,7 @@ def test_update_in_out_ratio(sperax, mock_token2, owner_l2):
         {'from': owner_l2}
     )
 
-    period = int(120)
+    period = int(180)
     short_period = int(20)
     long_period = int(300)
     print(bugging_time%2**32)
@@ -52,7 +52,7 @@ def test_update_in_out_ratio(sperax, mock_token2, owner_l2):
     tx = oracle_proxy.updateInOutRatio(
         {'from': owner_l2.address}
     )
-    brownie.chain.sleep(130)
+    brownie.chain.sleep(250)
     with brownie.reverts("SafeMath: division by zero"):
         tx = oracle_proxy.updateInOutRatio(
             {'from': owner_l2.address}
@@ -207,7 +207,7 @@ def test_get_USDC_price(sperax, owner_l2):
     )
 
 
-def test_get_USDs_price(sperax,weth,accounts, owner_l2):
+def test_get_USDs_price(sperax,mock_token2,accounts, owner_l2):
     (
         spa,
         usds_proxy,
@@ -220,7 +220,7 @@ def test_get_USDs_price(sperax,weth,accounts, owner_l2):
     ) = sperax
     chainlink_usdc_price_feed = '0x50834F3163758fcC1Df9973b6e91f0F0F0434aD3'
     oracle_proxy.updateCollateralInfo(
-        weth.address,  # ERC20 address
+        mock_token2.address,  # ERC20 address
         True,  # supported
         chainlink_usdc_price_feed,  # chainlink price feed address
         10**8,  # chainlink price feed precision
@@ -235,12 +235,12 @@ def test_get_USDs_price(sperax,weth,accounts, owner_l2):
 
     spa.approve(vault_proxy.address, slippage_spa, {'from': accounts[5] })
 
-    weth_erc20 = brownie.interface.IERC20(weth.address)
+    weth_erc20 = brownie.interface.IERC20(mock_token2.address)
     weth_erc20.approve(vault_proxy.address, slippage_spa, {'from': accounts[5]})
 
 
     txn = vault_proxy.mintBySpecifyingUSDsAmt(
-        weth.address,
+        mock_token2.address,
         int(amount),
         slippage_collateral,
         slippage_spa,
@@ -249,7 +249,7 @@ def test_get_USDs_price(sperax,weth,accounts, owner_l2):
     )
     txn=oracle_proxy.updateUniPoolsSetting(
         usds_proxy.address,
-        weth.address,
+        mock_token2.address,
         1000,
         1000,
         {'from': owner_l2.address}
@@ -288,6 +288,7 @@ def test_get_Collateral_Price(sperax, mock_token2, owner_l2):
         strategy_proxies,
         buybacks,
         bancor
+
     ) = sperax
     zero_address = "0x0000000000000000000000000000000000000000"
     with brownie.reverts("getCollateralPrice: Collateral not supported."):

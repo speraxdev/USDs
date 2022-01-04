@@ -13,7 +13,11 @@ def test_upgrade_oracle(sperax, OracleV2, proxy_admin, Contract, admin, owner_l2
         core_proxy,
         vault_proxy,
         oracle_proxy,
+<<<<<<< HEAD
+        strategy_proxy,
+=======
         strategy_proxies,
+>>>>>>> 6b4339c5d90926b4e0f121ed86f77501ab320539
         buybacks,
         bancor
     ) = sperax

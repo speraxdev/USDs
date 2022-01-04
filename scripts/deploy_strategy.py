@@ -43,6 +43,7 @@ def main():
         click.prompt(
             "owner account",
             type=click.Choice(accounts.load())
+
         )
     )
     print(f"contract owner account: {owner.address}\n")

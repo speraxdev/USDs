@@ -289,3 +289,143 @@ def configure_collaterals(
             {'from': owner }
         )
 
+
+
+def deploy_strategy(
+    usds_proxy,
+    vault_proxy,
+    oracle_proxy,
+    admin,
+    owner
+):
+    usdc_address = '0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8'
+    usdt_address = '0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9'
+    weth_address = '0x82af49447d8a07e3bd95bd0d56f35241523fbab1'
+    crv_address = '0x11cdb42b0eb46d95f990bedd4695a6e3fa034978'
+    # deploy strategy contracts for usdt, wbtc and weth
+    strategy_proxy_addr_usdc = deploy_strategy(0, admin, owner, vault_proxy, oracle_proxy)
+    strategy_proxy_addr_usdt = deploy_strategy(1, admin, owner, vault_proxy, oracle_proxy)
+    # deploy buyback contract supporting swapping usdc
+    buybackSingle = BuybackSingle.deploy(
+        usds_proxy.address,
+        vault_proxy.address,
+        {'from': owner},
+    )
+    buybackSingle.updateInputTokenInfo(
+        usdc_address, True, 500,
+        {'from': owner},
+    )
+    # deploy buyback contract supporting swapping usdt
+    buybackTwoHops = BuybackTwoHops.deploy(
+        usds_proxy.address,
+        vault_proxy.address,
+        {'from': owner},
+    )
+    buybackTwoHops.updateInputTokenInfo(
+        usdt_address, True, usdc_address, 500, 500,
+        {'from': owner},
+    )
+    # deploy buyback contract supporting swapping crv back to usds
+    buybackThreeHops = BuybackThreeHops.deploy(
+        usds_proxy.address,
+        vault_proxy.address,
+        {'from': owner},
+    )
+    buybackThreeHops.updateInputTokenInfo(
+        crv_address,
+        True,
+        weth_address,
+        usdc_address,
+        3000,
+        500,
+        500,
+        {'from': owner},
+    )
+    vault_proxy = Contract.from_abi(
+        "VaultCore",
+        vault_proxy.address,
+        VaultCore.abi
+    )
+    # on VaultCore, add strategy contracts
+    vault_proxy.addStrategy(
+        strategy_proxy_addr_usdc,
+        {'from': owner},
+    )
+    vault_proxy.addStrategy(
+        strategy_proxy_addr_usdt,
+        {'from': owner},
+    )
+    # on VaultCore, configure buyBackAddr of each strategy
+    vault_proxy.updateStrategyRwdBuybackAddr(
+        strategy_proxy_addr_usdc,
+        buybackThreeHops.address,
+        {'from': owner},
+    )
+    vault_proxy.updateStrategyRwdBuybackAddr(
+        strategy_proxy_addr_usdt,
+        buybackThreeHops.address,
+        {'from': owner},
+    )
+    # on VaultCore, configure collateral's strategy address and buyback addresses
+    # assuming usdt, wbtc and weth has been added to VaultCore
+    vault_proxy.updateCollateralInfo(
+        usdc_address,
+        strategy_proxy_addr_usdc,
+        True,
+        20,
+        buybackSingle.address,
+        True,
+        {'from': owner},
+    )
+    vault_proxy.updateCollateralInfo(
+        usdt_address,
+        strategy_proxy_addr_usdt,
+        True,
+        20,
+        buybackTwoHops.address,
+        True,
+        {'from': owner},
+    )
+
+    print(f"\nTwoPoolStrategy for USDC deployed at address: {strategy_proxy_addr_usdc}")
+    print(f"TwoPoolStrategy for USDT deployed at address: {strategy_proxy_addr_usdt}")
+    print(f"\nBuybackSingle (usdc) deployed at address: {buybackSingle.address}")
+    print(f"BuybackTwoHops (usdt) deployed at address: {buybackTwoHops.address}")
+    print(f"BuybackThreeHops (crv) deployed at address: {buybackThreeHops.address}")
+
+def deploy_strategy(index, admin, owner, vault_proxy, oracle_proxy):
+    strategy = TwoPoolStrategy.deploy(
+        {'from': owner},
+    )
+    proxy_admin = ProxyAdmin.deploy(
+        {'from': admin},
+    )
+    proxy = TransparentUpgradeableProxy.deploy(
+        strategy.address,
+        proxy_admin.address,
+        eth_utils.to_bytes(hexstr="0x"),
+        {'from': admin},
+#        publish_source=True,
+    )
+    strategy_proxy = Contract.from_abi(
+        "TwoPoolStrategy",
+        proxy.address,
+        TwoPoolStrategy.abi
+    )
+
+    strategy_vars_base.vault_proxy_address = vault_proxy.address
+    strategy_vars_base.index = index
+    strategy_vars_base.oralce_proxy_address = oracle_proxy.address
+    strategy_proxy.initialize(
+        strategy_vars_base.platform_address,
+        strategy_vars_base.vault_proxy_address,
+        strategy_vars_base.reward_token_address,
+        strategy_vars_base.assets,
+        strategy_vars_base.lp_tokens,
+        strategy_vars_base.crv_gauge_address,
+        strategy_vars_base.index,
+        strategy_vars_base.oralce_proxy_address,
+        {'from': owner},
+    )
+    return strategy_proxy.address
+

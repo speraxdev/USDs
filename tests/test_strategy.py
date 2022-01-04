@@ -186,6 +186,7 @@ def test_set_interest_liquidation_threshold(sperax, owner_l2):
     ) = sperax
     strategy_proxy = strategy_proxies[1];
     Threshold = int(10)
+    strategy_proxy = strategy_proxies[2];
     txn = strategy_proxy.setInterestLiquidationThreshold(
         Threshold,
         {'from': owner_l2.address})

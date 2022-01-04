@@ -23,10 +23,6 @@ contract VaultCoreV2 is Initializable, OwnableUpgradeable, AccessControlUpgradea
 	using SafeMathUpgradeable for uint;
 	using StableMath for uint;
 
-	function version() public pure returns (uint) {
-		return 2;
-	}
-
 	bytes32 public constant REBASER_ROLE = keccak256("REBASER_ROLE");
 
 	bool public override mintRedeemAllowed;
@@ -126,6 +122,8 @@ contract VaultCoreV2 is Initializable, OwnableUpgradeable, AccessControlUpgradea
 	mapping(address => strategyStruct) public strategiesInfo;
 	collateralStruct[] allCollaterals;	// the list of all added collaterals
 	strategyStruct[] allStrategies;	// the list of all strategy addresses
+	address[] public allCollateralAddr;	// the list of all added collaterals
+	address[] public allStrategyAddr;	// the list of all strategy addresses
 
 	/**
 	 * @dev contract initializer
@@ -147,14 +145,25 @@ contract VaultCoreV2 is Initializable, OwnableUpgradeable, AccessControlUpgradea
 		startBlockHeight = block.number;
 		chi_alpha = uint32(chi_alpha_prec * 513 / 10**10);
 		chiInit = uint(chi_prec * 95 / 100);
-		chi_beta = chi_beta_prec * 9;
-		chi_gamma = chi_gamma_prec;
-		swapFee_p = swapFee_p_prec * 99 / 100;
-		swapFee_theta = swapFee_theta_prec * 50;
-		swapFee_a = swapFee_a_prec * 12 / 10;
-		swapFee_A = swapFee_A_prec * 20;
+		chi_beta = uint32(chi_beta_prec) * 9;
+		chi_gamma = uint32(chi_gamma_prec);
+		swapFee_p = uint32(swapFee_p_prec) * 99 / 100;
+		swapFee_theta = uint32(swapFee_theta_prec)* 50;
+		swapFee_a = uint32(swapFee_a_prec) * 12 / 10;
+		swapFee_A = uint32(swapFee_A_prec) * 20;
 		feeVault = _feeVault;
 		_setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
+	}
+
+	/**
+	 * @dev align up allCollateralAddr and allCollaterals
+	 * @dev can only be called once
+	 */
+	function alignUpArray() external onlyOwner {
+		require (allCollateralAddr.length == 0, 'array not empty');
+		for (uint y = 0; y < allCollaterals.length; y++) {
+			allCollateralAddr.push(allCollaterals[y].collateralAddr);
+		}
 	}
 
 	/**
@@ -242,7 +251,7 @@ contract VaultCoreV2 is Initializable, OwnableUpgradeable, AccessControlUpgradea
 		addingCollateral.allocatePercentage = _allocatePercentage;
 		addingCollateral.buyBackAddr = _buyBackAddr;
 		addingCollateral.rebaseAllowed = _rebaseAllowed;
-		allCollaterals.push(addingCollateral);
+		allCollateralAddr.push(addingCollateral.collateralAddr);
 		emit CollateralAdded(_collateralAddr, addingCollateral.added, _defaultStrategyAddr, _allocationAllowed, _allocatePercentage, _buyBackAddr, _rebaseAllowed);
 	}
 
@@ -256,6 +265,7 @@ contract VaultCoreV2 is Initializable, OwnableUpgradeable, AccessControlUpgradea
 		updatedCollateral.defaultStrategyAddr = _defaultStrategyAddr;
 		updatedCollateral.allocationAllowed = _allocationAllowed;
 		updatedCollateral.buyBackAddr = _buyBackAddr;
+		updatedCollateral.rebaseAllowed = _rebaseAllowed;
 		emit CollateralChanged(_collateralAddr, updatedCollateral.added, _defaultStrategyAddr, _allocationAllowed, _allocatePercentage, _buyBackAddr, _rebaseAllowed);
 	}
 
@@ -268,7 +278,7 @@ contract VaultCoreV2 is Initializable, OwnableUpgradeable, AccessControlUpgradea
 		strategyStruct storage addingStrategy = strategiesInfo[_strategyAddr];
 		addingStrategy.strategyAddr = _strategyAddr;
 		addingStrategy.added = true;
-		allStrategies.push(addingStrategy);
+		allStrategyAddr.push(addingStrategy.strategyAddr);
 		emit StrategyAdded(_strategyAddr, true);
 	}
 
@@ -368,7 +378,7 @@ contract VaultCoreV2 is Initializable, OwnableUpgradeable, AccessControlUpgradea
 		require(USDsAmt >= slippageUSDs, "USDs amount is lower than the maximum slippage");
 		require(collateralDepAmt <= slippageCollat, "Collateral amount is more than the maximum slippage");
 		require(SPABurnAmt <= slippageSPA, "SPA amount is more than the maximum slippage");
-		require(block.timestamp <= deadline, "Deadline expired");
+		require(now <= deadline, "Deadline expired");
 		// burn SPA tokens
 		ISperaxToken(SPAaddr).burnFrom(msg.sender, SPABurnAmt);
 		SPAburnt = SPAburnt.add(SPABurnAmt);
@@ -427,7 +437,7 @@ contract VaultCoreV2 is Initializable, OwnableUpgradeable, AccessControlUpgradea
 		// slippageSPA is the minimum value of the minted spa
 		require(collateralUnlockedAmt >= slippageCollat, "Collateral amount is lower than the maximum slippage");
 		require(SPAMintAmt >= slippageSPA, "SPA amount is lower than the maximum slippage");
-		require(block.timestamp <= deadline, "Deadline expired");
+		require(now <= deadline, "Deadline expired");
 		collateralStruct memory collateral = collateralsInfo[collateralAddr];
 
 		ISperaxToken(SPAaddr).mintForUSDs(msg.sender, SPAMintAmt);
@@ -488,13 +498,15 @@ contract VaultCoreV2 is Initializable, OwnableUpgradeable, AccessControlUpgradea
 	function _harvest() internal returns (uint USDsIncrement) {
 		IStrategy strategy;
 		collateralStruct memory collateral;
-		for (uint y = 0; y < allCollaterals.length; y++) {
-			collateral = allCollaterals[y];
-			strategy = IStrategy(collateral.defaultStrategyAddr);
-			if (strategy.supportsCollateral(collateral.collateralAddr) && collateral.rebaseAllowed) {
-				uint USDsIncrement_viaReward = _harvestReward(strategy);
-				uint USDsIncrement_viaInterest = _harvestInterest(strategy, collateral.collateralAddr);
-				USDsIncrement = USDsIncrement.add(USDsIncrement_viaReward).add(USDsIncrement_viaInterest);
+		for (uint y = 0; y < allCollateralAddr.length; y++) {
+			collateral = collateralsInfo[allCollateralAddr[y]];
+			if (collateral.defaultStrategyAddr != address(0)) {
+				strategy = IStrategy(collateral.defaultStrategyAddr);
+				if (collateral.rebaseAllowed && strategy.supportsCollateral(collateral.collateralAddr)) {
+					uint USDsIncrement_viaReward = _harvestReward(strategy);
+					uint USDsIncrement_viaInterest = _harvestInterest(strategy, collateral.collateralAddr);
+					USDsIncrement = USDsIncrement.add(USDsIncrement_viaReward).add(USDsIncrement_viaInterest);
+				}
 			}
 		}
 	}
@@ -538,20 +550,23 @@ contract VaultCoreV2 is Initializable, OwnableUpgradeable, AccessControlUpgradea
 	function allocate() external whenAllocationAllowed onlyOwner nonReentrant {
 		IStrategy strategy;
 		collateralStruct memory collateral;
-		for (uint y = 0; y < allCollaterals.length; y++) {
-			collateral = allCollaterals[y];
-			strategy = IStrategy(collateral.defaultStrategyAddr);
-			if (collateral.allocationAllowed && collateral.defaultStrategyAddr != address(0) && strategy.supportsCollateral(collateral.collateralAddr)) {
-				uint valueInStrategy = _valueInStrategy(collateral.collateralAddr);
-				uint valueInVault = _valueInVault(collateral.collateralAddr);
-				uint valueInStrategy_optimal = valueInStrategy.add(valueInVault).mul(collateral.allocatePercentage).div(allocatePercentage_prec);
-				if (valueInStrategy_optimal > valueInStrategy) {
-					uint amtToAllocate = valueInStrategy_optimal.sub(valueInStrategy);
-					IERC20Upgradeable(collateral.collateralAddr).safeTransfer(collateral.defaultStrategyAddr, amtToAllocate);
-					strategy.deposit(collateral.collateralAddr, amtToAllocate);
-					emit CollateralAllocated(collateral.collateralAddr, collateral.defaultStrategyAddr, amtToAllocate);
+		for (uint y = 0; y < allCollateralAddr.length; y++) {
+			collateral = collateralsInfo[allCollateralAddr[y]];
+			if (collateral.defaultStrategyAddr != address(0)) {
+				strategy = IStrategy(collateral.defaultStrategyAddr);
+				if (collateral.allocationAllowed && strategy.supportsCollateral(collateral.collateralAddr)) {
+					uint amtInStrategy = strategy.checkBalance(collateral.collateralAddr);
+					uint amtInVault = IERC20Upgradeable(collateral.collateralAddr).balanceOf(address(this));
+					uint amtInStrategy_optimal = amtInStrategy.add(amtInVault).mul(uint(collateral.allocatePercentage)).div(uint(allocatePercentage_prec));
+					if (amtInStrategy_optimal > amtInStrategy) {
+						uint amtToAllocate = amtInStrategy_optimal.sub(amtInStrategy);
+						IERC20Upgradeable(collateral.collateralAddr).safeTransfer(collateral.defaultStrategyAddr, amtToAllocate);
+						strategy.deposit(collateral.collateralAddr, amtToAllocate);
+						emit CollateralAllocated(collateral.collateralAddr, collateral.defaultStrategyAddr, amtToAllocate);
+					}
 				}
 			}
+
 		}
 	}
 
@@ -579,8 +594,8 @@ contract VaultCoreV2 is Initializable, OwnableUpgradeable, AccessControlUpgradea
 	 * @dev the value of collaterals in this contract
 	 */
 	function totalValueInVault() public view returns (uint value) {
-		for (uint y = 0; y < allCollaterals.length; y++) {
-			collateralStruct memory collateral = allCollaterals[y];
+		for (uint y = 0; y < allCollateralAddr.length; y++) {
+			collateralStruct memory collateral = collateralsInfo[allCollateralAddr[y]];
 			value = value.add(_valueInVault(collateral.collateralAddr));
 		}
 	}
@@ -602,8 +617,8 @@ contract VaultCoreV2 is Initializable, OwnableUpgradeable, AccessControlUpgradea
 	 * @dev the value of collaterals in the strategies
 	 */
 	function totalValueInStrategies() public view returns (uint value) {
-		for (uint y = 0; y < allCollaterals.length; y++) {
-			collateralStruct memory collateral = allCollaterals[y];
+		for (uint y = 0; y < allCollateralAddr.length; y++) {
+			collateralStruct memory collateral = collateralsInfo[allCollateralAddr[y]];
 			value = value.add(_valueInStrategy(collateral.collateralAddr));
 		}
 	}
