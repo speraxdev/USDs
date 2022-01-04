@@ -9,10 +9,6 @@ from brownie import (
     SperaxTokenL2,
     USDsL2,
     VaultCore,
-    TwoPoolStrategy,
-    BuybackSingle,
-    BuybackTwoHops,
-    BuybackThreeHops,
     accounts,
     network,
     Contract,
@@ -23,7 +19,6 @@ from .constants import (
     mainnetAddresses,
     testnetAddresses,
     USDs_token_details,
-    strategy_vars_base,
     USDs_file
 )
 from .utils import (
@@ -231,9 +226,6 @@ def main():
     # configure stablecoin collaterals in vault and oracle
     configure_collaterals(vault_proxy, oracle_proxy, owner, convert)
 
-    if network.show_active() in ['arbitrum-main-fork', 'arbitrum-one']:
-        deploy_strategies(usds_proxy, vault_proxy, oracle_proxy, admin, owner)
-
     print(f"\n{network.show_active()}:\n")
     editAddressFile(USDs_file, bancor.address, "bancor_formula")
     editAddressFile(USDs_file, vault_tools_proxy.address, "vault_core_tools_proxy")
@@ -297,6 +289,8 @@ def configure_collaterals(
             {'from': owner }
         )
 
+
+
 def deploy_strategy(
     usds_proxy,
     vault_proxy,
@@ -309,18 +303,10 @@ def deploy_strategy(
     weth_address = '0x82af49447d8a07e3bd95bd0d56f35241523fbab1'
     crv_address = '0x11cdb42b0eb46d95f990bedd4695a6e3fa034978'
     # deploy strategy contracts for usdt, wbtc and weth
-<<<<<<< HEAD
-    strategy_proxy_addr_usdt = deploy_one_strategy(0, admin, owner, vault_proxy, oracle_proxy)
-    strategy_proxy_addr_wbtc = deploy_one_strategy(1, admin, owner, vault_proxy, oracle_proxy)
-    strategy_proxy_addr_weth = deploy_one_strategy(2, admin, owner, vault_proxy, oracle_proxy)
-    # deploy buyback contract supporting swapping usdt, wbtc and weth back to usds
-    buybackTwoHops = BuybackTwoHops.deploy(
-=======
     strategy_proxy_addr_usdc = deploy_strategy(0, admin, owner, vault_proxy, oracle_proxy)
     strategy_proxy_addr_usdt = deploy_strategy(1, admin, owner, vault_proxy, oracle_proxy)
     # deploy buyback contract supporting swapping usdc
     buybackSingle = BuybackSingle.deploy(
->>>>>>> 9f42bb81e09a2ce63ed1062e577d63c6d756059e
         usds_proxy.address,
         vault_proxy.address,
         {'from': owner},
@@ -371,11 +357,7 @@ def deploy_strategy(
     )
     # on VaultCore, configure buyBackAddr of each strategy
     vault_proxy.updateStrategyRwdBuybackAddr(
-<<<<<<< HEAD
-        strategy_proxy_addr_usdt,
-=======
         strategy_proxy_addr_usdc,
->>>>>>> 9f42bb81e09a2ce63ed1062e577d63c6d756059e
         buybackThreeHops.address,
         {'from': owner},
     )
@@ -446,3 +428,4 @@ def deploy_strategy(index, admin, owner, vault_proxy, oracle_proxy):
         {'from': owner},
     )
     return strategy_proxy.address
+
