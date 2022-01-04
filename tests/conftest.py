@@ -674,7 +674,7 @@ def deploy_buyback_three_hops(
         weth,
         usdc,
         3000,
-        3000,
+        500,
         3000,
         {'from': owner_l2}
     )
