@@ -71,11 +71,11 @@ def main():
     print(f"\nLP Tokens: {strategy_vars_base.lp_tokens}\n")
     print(f"\nCRV Gauge Index address: {strategy_vars_base.crv_gauge_address}\n")
     print(f"\nIndex: {strategy_vars_base.index}\n")
-    confirm("Are the above details correct?") 
+    confirm("Are the above details correct?")
 
     # deploy strategy contracts for usdt, wbtc and weth
     strategy_proxy_addr_usdc = deploy_strategy(0, admin, owner, vault_proxy_address, oracle_proxy_address)
-    strategy_proxy_addr_usdt = deploy_strategy(1, admin, owner,vault_proxy_address, oracle_proxy_address)
+    strategy_proxy_addr_usdt = deploy_strategy(1, admin, owner, vault_proxy_address, oracle_proxy_address)
     # deploy buyback contract supporting swapping usdc
     buybackSingle = BuybackSingle.deploy(
         usds_proxy_address,
@@ -162,8 +162,8 @@ def main():
         True,
         {'from': owner},
     )
-    
-    # write to JSON 
+
+    # write to JSON
     with open(Strategies_file, "r") as file:
         data = json.load(file)
     data["two_pool_strategy_usdc"] = strategy_proxy_addr_usdc
@@ -173,7 +173,7 @@ def main():
     data["buyback_three_hops_crv"] = buybackThreeHops.address
     with open(Strategies_file, "w") as file:
         json.dump(data, file)
-   
+
 
     print(f"\nTwoPoolStrategy for USDC deployed at address: {strategy_proxy_addr_usdc}")
     print(f"TwoPoolStrategy for USDT deployed at address: {strategy_proxy_addr_usdt}")
