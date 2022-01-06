@@ -340,13 +340,15 @@ def sperax(
         )
 
     amount = 10 * 10**18
-    # here it's temporarily change Oralce for SPA from SPA-USDC to SPA-ETH
+    # here it's temporarily change Oracle for SPA from SPA-USDC to SPA-ETH
     # would suggest to use a mock token to mock USDC instead
     mintSPA(spa, amount, owner_l2, vault_proxy)
+
     create_uniswap_v3_pool(spa, usdc, int(100 * 10**18), int(100 * 10**6), 3000, owner_l2)
     update_oracle_setting(oracle_proxy, usdc, owner_l2)
     mintUSDs(usds_proxy, spa, vault_proxy, owner_l2, usdt)
     create_uniswap_v3_pool(usdc, usds_proxy, int(10 * 10**18), int(10 * 10**6), 500, owner_l2)
+
 
     return (
         spa,
