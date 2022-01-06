@@ -22,6 +22,59 @@ contract VaultCoreTools is Initializable {
 	using SafeMathUpgradeable for uint;
 	using StableMath for uint;
 
+	// Testing utilities --------------
+	uint public priceUSDs;
+	uint public precisionUSDs;
+	uint public blockPassed;
+	uint public collateralRatio;
+	uint public USDsInOutRatio;
+	uint public priceUSDs_Average;
+	// Get value from system : 
+
+	function setUSDsInOutRatio(uint val) external {
+		USDsInOutRatio = val;
+	}
+
+	function setBlockPassed(uint val) external {
+		blockPassed = val;
+	}
+
+	function setPriceUSDs(uint val) external {
+		priceUSDs = val;
+	}
+
+	function setPrecisionUSDs(uint val)external {
+		precisionUSDs = val;
+	}
+
+	function setAvgPriceUSDs(uint val) external {
+		priceUSDs_Average = val;
+	}
+
+	function setCollateralRatio(uint val) external {
+		collateralRatio = val;
+	}
+
+	function getBlockNum(address _VaultCoreContract) external view returns(uint, uint) {
+		IVaultCore _vaultContract = IVaultCore(_VaultCoreContract);
+		return (block.number, _vaultContract.startBlockHeight());
+	}
+
+	function getOriginalValues(address _VaultCoreContract) external {
+		IVaultCore _vaultContract = IVaultCore(_VaultCoreContract);
+		priceUSDs = uint(IOracle(_vaultContract.oracleAddr()).getUSDsPrice());
+		precisionUSDs = IOracle(_vaultContract.oracleAddr()).getUSDsPrice_prec();
+		priceUSDs_Average = IOracle(_vaultContract.oracleAddr()).getUSDsPrice_average();
+		blockPassed = 1000;
+		collateralRatio = _vaultContract.collateralRatio();
+		USDsInOutRatio = IOracle(_vaultContract.oracleAddr()).USDsInOutRatio();
+	}	
+
+
+	event Debug(string func, string info, uint value);
+
+	// --------------------------------
+
 	BancorFormula public BancorInstance;
 
 	function initialize(address _BancorFormulaAddr) public initializer {
@@ -30,41 +83,63 @@ contract VaultCoreTools is Initializable {
 
 	/**
 	 * @dev calculate chiTarget by the formula in section 2.2 of the whitepaper
-	 * @param blockPassed the number of blocks that have passed since USDs is launched, i.e. "Block Height"
-	 * @param priceUSDs the price of USDs, i.e. "USDs Price"
-	 * @param precisionUSDs the precision used in the variable "priceUSDs"
+	 * @param blockPassed_ the number of blocks that have passed since USDs is launched, i.e. "Block Height"
+	 * @param priceUSDs_ the price of USDs, i.e. "USDs Price"
+	 * @param precisionUSDs_ the precision used in the variable "priceUSDs"
 	 * @return chiTarget_ the value of chiTarget
 	 */
 	function chiTarget(
-			uint blockPassed, uint priceUSDs, uint precisionUSDs, address _VaultCoreContract
-		) public view returns (uint chiTarget_) {
+			uint blockPassed_, uint priceUSDs_, uint precisionUSDs_, address _VaultCoreContract
+		) public /*view*/ returns (uint chiTarget_) {
+		string memory func = "chiTarget";
 		IVaultCore _vaultContract = IVaultCore(_VaultCoreContract);
-		uint chiAdjustmentA = blockPassed.mul(_vaultContract.chi_alpha());
+		uint chiAdjustmentA = blockPassed_.mul(_vaultContract.chi_alpha());
+		emit Debug(func, "chiAdjustmentA", chiAdjustmentA);
 		uint afterB;
-		if (priceUSDs >= precisionUSDs) {
+		if (priceUSDs_ >= precisionUSDs_) {
 			uint chiAdjustmentB = uint(_vaultContract.chi_beta())
 				.mul(uint(_vaultContract.chi_prec()))
-				.mul(priceUSDs - precisionUSDs)
-				.mul(priceUSDs - precisionUSDs);
+				.mul(priceUSDs_ - precisionUSDs_)
+				.mul(priceUSDs_ - precisionUSDs_);
+
+			emit Debug(func, "if_chiAdjustmentB_1", chiAdjustmentB);
+
 			chiAdjustmentB = chiAdjustmentB
 				.div(_vaultContract.chi_beta_prec())
-				.div(precisionUSDs)
-				.div(precisionUSDs);
+				.div(precisionUSDs_)
+				.div(precisionUSDs_);
+			
+			emit Debug(func, "if_chiAdjustmentB_2", chiAdjustmentB);
+
 			afterB = _vaultContract.chiInit().add(chiAdjustmentB);
+			emit Debug(func, "if_afterB", afterB);
+
 		} else {
 			uint chiAdjustmentB = uint(_vaultContract.chi_beta())
 				.mul(uint(_vaultContract.chi_prec()))
-				.mul(precisionUSDs - priceUSDs)
-				.mul(precisionUSDs - priceUSDs);
+				.mul(precisionUSDs_ - priceUSDs_)
+				.mul(precisionUSDs_ - priceUSDs_);
+			
+			emit Debug(func, "else_chiAdjustmentB_1", chiAdjustmentB);
+
 			chiAdjustmentB = chiAdjustmentB
 				.div(_vaultContract.chi_beta_prec())
-				.div(precisionUSDs)
-				.div(precisionUSDs);
+				.div(precisionUSDs_)
+				.div(precisionUSDs_);
+			
+			emit Debug(func, "else_chiAdjustmentB_2", chiAdjustmentB);
+
 			(, afterB) = _vaultContract.chiInit().trySub(chiAdjustmentB);
+
+			emit Debug(func, "else_afterB", afterB);
 		}
 		(, chiTarget_) = afterB.trySub(chiAdjustmentA);
+
+		emit Debug(func, "chiTarget_", chiTarget_);
+
 		if (chiTarget_ > _vaultContract.chi_prec()) {
 			chiTarget_ = _vaultContract.chi_prec();
+			emit Debug(func, "if_chiTarget_", chiTarget_);
 		}
 	}
 
@@ -76,12 +151,15 @@ contract VaultCoreTools is Initializable {
 	 * @dev calculate chiMint
 	 * @return chiMint, i.e. chiTarget, since they share the same value
 	 */
-	function chiMint(address _VaultCoreContract) public view returns (uint)	{
-		IVaultCore _vaultContract = IVaultCore(_VaultCoreContract);
-		uint priceUSDs = uint(IOracle(_vaultContract.oracleAddr()).getUSDsPrice());
-		uint precisionUSDs = IOracle(_vaultContract.oracleAddr()).getUSDsPrice_prec();
-		uint blockPassed = uint(block.number).sub(_vaultContract.startBlockHeight());
-		return chiTarget(blockPassed, priceUSDs, precisionUSDs, _VaultCoreContract);
+	function chiMint(address _VaultCoreContract) public /*view*/ returns (uint)	{
+		string memory func = "chiMint";
+		// IVaultCore _vaultContract = IVaultCore(_VaultCoreContract);
+		// uint priceUSDs = uint(IOracle(_vaultContract.oracleAddr()).getUSDsPrice());
+		// uint precisionUSDs = IOracle(_vaultContract.oracleAddr()).getUSDsPrice_prec();
+		// uint blockPassed = uint(block.number).sub(_vaultContract.startBlockHeight());
+		uint chiMint_ = chiTarget(blockPassed, priceUSDs, precisionUSDs, _VaultCoreContract);
+		emit Debug(func, "chiMint_", chiMint_);
+		return chiMint_;
 	}
 
 
@@ -89,19 +167,22 @@ contract VaultCoreTools is Initializable {
 	 * @dev calculate chiRedeem based on the formula at the end of section 2.2
 	 * @return chiRedeem_
 	 */
-	function chiRedeem(address _VaultCoreContract) public view returns (uint chiRedeem_) {
+	function chiRedeem(address _VaultCoreContract) public /*view*/ returns (uint chiRedeem_) {
+		string memory func = "chiRedeem";
 		// calculate chiTarget
 		IVaultCore _vaultContract = IVaultCore(_VaultCoreContract);
-		uint priceUSDs = uint(IOracle(_vaultContract.oracleAddr()).getUSDsPrice());
-		uint precisionUSDs = IOracle(_vaultContract.oracleAddr()).getUSDsPrice_prec();
-		uint blockPassed = uint(block.number).sub(_vaultContract.startBlockHeight());
+		// uint priceUSDs = uint(IOracle(_vaultContract.oracleAddr()).getUSDsPrice());
+		// uint precisionUSDs = IOracle(_vaultContract.oracleAddr()).getUSDsPrice_prec();
+		// uint blockPassed = uint(block.number).sub(_vaultContract.startBlockHeight());
 		uint chiTarget_ = chiTarget(blockPassed, priceUSDs, precisionUSDs, _VaultCoreContract);
 		// calculate chiRedeem
-		uint collateralRatio_ = _vaultContract.collateralRatio();
-		if (chiTarget_ > collateralRatio_) {
-			chiRedeem_ = chiTarget_.sub(uint(_vaultContract.chi_gamma()).mul(chiTarget_ - collateralRatio_).div(uint(_vaultContract.chi_gamma_prec())));
+		// uint collateralRatio_ = _vaultContract.collateralRatio();
+		if (chiTarget_ > collateralRatio) {
+			chiRedeem_ = chiTarget_.sub(uint(_vaultContract.chi_gamma()).mul(chiTarget_ - collateralRatio).div(uint(_vaultContract.chi_gamma_prec())));
+			emit Debug(func, "if_chiRedeem_", chiRedeem_);
 		} else {
 			chiRedeem_ = chiTarget_;
+			emit Debug(func, "else_chiRedeem_", chiRedeem_);
 		}
 	}
 
@@ -110,28 +191,38 @@ contract VaultCoreTools is Initializable {
 	 * @dev calculate the OutSwap fee, i.e. fees for redeeming USDs
 	 * @return the OutSwap fee
 	 */
-	function calculateSwapFeeOut(address _VaultCoreContract) public view returns (uint) {
+	function calculateSwapFeeOut(address _VaultCoreContract) public /*view*/ returns (uint) {
+		string memory func = "calculateSwapFeeOut";
+		uint fee = 0;
 		// if the OutSwap fee is diabled, return 0
 		IVaultCore _vaultContract = IVaultCore(_VaultCoreContract);
 		if (!_vaultContract.swapfeeOutAllowed()) {
 			return 0;
 		}
 		// implement the formula in Section 4.3.2 of whitepaper
-		uint USDsInOutRatio = IOracle(_vaultContract.oracleAddr()).USDsInOutRatio();
+		// uint USDsInOutRatio = IOracle(_vaultContract.oracleAddr()).USDsInOutRatio();
 		uint32 USDsInOutRatio_prec = IOracle(_vaultContract.oracleAddr()).USDsInOutRatio_prec();
 		if (USDsInOutRatio <= uint(_vaultContract.swapFee_a()).mul(uint(USDsInOutRatio_prec)).div(uint(_vaultContract.swapFee_a_prec()))) {
-			return uint(_vaultContract.swapFee_prec()) / 1000; //0.1%
+			fee = uint(_vaultContract.swapFee_prec()) / 1000; //0.1%
+			emit Debug(func, "if_fee", fee);
+			return fee;
 		} else {
 			uint exponentWithPrec = USDsInOutRatio - uint(_vaultContract.swapFee_a()).mul(uint(USDsInOutRatio_prec)).div(uint(_vaultContract.swapFee_a_prec()));
 			if (exponentWithPrec >= 2^32) {
-				return uint(_vaultContract.swapFee_prec());
+				fee = uint(_vaultContract.swapFee_prec());
+				emit Debug(func, "else_if1_fee", fee);
+				return fee;
 			}
 			(uint powResWithPrec, uint8 powResPrec) = BancorInstance.power(
 				uint(_vaultContract.swapFee_A()), uint(_vaultContract.swapFee_A_prec()), uint32(exponentWithPrec), USDsInOutRatio_prec
 			);
+			emit Debug(func, "else_powResWithPrec", powResWithPrec);
+			emit Debug(func, "else_powResPrec", uint(powResPrec));
 			uint toReturn = uint(powResWithPrec.mul(uint(_vaultContract.swapFee_prec())) >> powResPrec) / 100;
+			emit Debug(func, "else_toReturn", toReturn);
 			if (toReturn >= uint(_vaultContract.swapFee_prec())) {
-				return uint(_vaultContract.swapFee_prec());
+				fee = uint(_vaultContract.swapFee_prec());
+				emit Debug(func, "else_if2_fee", fee);
 			} else {
 				return toReturn;
 			}
@@ -143,7 +234,7 @@ contract VaultCoreTools is Initializable {
 		uint USDsAmt,
 		address _VaultCoreContract,
 		address _oracleAddr
-	) public view returns (uint SPAMintAmt, uint collaUnlockAmt, uint USDsBurntAmt, uint swapFeeAmount) {
+	) public /*view*/ returns (uint SPAMintAmt, uint collaUnlockAmt, uint USDsBurntAmt, uint swapFeeAmount) {
 		IVaultCore _vaultContract = IVaultCore(_VaultCoreContract);
 		uint swapFee = calculateSwapFeeOut(_VaultCoreContract);
 		collaUnlockAmt = 0;
@@ -173,32 +264,44 @@ contract VaultCoreTools is Initializable {
 	 * @dev calculate the InSwap fee, i.e. fees for minting USDs
 	 * @return the InSwap fee
 	 */
-	function calculateSwapFeeIn(address _VaultCoreContract) public view returns (uint) {
+	function calculateSwapFeeIn(address _VaultCoreContract) public /*view*/ returns (uint) {
+		string memory func = "calculateSwapFeeIn";
 		// if InSwap fee is disabled, return 0
 		IVaultCore _vaultContract = IVaultCore(_VaultCoreContract);
 		if (!_vaultContract.swapfeeInAllowed()) {
 			return 0;
 		}
-
+		uint fee;
 		// implement the formula in Section 4.3.1 of whitepaper
-		uint priceUSDs_Average = IOracle(_vaultContract.oracleAddr()).getUSDsPrice_average();
-		uint precisionUSDs = IOracle(_vaultContract.oracleAddr()).getUSDsPrice_prec();
+		// uint priceUSDs_Average = IOracle(_vaultContract.oracleAddr()).getUSDsPrice_average();
+		// uint precisionUSDs = IOracle(_vaultContract.oracleAddr()).getUSDsPrice_prec();
 		uint smallPwithPrecision = uint(_vaultContract.swapFee_p()).mul(precisionUSDs).div(_vaultContract.swapFee_p_prec());
+		emit Debug(func, "smallPwithPrecision", smallPwithPrecision);
 		uint swapFee_prec = uint(_vaultContract.swapFee_prec());
 		if (smallPwithPrecision < priceUSDs_Average) {
-			return swapFee_prec / 1000; // 0.1%
+			fee = swapFee_prec / 1000; // 0.1%
+			emit Debug(func, "if_fee", fee);
 		} else {
 			uint temp = (smallPwithPrecision - priceUSDs_Average).mul(_vaultContract.swapFee_theta()).div(_vaultContract.swapFee_theta_prec()); //precision: precisionUSDs
 			uint temp2 = temp.mul(temp); //precision: precisionUSDs^2
 			uint temp3 = temp2.mul(swapFee_prec).div(precisionUSDs).div(precisionUSDs);
 			uint temp4 = temp3.div(100);
 			uint temp5 = swapFee_prec / 1000 + temp4;
+			emit Debug(func, "else_temp", temp);
+			emit Debug(func, "else_temp2", temp2);
+			emit Debug(func, "else_temp3", temp3);
+			emit Debug(func, "else_temp4", temp4);
+			emit Debug(func, "else_temp5", temp5);
+			
 			if (temp5 >= swapFee_prec) {
-				return swapFee_prec;
+				fee = swapFee_prec;
+				emit Debug(func, "else_if_fee", fee);
 			} else {
-				return temp5;
+				fee = temp5;
+				emit Debug(func, "else_else_fee", fee);
 			}
 		}
+		return fee;
 	}
 
 	/**
@@ -219,7 +322,7 @@ contract VaultCoreTools is Initializable {
 		uint valueAmt,
 		uint8 valueType,
 		address _VaultCoreContract
-	) public view returns (uint SPABurnAmt, uint collaDeptAmt, uint USDsAmt, uint swapFeeAmount) {
+	) public /*view*/ returns (uint SPABurnAmt, uint collaDeptAmt, uint USDsAmt, uint swapFeeAmount) {
 		// obtain the price and pecision of the collateral
 		IVaultCore _vaultContract = IVaultCore(_VaultCoreContract);
 
@@ -262,7 +365,7 @@ contract VaultCoreTools is Initializable {
 
 	function collaDeptAmountCalculator(
 		uint valueType, uint USDsAmt, address _VaultCoreContract, address collaAddr, uint swapFee
-	) public view returns (uint256 collaDeptAmt) {
+	) public /*view*/ returns (uint256 collaDeptAmt) {
 		require(valueType == 0 || valueType == 1, 'invalid valueType');
 		IVaultCore _vaultContract = IVaultCore(_VaultCoreContract);
 		uint collaAddrDecimal = uint(ERC20Upgradeable(collaAddr).decimals());
@@ -281,7 +384,7 @@ contract VaultCoreTools is Initializable {
 
 	function SPAAmountCalculator(
 		uint valueType, uint USDsAmt, address _VaultCoreContract, uint swapFee
-	) public view returns (uint256 SPABurnAmt) {
+	) public /*view*/ returns (uint256 SPABurnAmt) {
 		require(valueType == 0 || valueType == 2, 'invalid valueType');
 		IVaultCore _vaultContract = IVaultCore(_VaultCoreContract);
 		uint priceSPA = IOracle(_vaultContract.oracleAddr()).getSPAprice();
@@ -294,7 +397,7 @@ contract VaultCoreTools is Initializable {
 
 	function USDsAmountCalculator(
 		uint valueType, uint valueAmt, address _VaultCoreContract, address collaAddr, uint swapFee
-	) public view returns (uint256 USDsAmt) {
+	) public /*view*/ returns (uint256 USDsAmt) {
 		require(valueType == 1 || valueType == 2, 'invalid valueType');
 		IVaultCore _vaultContract = IVaultCore(_VaultCoreContract);
 		uint priceSPA = IOracle(_vaultContract.oracleAddr()).getSPAprice();
