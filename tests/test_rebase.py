@@ -19,7 +19,7 @@ def mintUSDs(
     usdt
     ):
     deadline = 1637632800 + brownie.chain.time()
-    slippage_collateral = 1000000000000000000000000000000
+    slippage_collateral = 1000000000000000000000
     slippage_spa = 1000000000000000000000000000000
     spa.approve(vault_proxy.address, slippage_spa, {'from': owner})
     usdt.approve(vault_proxy.address, slippage_collateral, {'from': owner})
@@ -77,7 +77,7 @@ def test_withdraw_from_strategy(sperax, usdt, owner_l2, accounts):
     vault_proxy.allocate({'from': owner_l2})
     # withdraw
     spa.approve(vault_proxy.address, 1000000000000000000000000000000, {'from': owner_l2})
-    amount = 100 * 10**18;
+    amount = 10**17;
     assert amount < usds_proxy.balanceOf(owner_l2)
     usdt_balance_before = usdt.balanceOf(owner_l2)
     txn = vault_proxy.redeem(

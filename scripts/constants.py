@@ -5,12 +5,15 @@ cwd = os.getcwd()
 wSPAL1_file = cwd + '/scripts/constants/wSPAL1.json'
 SPAL2_file = cwd + '/scripts/constants/SPAL2.json'
 USDs_file = cwd + '/scripts/constants/USDs.json'
+Strategies_file = cwd + '/scripts/constants/Strategies.json'
 with open(wSPAL1_file) as f:
     wSPAL1 = json.load(f)
 with open(SPAL2_file) as f:
     SPAL2 = json.load(f)
 with open(USDs_file) as f:
     USDs = json.load(f)
+with open(Strategies_file) as f:
+    Strategies = json.load(f)
 
 
 
@@ -171,6 +174,20 @@ mainnet_L1_addresses = L1DeployAddresses(
     "0xcEe284F754E854890e311e3280b767F80797180d", # Bridge
     "0x72Ce9c846789fdB6fC1f34aC4AD25Dd9ef7031ef" # Router
     )
+
+class StrategyAddresses:
+    def __init__(self, usdc, usdt, weth, crv):
+        self.usdc = usdc
+        self.usdt = usdt
+        self.weth = weth
+        self.crv = crv
+
+strategy_addresses = StrategyAddresses(
+    '0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8', #USDC
+    '0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9', #USDT
+    '0x82af49447d8a07e3bd95bd0d56f35241523fbab1', #WETH
+    '0x11cdb42b0eb46d95f990bedd4695a6e3fa034978' #CRV
+)
 
 class StrategyVars:
     def __init__(self, platform_address, vault_proxy_address, reward_token_address, assets, lp_tokens, crv_gauge_address, index, oracle_proxy_address):

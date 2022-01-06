@@ -168,14 +168,12 @@ def dai(MockToken, owner_l2):
     print("DAI: ", token.address)
     return brownie.interface.IERC20(token.address)
 
-
 @pytest.fixture(scope="module", autouse=True)
 def crv(owner_l2):
     crv_source_address = '0x97e2768e8e73511ca874545dc5ff8067eb19b787'
     crv_erc20 = brownie.interface.IERC20("0x11cdb42b0eb46d95f990bedd4695a6e3fa034978")
-    crv_erc20.transfer(owner_l2, 100*10**18, {'from': crv_source_address})
+    txn = crv_erc20.transfer(owner_l2, 100*10**18, {'from': crv_source_address})
     return crv_erc20
-
 
 @pytest.fixture(scope="module", autouse=True)
 def proxy_admin(
@@ -345,11 +343,12 @@ def sperax(
     # here it's temporarily change Oracle for SPA from SPA-USDC to SPA-ETH
     # would suggest to use a mock token to mock USDC instead
     mintSPA(spa, amount, owner_l2, vault_proxy)
+
+    create_uniswap_v3_pool(spa, usdc, int(100 * 10**18), int(100 * 10**6), 3000, owner_l2)
     update_oracle_setting(oracle_proxy, usdc, owner_l2)
-    deposit_weth(weth, owner_l2, accounts, amount)
-    create_uniswap_v3_pool(spa, usdc, int(100 * 10**18), int(10 * 10**6), 3000, owner_l2)
-    mintUSDs(usds_proxy, spa, vault_proxy, owner_l2, weth)
-    create_uniswap_v3_pool(usdc, usds_proxy, int(100 * 10**6), int(10 * 10**18), 500, owner_l2)
+    mintUSDs(usds_proxy, spa, vault_proxy, owner_l2, usdt)
+    create_uniswap_v3_pool(usdc, usds_proxy, int(10 * 10**18), int(10 * 10**6), 500, owner_l2)
+
 
     return (
         spa,
@@ -677,7 +676,7 @@ def deploy_buyback_three_hops(
         weth,
         usdc,
         3000,
-        3000,
+        500,
         3000,
         {'from': owner_l2}
     )
@@ -865,7 +864,7 @@ def mintUSDs(
     spa,
     vault_proxy,
     owner,
-    weth
+    usdt
     ):
     deadline = 1637632800 + brownie.chain.time()
     amount  = 10 * 10**18
@@ -875,14 +874,10 @@ def mintUSDs(
 
     spa.approve(vault_proxy.address, slippage_spa, {'from': owner})
 
-
-    weth_erc20 = brownie.interface.IERC20(weth.address)
-    print("WETH BAL",weth_erc20.balanceOf(owner))
-    print("SPA BAL", spa.balanceOf(owner))
-    weth_erc20.approve(vault_proxy.address, slippage_spa, {'from': owner})
+    usdt.approve(vault_proxy.address, slippage_spa, {'from': owner})
 
     txn = vault_proxy.mintBySpecifyingUSDsAmt(
-        weth.address,
+        usdt,
         int(amount),
         slippage_collateral,
         slippage_spa,
@@ -902,7 +897,7 @@ def update_oracle_setting(oracle_proxy, usdc, owner_l2):
         usdc.address,
         usdc.address,
         3000,
-        3000,
+        500,
     {'from': owner_l2} )
 
 
