@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.6.12;
+pragma solidity >=0.8.7;
 import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/token/ERC20/SafeERC20Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "../interfaces/ISperaxToken.sol";
 import "../interfaces/IStrategy.sol";
 import "../interfaces/IVaultCore.sol";
@@ -74,7 +74,7 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 	event USDsAddressUpdated(address oldAddr, address newAddr);
     event OracleAddressUpdated(address oldAddr, address newAddr);
 	event TotalValueLocked(
-		uint totalValueLocked,
+		uint _totalValueLocked,
 		uint totalValueInVault,
 		uint totalValueInStrategies
 	);
@@ -364,7 +364,7 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 		require(USDsAmt >= slippageUSDs, "USDs amount is lower than the maximum slippage");
 		require(collateralDepAmt <= slippageCollat, "Collateral amount is more than the maximum slippage");
 		require(SPABurnAmt <= slippageSPA, "SPA amount is more than the maximum slippage");
-		require(now <= deadline, "Deadline expired");
+		require(block.timestamp <= deadline, "Deadline expired");
 		// burn SPA tokens
 		ISperaxToken(SPAaddr).burnFrom(msg.sender, SPABurnAmt);
 		SPAburnt = SPAburnt.add(SPABurnAmt);
@@ -423,7 +423,7 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 		// slippageSPA is the minimum value of the minted spa
 		require(collateralUnlockedAmt >= slippageCollat, "Collateral amount is lower than the maximum slippage");
 		require(SPAMintAmt >= slippageSPA, "SPA amount is lower than the maximum slippage");
-		require(now <= deadline, "Deadline expired");
+		require(block.timestamp <= deadline, "Deadline expired");
 		collateralStruct memory collateral = collateralsInfo[collateralAddr];
 
 		ISperaxToken(SPAaddr).mintForUSDs(msg.sender, SPAMintAmt);
@@ -543,7 +543,7 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 				if (collateral.allocationAllowed && strategy.supportsCollateral(collateral.collateralAddr)) {
 					uint valueInStrategy = _valueInStrategy(collateral.collateralAddr);
 					uint valueInVault = _valueInVault(collateral.collateralAddr);
-					uint valueInStrategy_optimal = valueInStrategy.add(valueInVault).mul(collateral.allocatePercentage).div(allocatePercentage_prec);
+					uint valueInStrategy_optimal = valueInStrategy.add(valueInVault).mul(collateral.allocatePercentage)/(allocatePercentage_prec);
 					if (valueInStrategy_optimal > valueInStrategy) {
 						uint amtToAllocate = valueInStrategy_optimal.sub(valueInStrategy);
 						IERC20Upgradeable(collateral.collateralAddr).safeTransfer(collateral.defaultStrategyAddr, amtToAllocate);
@@ -557,16 +557,16 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 	}
 
 	/**
-	 * @dev the value of collaterals in this contract and strategies divide by USDs total supply
+	 * @dev the value of collaterals in this contract and strategies/ide by USDs total supply
 	 * @dev precision: same as chi_prec
 	 */
 	function collateralRatio() public view override returns (uint ratio) {
-		uint totalValueLocked = totalValueLocked();
+		uint _totalValueLocked = totalValueLocked(); // fixing shadow declaration
 		uint USDsSupply = IERC20Upgradeable(USDsAddr).totalSupply();
 		uint priceUSDs = uint(IOracle(oracleAddr).getUSDsPrice());
 		uint precisionUSDs = IOracle(oracleAddr).getUSDsPrice_prec();
-		uint USDsValue = USDsSupply.mul(priceUSDs).div(precisionUSDs);
-		ratio = totalValueLocked.mul(chi_prec).div(USDsValue);
+		uint USDsValue = USDsSupply.mul(priceUSDs)/(precisionUSDs);
+		ratio = _totalValueLocked.mul(chi_prec)/(USDsValue);
 	}
 
 	/**
@@ -594,7 +594,7 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 		uint priceColla = IOracle(oracleAddr).getCollateralPrice(collateral.collateralAddr);
 		uint precisionColla = IOracle(oracleAddr).getCollateralPrice_prec(collateral.collateralAddr);
 		uint collateralAddrDecimal = uint(ERC20Upgradeable(collateral.collateralAddr).decimals());
-		uint collateralTotalValueInVault = IERC20Upgradeable(collateral.collateralAddr).balanceOf(address(this)).mul(priceColla).div(precisionColla);
+		uint collateralTotalValueInVault = IERC20Upgradeable(collateral.collateralAddr).balanceOf(address(this)).mul(priceColla)/(precisionColla);
 		uint collateralTotalValueInVault_18 = collateralTotalValueInVault.mul(10**(uint(18).sub(collateralAddrDecimal)));
 		value = collateralTotalValueInVault_18;
 	}
@@ -624,7 +624,7 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 		uint priceColla = IOracle(oracleAddr).getCollateralPrice(collateral.collateralAddr);
 		uint precisionColla = IOracle(oracleAddr).getCollateralPrice_prec(collateral.collateralAddr);
 		uint collateralAddrDecimal = uint(ERC20Upgradeable(collateral.collateralAddr).decimals());
-		uint collateralTotalValueInStrategy = strategy.checkBalance(collateral.collateralAddr).mul(priceColla).div(precisionColla);
+		uint collateralTotalValueInStrategy = strategy.checkBalance(collateral.collateralAddr).mul(priceColla)/(precisionColla);
 		uint collateralTotalValueInStrategy_18 = collateralTotalValueInStrategy.mul(10**(uint(18).sub(collateralAddrDecimal)));
 		return collateralTotalValueInStrategy_18;
 	}

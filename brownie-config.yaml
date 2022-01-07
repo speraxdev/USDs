@@ -2,10 +2,10 @@
 # https://eth-brownie.readthedocs.io/en/stable/config.html
 # required external contracts
 dependencies:
-  - OpenZeppelin/openzeppelin-contracts-upgradeable@3.4.0
-  - OpenZeppelin/openzeppelin-contracts@3.4.0
+  - OpenZeppelin/openzeppelin-contracts-upgradeable@4.4.1
+  - OpenZeppelin/openzeppelin-contracts@4.4.1
   - Uniswap/uniswap-v3-core@1.0.0
-  - smartcontractkit/chainlink-brownie-contracts@0.2.2
+  - smartcontractkit/chainlink-brownie-contracts@0.3.0
 pytest:
     # these settings replace the defaults when running pytest
     default_contract_owner: true
@@ -13,17 +13,16 @@ pytest:
     revert_traceback: true
 compiler:
     solc:
-        version: 0.6.12
         optimizer:
             enabled: true
-            runs: 1
+            runs: 100
       
         remappings:
-          - "@openzeppelin/contracts-upgradeable=OpenZeppelin/openzeppelin-contracts-upgradeable@3.4.0/contracts"
-          - "@openzeppelin/contracts=OpenZeppelin/openzeppelin-contracts@3.4.0/contracts"
+          - "@openzeppelin/contracts-upgradeable=OpenZeppelin/openzeppelin-contracts-upgradeable@4.4.1/contracts"
+          - "@openzeppelin/contracts=OpenZeppelin/openzeppelin-contracts@4.4.1/contracts"
 #          - "@openzeppelin/contracts=/Users/maximo/.brownie/packages/OpenZeppelin/openzeppelin-contracts@3.4.0/contracts"
           - "@uniswap/v3-core/contracts=Uniswap/uniswap-v3-core@1.0.0/contracts"
-          - "@chainlink=smartcontractkit/chainlink-brownie-contracts@0.2.2"
+          - "@chainlink=smartcontractkit/chainlink-brownie-contracts@0.3.0"
           - "arbos-contracts=packages/arbos-contracts"
           - "arb-bridge-peripherals/contracts=packages/arb-bridge-peripherals/contracts"
           - "arb-bridge-eth/contracts=packages/arb-bridge-eth/contracts"

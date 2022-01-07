@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >0.6.0 <0.8.0;
+pragma solidity >0.6.0 <0.9.0;
 
-import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/draft-ERC20PermitUpgradeable.sol";
 import "./ITransferAndCall.sol";
 
 // Implementation from https://github.com/smartcontractkit/LinkToken/blob/master/contracts/v0.6/TransferAndCallToken.sol

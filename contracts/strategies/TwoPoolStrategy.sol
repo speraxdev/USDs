@@ -4,10 +4,10 @@
  * @notice Investment strategy for investing stablecoins via Curve 2Pool
  * @author Sperax Inc
  */
- pragma solidity ^0.6.12;
+ pragma solidity ^0.8.7;
 
 import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
-import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import '../interfaces/IOracle.sol';
 import { ICurve2Pool } from "./ICurve2Pool.sol";
 import { ICurveGauge } from "./ICurveGauge.sol";
@@ -133,13 +133,11 @@ contract TwoPoolStrategy is InitializableAbstractStrategy {
         // Set the amount on the asset we want to deposit
         _amounts[poolCoinIndex] = _amount;
         uint256 expectedPtokenAmt = _getExpectedPtokenAmt(_amount, _asset);
-        uint256 minMintAmount = expectedPtokenAmt
-            .mul(lpAssetSlippage)
-            .div(10000000);
+        uint256 minMintAmount = expectedPtokenAmt*(lpAssetSlippage)/(10000000);
         // Do the deposit to 2Pool
         // triger to deposit LP tokens
         curvePool.add_liquidity(_amounts, minMintAmount);
-        allocatedAmt[_asset] = allocatedAmt[_asset].add(_amount);
+        allocatedAmt[_asset] = allocatedAmt[_asset]+(_amount);
         // Deposit into Gauge
         IERC20 pToken = IERC20(assetToPToken[_asset]);
         curveGauge.deposit(
@@ -187,9 +185,7 @@ contract TwoPoolStrategy is InitializableAbstractStrategy {
             totalPTokens,
             poolCoinIndex
         );
-        uint256 maxBurnedPTokens = totalPTokens
-            .mul(assetInterest)
-            .div(maxAmount);
+        uint256 maxBurnedPTokens = totalPTokens*(assetInterest)/(maxAmount);
         // Not enough in this contract or in the Gauge, can't proceed
         require(totalPTokens >= maxBurnedPTokens, "Insufficient 2CRV balance");
         // We have enough LP tokens, make sure they are all on this contract
@@ -197,24 +193,21 @@ contract TwoPoolStrategy is InitializableAbstractStrategy {
             // Not enough of pool token exists on this contract, some must be
             // staked in Gauge, unstake difference
             curveGauge.withdraw(
-                maxBurnedPTokens.sub(contractPTokens)
+                maxBurnedPTokens-(contractPTokens)
             );
         }
         (contractPTokens, , ) = _getTotalPTokens();
         maxBurnedPTokens = maxBurnedPTokens < contractPTokens ?
                            maxBurnedPTokens : contractPTokens;
         uint256 expectedAssetAmt = _getExpectedAssetAmt(maxBurnedPTokens, _asset);
-        uint256 minRedeemAmount = expectedAssetAmt
-            .mul(lpAssetSlippage)
-            .div(10000000);
+        uint256 minRedeemAmount = expectedAssetAmt*(lpAssetSlippage)/(10000000);
         uint256 balance_before = IERC20(_asset).balanceOf(address(this));
         curvePool.remove_liquidity_one_coin(
             maxBurnedPTokens,
             int128(_getPoolCoinIndex(_asset)),
             minRedeemAmount
         );
-        uint256 _amount_received = IERC20(_asset).balanceOf(address(this))
-            .sub(balance_before);
+        uint256 _amount_received = IERC20(_asset).balanceOf(address(this))-(balance_before);
         IERC20(_asset).safeTransfer(_recipient, _amount_received);
         emit InterestCollected(
             _asset,
@@ -231,7 +224,7 @@ contract TwoPoolStrategy is InitializableAbstractStrategy {
         uint256 balance_before = crvToken.balanceOf(vaultAddress);
         curveGauge.claim_rewards(address(this), vaultAddress);
         uint256 balance_after = crvToken.balanceOf(vaultAddress);
-        emit RewardTokenCollected(vaultAddress, balance_after.sub(balance_before));
+        emit RewardTokenCollected(vaultAddress, balance_after-(balance_before));
     }
 
     /**
@@ -296,7 +289,7 @@ contract TwoPoolStrategy is InitializableAbstractStrategy {
         }
         uint256 assetInterest;
         if (maxAmount > allocatedAmt[_asset]) {
-            return assetInterest = maxAmount.sub(allocatedAmt[_asset]);
+            return assetInterest = maxAmount-(allocatedAmt[_asset]);
         } else {
             return 0;
         }
@@ -327,7 +320,7 @@ contract TwoPoolStrategy is InitializableAbstractStrategy {
                 int128(_getPoolCoinIndex(_asset))
             );
         }
-        uint256 maxBurnedPTokens = totalPTokens.mul(_amount).div(maxAmount);
+        uint256 maxBurnedPTokens = totalPTokens*(_amount)/(maxAmount);
         // Not enough in this contract or in the Gauge, can't proceed
         require(totalPTokens >= maxBurnedPTokens, "Insufficient 2CRV balance");
         // We have enough LP tokens, make sure they are all on this contract
@@ -335,7 +328,7 @@ contract TwoPoolStrategy is InitializableAbstractStrategy {
             // Not enough of pool token exists on this contract, some must be
             // staked in Gauge, unstake difference
             curveGauge.withdraw(
-                maxBurnedPTokens.sub(contractPTokens)
+                maxBurnedPTokens-(contractPTokens)
             );
         }
         (contractPTokens, , ) = _getTotalPTokens();
@@ -343,20 +336,19 @@ contract TwoPoolStrategy is InitializableAbstractStrategy {
                            maxBurnedPTokens : contractPTokens;
         uint256 expectedAssetAmt = _getExpectedAssetAmt(maxBurnedPTokens, _asset);
         uint256 minRedeemAmount = expectedAssetAmt
-            .mul(lpAssetSlippage)
-            .div(10000000);
+            *(lpAssetSlippage)
+            /(10000000);
         uint256 balance_before = IERC20(_asset).balanceOf(address(this));
         curvePool.remove_liquidity_one_coin(
             maxBurnedPTokens,
             int128(_getPoolCoinIndex(_asset)),
             minRedeemAmount
         );
-        uint256 _amount_received = IERC20(_asset).balanceOf(address(this))
-            .sub(balance_before);
+        uint256 _amount_received = IERC20(_asset).balanceOf(address(this))-(balance_before);
         if (_amount_received >= allocatedAmt[_asset]) {
             allocatedAmt[_asset] = 0;
         } else {
-            allocatedAmt[_asset] = allocatedAmt[_asset].sub(_amount_received);
+            allocatedAmt[_asset] = allocatedAmt[_asset]-(_amount_received);
         }
         IERC20(_asset).safeTransfer(_recipient, _amount_received);
         emit Withdrawal(_asset, address(assetToPToken[_asset]), _amount_received);
@@ -372,10 +364,10 @@ contract TwoPoolStrategy is InitializableAbstractStrategy {
         IERC20 pToken = IERC20(_pToken);
         // 2Pool for asset (required for adding liquidity)
         asset.safeApprove(platformAddress, 0);
-        asset.safeApprove(platformAddress, uint256(-1));
+        asset.safeApprove(platformAddress, type (uint256).max);
         // 2Pool for LP token (required for removing liquidity)
         pToken.safeApprove(platformAddress, 0);
-        pToken.safeApprove(platformAddress, uint256(-1));
+        pToken.safeApprove(platformAddress, type (uint256).max);
         // Gauge for LP token
         pToken.safeApprove(address(curveGauge), 0);
         pToken.safeApprove(address(curveGauge), uint256(-1));
@@ -399,7 +391,7 @@ contract TwoPoolStrategy is InitializableAbstractStrategy {
             address(this)
         );
         gaugePTokens = curveGauge.balanceOf(address(this));
-        totalPTokens = contractPTokens.add(gaugePTokens);
+        totalPTokens = contractPTokens+(gaugePTokens);
     }
 
     /**
@@ -425,11 +417,7 @@ contract TwoPoolStrategy is InitializableAbstractStrategy {
     ) internal view returns (uint256 expectedAssetAmt) {
         uint256 assetPrice_prec = oracle.getCollateralPrice_prec(_asset);
         uint256 assetPrice = oracle.getCollateralPrice(_asset);
-        expectedAssetAmt = lpTokenAmt
-            .mul(curvePool.get_virtual_price())
-            .mul(assetPrice_prec)
-            .div(assetPrice)
-            .div(1e18) //get_virtual_price()'s precsion
+        expectedAssetAmt = lpTokenAmt*(curvePool.get_virtual_price())*(assetPrice_prec)/(assetPrice)/(1e18) //get_virtual_price()'s precsion
             .scaleBy(int8(ERC20(_asset).decimals() - 18));
     }
 

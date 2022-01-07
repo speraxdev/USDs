@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-pragma solidity ^0.6.11;
+pragma solidity >0.6.0 <0.9.0;
 
 library AddressAliasHelper {
     uint160 constant offset = uint160(0x1111000000000000000000000000000000001111);

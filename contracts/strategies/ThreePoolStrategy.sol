@@ -4,10 +4,10 @@
  * @notice Investment strategy for investing stablecoins via Curve 3Pool
  * @author Sperax Inc
  */
- pragma solidity ^0.6.12;
+ pragma solidity >=0.6.11 <0.9.0;
 
 import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
-import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import '../interfaces/IOracle.sol';
 import { ICurve3Pool } from "./ICurve3Pool.sol";
 import { ICurveGauge } from "./ICurveGauge.sol";
@@ -18,20 +18,17 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
     using StableMath for uint256;
     using SafeERC20 for IERC20;
 
-    event RewardTokenCollected(address recipient, uint256 amount);
     event SlippageChanged(uint256 newSlippage);
     event ThresholdChanged(uint256 newThreshold);
 
     uint256 public lpAssetThreshold = 3000;
-    uint256 public lpAssetSlippage = 10*1e16; // TODO: change to a reasonable number
+    uint256 public lpAssetSlippage = 9800000;
     uint256 internal supportedAssetIndex;
 
     ICurveGauge internal curveGauge;
     ICurve3Pool internal curvePool;
     IOracle internal oracle;
 
-    receive() external payable {}
-    fallback() external payable {}
 
     /**
      * Initializer for setting up strategy internal state. This overrides the
@@ -75,12 +72,14 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
 
     /**
      * @dev change to a new lpAssetSlippage
-     * @dev lpAssetSlippage set to 1e16 means the slippage is 1% (overall precision
-            is 1e18); it is the slippage on the conversion between LP token
-            and underlying collateral/asset
+     * @dev lpAssetSlippage set to 9900000 means the slippage is 1%;
+            overall precision is 10000000;
+            it is the slippage on the conversion between LP token and underlying
+            collateral/asset
      * @param _lpAssetSlippage new slippage setting
      */
     function changeSlippage(uint256 _lpAssetSlippage) external onlyOwner {
+        require(_lpAssetSlippage <= 10000000, 'Slippage exceeds 100%');
         lpAssetSlippage = _lpAssetSlippage;
         emit SlippageChanged(lpAssetSlippage);
     }
@@ -134,21 +133,14 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
         uint256 poolCoinIndex = _getPoolCoinIndex(_asset);
         // Set the amount on the asset we want to deposit
         _amounts[poolCoinIndex] = _amount;
-        uint256 assetDecimals = ERC20(_asset).decimals();
-        uint256 assetPrice =  oracle.getCollateralPrice(_asset);
-        uint256 assetPrice_prec = oracle.getCollateralPrice_prec(_asset);
-        uint256 depositValue = _amount
-            .scaleBy(int8(18 - assetDecimals))
-            .mul(assetPrice)
-            .divPrecisely(curvePool.get_virtual_price())
-            .div(assetPrice_prec);
-        uint256 minMintAmount = depositValue.mulTruncate(
-            uint256(1e18).sub(lpAssetSlippage)
-        );
+        uint256 expectedPtokenAmt = _getExpectedPtokenAmt(_amount, _asset);
+        uint256 minMintAmount = expectedPtokenAmt
+            *(lpAssetSlippage)
+            /(10000000);
         // Do the deposit to 3pool
         // triger to deposit LP tokens
         curvePool.add_liquidity(_amounts, 0); //TODO: change to minMintAmount
-        allocatedAmt[_asset] = allocatedAmt[_asset].add(_amount);
+        allocatedAmt[_asset] = allocatedAmt[_asset]+(_amount);
         // Deposit into Gauge
         IERC20 pToken = IERC20(assetToPToken[_asset]);
         curveGauge.deposit(
@@ -197,8 +189,8 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
             poolCoinIndex
         );
         uint256 maxBurnedPTokens = totalPTokens
-            .mul(assetInterest)
-            .div(maxAmount);
+            *(assetInterest)
+            /(maxAmount);
         // Not enough in this contract or in the Gauge, can't proceed
         require(totalPTokens >= maxBurnedPTokens, "Insufficient 3CRV balance");
         // We have enough LP tokens, make sure they are all on this contract
@@ -206,13 +198,16 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
             // Not enough of pool token exists on this contract, some must be
             // staked in Gauge, unstake difference
             curveGauge.withdraw(
-                maxBurnedPTokens.sub(contractPTokens)
+                maxBurnedPTokens-(contractPTokens)
             );
         }
         (contractPTokens, , ) = _getTotalPTokens();
         maxBurnedPTokens = maxBurnedPTokens < contractPTokens ?
                            maxBurnedPTokens : contractPTokens;
-        uint256 minRedeemAmount = _getMinRedeemAmt(maxBurnedPTokens, _asset);
+        uint256 expectedAssetAmt = _getExpectedAssetAmt(maxBurnedPTokens, _asset);
+        uint256 minRedeemAmount = expectedAssetAmt
+            *(lpAssetSlippage)
+            /(10000000);
         uint256 balance_before = IERC20(_asset).balanceOf(address(this));
         curvePool.remove_liquidity_one_coin(
             maxBurnedPTokens,
@@ -220,7 +215,7 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
             minRedeemAmount
         );
         uint256 _amount_received = IERC20(_asset).balanceOf(address(this))
-            .sub(balance_before);
+            -(balance_before);
         IERC20(_asset).safeTransfer(_recipient, _amount_received);
         emit InterestCollected(
             _asset,
@@ -237,7 +232,7 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
         uint256 balance_before = crvToken.balanceOf(vaultAddress);
         curveGauge.claim_rewards(address(this), vaultAddress);
         uint256 balance_after = crvToken.balanceOf(vaultAddress);
-        emit RewardTokenCollected(vaultAddress, balance_after.sub(balance_before));
+        emit RewardTokenCollected(vaultAddress, balance_after-(balance_before));
     }
 
     /**
@@ -302,7 +297,7 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
         }
         uint256 assetInterest;
         if (maxAmount > allocatedAmt[_asset]) {
-            return assetInterest = maxAmount.sub(allocatedAmt[_asset]);
+            return assetInterest = maxAmount-(allocatedAmt[_asset]);
         } else {
             return 0;
         }
@@ -333,7 +328,7 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
                 _getPoolCoinIndex(_asset)
             );
         }
-        uint256 maxBurnedPTokens = totalPTokens.mul(_amount).div(maxAmount);
+        uint256 maxBurnedPTokens = totalPTokens*(_amount)/(maxAmount);
         // Not enough in this contract or in the Gauge, can't proceed
         require(totalPTokens >= maxBurnedPTokens, "Insufficient 3CRV balance");
         // We have enough LP tokens, make sure they are all on this contract
@@ -341,13 +336,16 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
             // Not enough of pool token exists on this contract, some must be
             // staked in Gauge, unstake difference
             curveGauge.withdraw(
-                maxBurnedPTokens.sub(contractPTokens)
+                maxBurnedPTokens-(contractPTokens)
             );
         }
         (contractPTokens, , ) = _getTotalPTokens();
         maxBurnedPTokens = maxBurnedPTokens < contractPTokens ?
                            maxBurnedPTokens : contractPTokens;
-        uint256 minRedeemAmount = _getMinRedeemAmt(maxBurnedPTokens, _asset);
+        uint256 expectedAssetAmt = _getExpectedAssetAmt(maxBurnedPTokens, _asset);
+        uint256 minRedeemAmount = expectedAssetAmt
+            *(lpAssetSlippage)
+            /(10000000);
         uint256 balance_before = IERC20(_asset).balanceOf(address(this));
         curvePool.remove_liquidity_one_coin(
             maxBurnedPTokens,
@@ -355,11 +353,11 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
             minRedeemAmount
         );
         uint256 _amount_received = IERC20(_asset).balanceOf(address(this))
-            .sub(balance_before);
+            -(balance_before);
         if (_amount_received >= allocatedAmt[_asset]) {
             allocatedAmt[_asset] = 0;
         } else {
-            allocatedAmt[_asset] = allocatedAmt[_asset].sub(_amount_received);
+            allocatedAmt[_asset] = allocatedAmt[_asset]-(_amount_received);
         }
         IERC20(_asset).safeTransfer(_recipient, _amount_received);
         emit Withdrawal(_asset, address(assetToPToken[_asset]), _amount_received);
@@ -375,13 +373,13 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
         IERC20 pToken = IERC20(_pToken);
         // 3Pool for asset (required for adding liquidity)
         asset.safeApprove(platformAddress, 0);
-        asset.safeApprove(platformAddress, uint256(-1));
+        asset.safeApprove(platformAddress, type(uint256).max);
         // 3Pool for LP token (required for removing liquidity)
         pToken.safeApprove(platformAddress, 0);
-        pToken.safeApprove(platformAddress, uint256(-1));
+        pToken.safeApprove(platformAddress, type(uint256).max);
         // Gauge for LP token
         pToken.safeApprove(address(curveGauge), 0);
-        pToken.safeApprove(address(curveGauge), uint256(-1));
+        pToken.safeApprove(address(curveGauge), type(uint256).max);
     }
 
     /**
@@ -402,7 +400,7 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
             address(this)
         );
         gaugePTokens = curveGauge.balanceOf(address(this));
-        totalPTokens = contractPTokens.add(gaugePTokens);
+        totalPTokens = contractPTokens+(gaugePTokens);
     }
 
     /**
@@ -419,20 +417,40 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
      * @dev Get the expected amount of asset/collateral when redeeming LP tokens
      * @param lpTokenAmt  Amount of LP token to redeem
      * @param _asset  Address of the asset
-     * @return interestEarned
-               The amount of asset/collateral earned as interest
+     * @return expectedAssetAmt
+                the expected amount of asset/collateral token received
      */
-    function _getMinRedeemAmt(
+    function _getExpectedAssetAmt(
         uint256 lpTokenAmt,
         address _asset
-    ) internal returns (uint256) {
+    ) internal view returns (uint256 expectedAssetAmt) {
         uint256 assetPrice_prec = oracle.getCollateralPrice_prec(_asset);
         uint256 assetPrice = oracle.getCollateralPrice(_asset);
-        uint256 minRedeemAmount = lpTokenAmt
-            .mul(curvePool.get_virtual_price())
-            .mul(assetPrice_prec)
-            .div(assetPrice)
-            .div(1e18) //get_virtual_price()'s precsion
+        expectedAssetAmt = lpTokenAmt
+            *(curvePool.get_virtual_price())
+            *(assetPrice_prec)
+            /(assetPrice)
+            /(1e18) //get_virtual_price()'s precsion
             .scaleBy(int8(ERC20(_asset).decimals() - 18));
+    }
+
+    /**
+     * @dev Get the expected amount of lp when adding liquidity
+     * @param assetAmt  Amount of asset/collateral
+     * @param _asset  Address of the asset
+     * @return expectedPtokenAmt the expected amount of lp token received
+     */
+    function _getExpectedPtokenAmt(
+        uint256 assetAmt,
+        address _asset
+    ) internal view returns (uint256 expectedPtokenAmt) {
+        uint256 assetPrice_prec = oracle.getCollateralPrice_prec(_asset);
+        uint256 assetPrice = oracle.getCollateralPrice(_asset);
+        expectedPtokenAmt = assetAmt
+            .scaleBy(int8(18 - ERC20(_asset).decimals()))
+            *(assetPrice)
+            *(1e18)
+            /(curvePool.get_virtual_price())
+            /(assetPrice_prec);
     }
 }

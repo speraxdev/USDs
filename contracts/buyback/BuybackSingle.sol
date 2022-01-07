@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.6.12;
+pragma solidity ^0.8.7;
 pragma experimental ABIEncoderV2;
 
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
-import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import '@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol';
 import "@openzeppelin/contracts/access/Ownable.sol";
 import '../libraries/TransferHelper.sol';
@@ -45,7 +45,7 @@ contract BuybackSingle is IBuyback, Ownable {
 
     mapping(address => inputTokenStruct) public inputTokensInfo;
 
-    constructor(address _USDs, address _vaultAddr) public {
+    constructor(address _USDs, address _vaultAddr)  {
         USDs = _USDs;
         vaultAddr = _vaultAddr;
     }

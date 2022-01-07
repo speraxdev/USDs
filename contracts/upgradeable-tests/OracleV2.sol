@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.6.12;
+pragma solidity >=0.8.7;
 
-import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@chainlink/contracts/src/v0.6/interfaces/AggregatorV3Interface.sol";
-import "@chainlink/contracts/src/v0.6/interfaces/FlagsInterface.sol";
+import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
+import "@chainlink/contracts/src/v0.8/interfaces/FlagsInterface.sol";
 import '@uniswap/v3-core/contracts/interfaces/IUniswapV3Factory.sol';
 
 import "../vault/VaultCore.sol";
@@ -181,7 +181,7 @@ contract OracleV2 is Initializable, IOracle, OwnableUpgradeable {
         } else if (USDsInflow_average == 0 && USDsOutflow_average > 0) {
             USDsInOutRatio = 10 * USDsInOutRatio_prec;
         } else {
-            USDsInOutRatio = USDsOutflow_average.mul(USDsInOutRatio_prec).div(USDsInflow_average);
+            USDsInOutRatio = USDsOutflow_average.mul(USDsInOutRatio_prec)/(USDsInflow_average);
         }
         lastUpdateTime = currTime;
         updateNextIndex = indexOld;
@@ -216,8 +216,8 @@ contract OracleV2 is Initializable, IOracle, OwnableUpgradeable {
         return _getCollateralPrice(SPAoracleQuoteTokenAddr)
             .mul(quoteTokenAmtPerSPA)
             .mul(SPAprice_prec)
-            .div(SPAoracleQuoteToken_prec)
-            .div(USDCprice_prec);
+            /(SPAoracleQuoteToken_prec)
+            /(USDCprice_prec);
     }
 
     function getUSDsPrice() external view override returns (uint) {
@@ -240,8 +240,8 @@ contract OracleV2 is Initializable, IOracle, OwnableUpgradeable {
         return _getCollateralPrice(USDsOracleQuoteTokenAddr)
             .mul(quoteTokenAmtPerUSDs)
             .mul(USDsPrice_prec)
-            .div(USDsOracleQuoteToken_prec)
-            .div(USDCprice_prec);
+            /(USDsOracleQuoteToken_prec)
+            /(USDCprice_prec);
     }
 
     function getUSDsPrice_average() external view override returns (uint) {
@@ -264,8 +264,8 @@ contract OracleV2 is Initializable, IOracle, OwnableUpgradeable {
         return _getCollateralPrice(USDsOracleQuoteTokenAddr)
             .mul(quoteTokenAmtPerUSDs)
             .mul(USDsPrice_prec)
-            .div(USDsOracleQuoteToken_prec)
-            .div(USDCprice_prec);
+            /(USDsOracleQuoteToken_prec)
+            /(USDCprice_prec);
     }
     function getCollateralPrice_prec(address collateralAddr) external view override returns (uint) {
         collateralStruct memory  collateralInfo = collateralsInfo[collateralAddr];

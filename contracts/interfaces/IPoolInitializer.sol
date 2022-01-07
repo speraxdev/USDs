@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 //pragma solidity >=0.7.5;
 //pragma abicoder v2;
-pragma solidity >=0.6.12;
+pragma solidity >=0.8.7;
 pragma experimental ABIEncoderV2;
 
 /// @title Creates and initializes V3 Pools

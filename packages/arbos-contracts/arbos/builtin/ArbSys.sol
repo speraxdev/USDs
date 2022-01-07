@@ -1,4 +1,5 @@
-pragma solidity >=0.4.21 <0.7.0;
+// SPDX-License-Identifier: Apache-2.0
+pragma solidity >0.6.0 <0.9.0;
 
 /**
 * @title Precompiled contract that exists in every Arbitrum chain at address(100), 0x0000000000000000000000000000000000000064. Exposes a variety of system-level functionality.

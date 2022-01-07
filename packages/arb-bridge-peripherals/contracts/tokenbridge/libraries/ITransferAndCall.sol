@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >0.6.0 <0.8.0;
+pragma solidity >0.6.0 <0.9.0;
 
-import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/draft-ERC20PermitUpgradeable.sol";
 
 interface ITransferAndCall is IERC20Upgradeable {
     function transferAndCall(

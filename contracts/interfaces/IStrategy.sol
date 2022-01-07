@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.6.12;
+pragma solidity >=0.6.11 <0.9.0;
 
 /**
  * @title Platform interface to integrate with lending platform like Compound, AAVE etc.
@@ -57,17 +57,17 @@ interface IStrategy {
     /**
      * @dev The address of the reward token for the Strategy.
      */
-    function rewardTokenAddress() external pure returns (address);
+    function rewardTokenAddress() external view returns (address);
 
     /**
      * @dev The threshold (denominated in the reward token) over which the
      * vault will auto harvest on allocate calls.
      */
-    function rewardLiquidationThreshold() external pure returns (uint256);
+    function rewardLiquidationThreshold() external view returns (uint256);
 
     /**
      * @dev The threshold (denominated in the reward token) over which the
      * vault will auto harvest on allocate calls.
      */
-    function interestLiquidationThreshold() external pure returns (uint256);
+    function interestLiquidationThreshold() external view returns (uint256);
 }

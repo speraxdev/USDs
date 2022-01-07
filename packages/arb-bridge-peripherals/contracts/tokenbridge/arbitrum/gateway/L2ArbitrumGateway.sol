@@ -16,7 +16,8 @@
  * limitations under the License.
  */
 
-pragma solidity ^0.6.11;
+
+pragma solidity >0.6.0 <0.9.0;
 
 import "@openzeppelin/contracts/utils/Address.sol";
 import "arb-bridge-eth/contracts/libraries/BytesLib.sol";

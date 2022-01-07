@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.6.12;
+pragma solidity >=0.6.11 <0.9.0;
 
-import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
 
 // Based on StableMath from Stability Labs Pty. Ltd.
 // https://github.com/mstable/mStable-contracts/blob/master/contracts/shared/StableMath.sol
@@ -23,15 +23,15 @@ library StableMath {
      * @dev Adjust the scale of an integer
      * @param adjustment Amount to adjust by e.g. scaleBy(1e18, -1) == 1e17
      */
-    function scaleBy(uint256 x, int8 adjustment)
+    function scaleBy(uint256 x, int256 adjustment)
         internal
         pure
         returns (uint256)
     {
         if (adjustment > 0) {
-            x = x.mul(10**uint256(adjustment));
+            x = x*(10**uint256(adjustment));
         } else if (adjustment < 0) {
-            x = x.div(10**uint256(adjustment * -1));
+            x = x/(10**uint256(adjustment * -1));
         }
         return x;
     }
@@ -67,9 +67,9 @@ library StableMath {
     ) internal pure returns (uint256) {
         // e.g. assume scale = fullScale
         // z = 10e18 * 9e17 = 9e36
-        uint256 z = x.mul(y);
+        uint256 z = x*(y);
         // return 9e38 / 1e18 = 9e18
-        return z.div(scale);
+        return z/(scale);
     }
 
     /**
@@ -85,11 +85,11 @@ library StableMath {
         returns (uint256)
     {
         // e.g. 8e17 * 17268172638 = 138145381104e17
-        uint256 scaled = x.mul(y);
+        uint256 scaled = x*(y);
         // e.g. 138145381104e17 + 9.99...e17 = 138145381113.99...e17
-        uint256 ceil = scaled.add(FULL_SCALE.sub(1));
+        uint256 ceil = scaled+(FULL_SCALE-(1));
         // e.g. 13814538111.399...e18 / 1e18 = 13814538111
-        return ceil.div(FULL_SCALE);
+        return ceil/(FULL_SCALE);
     }
 
     /**
@@ -106,8 +106,8 @@ library StableMath {
         returns (uint256)
     {
         // e.g. 8e18 * 1e18 = 8e36
-        uint256 z = x.mul(FULL_SCALE);
+        uint256 z = x*(FULL_SCALE);
         // e.g. 8e36 / 10e18 = 8e17
-        return z.div(y);
+        return z/(y);
     }
 }

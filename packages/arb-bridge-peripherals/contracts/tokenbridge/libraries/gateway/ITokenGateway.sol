@@ -16,7 +16,8 @@
  * limitations under the License.
  */
 
-pragma solidity ^0.6.11;
+
+pragma solidity >0.6.0 <0.9.0;
 
 interface ITokenGateway {
     /// @notice event deprecated in favor of DepositInitiated and WithdrawalInitiated

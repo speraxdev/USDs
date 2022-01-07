@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.6.12;
+pragma solidity >=0.8.7;
 
-import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@chainlink/contracts/src/v0.6/interfaces/AggregatorV3Interface.sol";
-import "@chainlink/contracts/src/v0.6/interfaces/FlagsInterface.sol";
+import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
+import "@chainlink/contracts/src/v0.8/interfaces/FlagsInterface.sol";
 import '@uniswap/v3-core/contracts/interfaces/IUniswapV3Factory.sol';
 
 import "../vault/VaultCore.sol";
@@ -93,7 +93,7 @@ contract Oracle is Initializable, IOracle, OwnableUpgradeable {
     function initialize(address _priceFeedUSDC, address _SPAaddr, address _USDCaddr, address _chainlinkFlags) public initializer {
         OwnableUpgradeable.__Ownable_init();
         updatePeriod = 12 hours;
-        lastUpdateTime = uint32(now % 2**32);
+        lastUpdateTime = uint32(block.timestamp % 2**32);
         priceFeedUSDC = AggregatorV3Interface(_priceFeedUSDC);
         SPAaddr = _SPAaddr;
         SPA_prec = uint128(10)**18;
@@ -166,7 +166,7 @@ contract Oracle is Initializable, IOracle, OwnableUpgradeable {
      * @dev USDsInOutRatio is accurate after one iteration
      */
     function updateInOutRatio() external override {
-        uint32 currTime = uint32(now % 2 ** 32);
+        uint32 currTime = uint32(block.timestamp % 2 ** 32);
         uint32 timeElapsed = currTime - lastUpdateTime;
         require(currTime >= lastUpdateTime, "updateInOutRatio: error last update happened in the future");
         require(timeElapsed >= updatePeriod, "updateInOutRatio: the time elapsed is too short.");

@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-pragma solidity ^0.6.11;
+pragma solidity >=0.6.0 <0.9.0;
 
 import { ArbitrumEnabledToken } from "../ICustomToken.sol";
 import "./L1ArbitrumExtendedGateway.sol";
