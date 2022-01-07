@@ -22,7 +22,7 @@ import "../libraries/OracleLibrary.sol";
  * @author Sperax Inc
  */
 contract Oracle is Initializable, IOracle, OwnableUpgradeable {
-    using SafeMathUpgradeable for uint;
+   
     uint public override USDsInOutRatio; // USDsInOutRatio is accurate after 24 hours (one iteration)
     uint32 public constant override USDsInOutRatio_prec = 10**6;
     uint8 public constant FREQUENCY = 6;
@@ -174,14 +174,14 @@ contract Oracle is Initializable, IOracle, OwnableUpgradeable {
         uint32 indexOld = (indexNew + 1) % (FREQUENCY + 1);
         USDsInflow[indexNew] = IUSDs(USDsAddr).mintedViaUsers();
         USDsOutflow[indexNew] = IUSDs(USDsAddr).burntViaUsers();
-        uint USDsInflow_average = USDsInflow[indexNew].sub(USDsInflow[indexOld]);
-        uint USDsOutflow_average = USDsOutflow[indexNew].sub(USDsOutflow[indexOld]);
+        uint USDsInflow_average = USDsInflow[indexNew]-(USDsInflow[indexOld]);
+        uint USDsOutflow_average = USDsOutflow[indexNew]-(USDsOutflow[indexOld]);
         if (USDsInflow_average == 0 && USDsOutflow_average == 0) {
             USDsInOutRatio = USDsInOutRatio_prec;
         } else if (USDsInflow_average == 0 && USDsOutflow_average > 0) {
             USDsInOutRatio = 10 * USDsInOutRatio_prec;
         } else {
-            USDsInOutRatio = USDsOutflow_average.mul(USDsInOutRatio_prec).div(USDsInflow_average);
+            USDsInOutRatio = USDsOutflow_average*(USDsInOutRatio_prec)/(USDsInflow_average);
         }
         lastUpdateTime = currTime;
         updateNextIndex = indexOld;
@@ -214,10 +214,10 @@ contract Oracle is Initializable, IOracle, OwnableUpgradeable {
             movingAvgShortPeriod
         );
         return _getCollateralPrice(SPAoracleQuoteTokenAddr)
-            .mul(quoteTokenAmtPerSPA)
-            .mul(SPAprice_prec)
-            .div(SPAoracleQuoteToken_prec)
-            .div(USDCprice_prec);
+            *(quoteTokenAmtPerSPA)
+            *(SPAprice_prec)
+            /(SPAoracleQuoteToken_prec)
+            /(USDCprice_prec);
     }
 
     function getUSDsPrice() external view override returns (uint) {
@@ -238,10 +238,10 @@ contract Oracle is Initializable, IOracle, OwnableUpgradeable {
             movingAvgShortPeriod
         );
         return _getCollateralPrice(USDsOracleQuoteTokenAddr)
-            .mul(quoteTokenAmtPerUSDs)
-            .mul(USDsPrice_prec)
-            .div(USDsOracleQuoteToken_prec)
-            .div(USDCprice_prec);
+            *(quoteTokenAmtPerUSDs)
+            *(USDsPrice_prec)
+            /(USDsOracleQuoteToken_prec)
+            /(USDCprice_prec);
     }
 
     function getUSDsPrice_average() external view override returns (uint) {
@@ -262,10 +262,10 @@ contract Oracle is Initializable, IOracle, OwnableUpgradeable {
             movingAvgLongPeriod
         );
         return _getCollateralPrice(USDsOracleQuoteTokenAddr)
-            .mul(quoteTokenAmtPerUSDs)
-            .mul(USDsPrice_prec)
-            .div(USDsOracleQuoteToken_prec)
-            .div(USDCprice_prec);
+            *(quoteTokenAmtPerUSDs)
+            *(USDsPrice_prec)
+            /(USDsOracleQuoteToken_prec)
+            /(USDCprice_prec);
     }
     function getCollateralPrice_prec(address collateralAddr) external view override returns (uint) {
         collateralStruct memory  collateralInfo = collateralsInfo[collateralAddr];

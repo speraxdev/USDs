@@ -7,7 +7,7 @@ import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
 // https://github.com/mstable/mStable-contracts/blob/master/contracts/shared/StableMath.sol
 
 library StableMath {
-    using SafeMathUpgradeable for uint256;
+
 
     /**
      * @dev Scaling unit for use in specific calculations,

@@ -20,7 +20,6 @@ import "../vault/VaultCoreTools.sol";
  */
 contract VaultCoreV2 is Initializable, OwnableUpgradeable, AccessControlUpgradeable, ReentrancyGuardUpgradeable, IVaultCore {
 	using SafeERC20Upgradeable for IERC20Upgradeable;
-	using SafeMathUpgradeable for uint;
 	using StableMath for uint;
 
 	bytes32 public constant REBASER_ROLE = keccak256("REBASER_ROLE");
@@ -557,7 +556,7 @@ contract VaultCoreV2 is Initializable, OwnableUpgradeable, AccessControlUpgradea
 				if (collateral.allocationAllowed && strategy.supportsCollateral(collateral.collateralAddr)) {
 					uint amtInStrategy = strategy.checkBalance(collateral.collateralAddr);
 					uint amtInVault = IERC20Upgradeable(collateral.collateralAddr).balanceOf(address(this));
-					uint amtInStrategy_optimal = amtInStrategy.add(amtInVault).mul(uint(collateral.allocatePercentage))/(uint(allocatePercentage_prec));
+					uint amtInStrategy_optimal = amtInStrategy.add(amtInVault).mul(uint(collateral.allocatePercentage)).div(uint(allocatePercentage_prec));
 					if (amtInStrategy_optimal > amtInStrategy) {
 						uint amtToAllocate = amtInStrategy_optimal.sub(amtInStrategy);
 						IERC20Upgradeable(collateral.collateralAddr).safeTransfer(collateral.defaultStrategyAddr, amtToAllocate);
@@ -571,7 +570,7 @@ contract VaultCoreV2 is Initializable, OwnableUpgradeable, AccessControlUpgradea
 	}
 
 	/**
-	 * @dev the value of collaterals in this contract and strategies/ide by USDs total supply
+	 * @dev the value of collaterals in this contract and strategies divide by USDs total supply
 	 * @dev precision: same as chi_prec
 	 */
 	function collateralRatio() public view override returns (uint ratio) {
@@ -579,8 +578,8 @@ contract VaultCoreV2 is Initializable, OwnableUpgradeable, AccessControlUpgradea
 		uint USDsSupply = IERC20Upgradeable(USDsAddr).totalSupply();
 		uint priceUSDs = uint(IOracle(oracleAddr).getUSDsPrice());
 		uint precisionUSDs = IOracle(oracleAddr).getUSDsPrice_prec();
-		uint USDsValue = USDsSupply.mul(priceUSDs)/(precisionUSDs);
-		ratio = _totalValueLocked.mul(chi_prec)/(USDsValue);
+		uint USDsValue = USDsSupply.mul(priceUSDs).div(precisionUSDs);
+		ratio = _totalValueLocked.mul(chi_prec).div(USDsValue);
 	}
 
 	/**
@@ -608,7 +607,7 @@ contract VaultCoreV2 is Initializable, OwnableUpgradeable, AccessControlUpgradea
 		uint priceColla = IOracle(oracleAddr).getCollateralPrice(collateral.collateralAddr);
 		uint precisionColla = IOracle(oracleAddr).getCollateralPrice_prec(collateral.collateralAddr);
 		uint collateralAddrDecimal = uint(ERC20Upgradeable(collateral.collateralAddr).decimals());
-		uint collateralTotalValueInVault = IERC20Upgradeable(collateral.collateralAddr).balanceOf(address(this)).mul(priceColla)/(precisionColla);
+		uint collateralTotalValueInVault = IERC20Upgradeable(collateral.collateralAddr).balanceOf(address(this)).mul(priceColla).div(precisionColla);
 		uint collateralTotalValueInVault_18 = collateralTotalValueInVault.mul(10**(uint(18).sub(collateralAddrDecimal)));
 		value = collateralTotalValueInVault_18;
 	}
@@ -638,7 +637,7 @@ contract VaultCoreV2 is Initializable, OwnableUpgradeable, AccessControlUpgradea
 		uint priceColla = IOracle(oracleAddr).getCollateralPrice(collateral.collateralAddr);
 		uint precisionColla = IOracle(oracleAddr).getCollateralPrice_prec(collateral.collateralAddr);
 		uint collateralAddrDecimal = uint(ERC20Upgradeable(collateral.collateralAddr).decimals());
-		uint collateralTotalValueInStrategy = strategy.checkBalance(collateral.collateralAddr).mul(priceColla)/(precisionColla);
+		uint collateralTotalValueInStrategy = strategy.checkBalance(collateral.collateralAddr).mul(priceColla).div(precisionColla);
 		uint collateralTotalValueInStrategy_18 = collateralTotalValueInStrategy.mul(10**(uint(18).sub(collateralAddrDecimal)));
 		return collateralTotalValueInStrategy_18;
 	}

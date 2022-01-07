@@ -22,7 +22,6 @@ import "../libraries/OracleLibrary.sol";
  * @author Sperax Inc
  */
 contract OracleV2 is Initializable, IOracle, OwnableUpgradeable {
-    using SafeMathUpgradeable for uint;
     uint public override USDsInOutRatio; // USDsInOutRatio is accurate after 24 hours (one iteration)
     uint32 public constant override USDsInOutRatio_prec = 10**6;
     uint8 public constant FREQUENCY = 6;
@@ -181,7 +180,7 @@ contract OracleV2 is Initializable, IOracle, OwnableUpgradeable {
         } else if (USDsInflow_average == 0 && USDsOutflow_average > 0) {
             USDsInOutRatio = 10 * USDsInOutRatio_prec;
         } else {
-            USDsInOutRatio = USDsOutflow_average.mul(USDsInOutRatio_prec)/(USDsInflow_average);
+            USDsInOutRatio = USDsOutflow_average.mul(USDsInOutRatio_prec).div(USDsInflow_average);
         }
         lastUpdateTime = currTime;
         updateNextIndex = indexOld;
@@ -216,8 +215,8 @@ contract OracleV2 is Initializable, IOracle, OwnableUpgradeable {
         return _getCollateralPrice(SPAoracleQuoteTokenAddr)
             .mul(quoteTokenAmtPerSPA)
             .mul(SPAprice_prec)
-            /(SPAoracleQuoteToken_prec)
-            /(USDCprice_prec);
+            .div(SPAoracleQuoteToken_prec)
+            .div(USDCprice_prec);
     }
 
     function getUSDsPrice() external view override returns (uint) {
@@ -240,8 +239,8 @@ contract OracleV2 is Initializable, IOracle, OwnableUpgradeable {
         return _getCollateralPrice(USDsOracleQuoteTokenAddr)
             .mul(quoteTokenAmtPerUSDs)
             .mul(USDsPrice_prec)
-            /(USDsOracleQuoteToken_prec)
-            /(USDCprice_prec);
+            .div(USDsOracleQuoteToken_prec)
+            .div(USDCprice_prec);
     }
 
     function getUSDsPrice_average() external view override returns (uint) {
@@ -264,8 +263,8 @@ contract OracleV2 is Initializable, IOracle, OwnableUpgradeable {
         return _getCollateralPrice(USDsOracleQuoteTokenAddr)
             .mul(quoteTokenAmtPerUSDs)
             .mul(USDsPrice_prec)
-            /(USDsOracleQuoteToken_prec)
-            /(USDCprice_prec);
+            .div(USDsOracleQuoteToken_prec)
+            .div(USDCprice_prec);
     }
     function getCollateralPrice_prec(address collateralAddr) external view override returns (uint) {
         collateralStruct memory  collateralInfo = collateralsInfo[collateralAddr];

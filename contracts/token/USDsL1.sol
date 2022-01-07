@@ -18,7 +18,6 @@ import "arb-bridge-peripherals/contracts/tokenbridge/ethereum/gateway/L1GatewayR
  * @author Sperax Foundation
  */
 contract USDsL1 is Initializable, ERC20Upgradeable, OwnableUpgradeable, ICustomToken {
-    using SafeMathUpgradeable for uint256;
     using StableMath for uint256;
 
     // Arbitrum Bridge

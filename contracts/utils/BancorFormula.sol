@@ -1,15 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
 
-import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
-
 /**
  * @title Bancor formula to calculate power function
  * @dev modified based on https://github.com/bancorprotocol/contracts-solidity/blob/master/solidity/contracts/converter/BancorFormula.sol
  * @dev removed content unrelated to power()
  */
 contract BancorFormula {
-    using SafeMathUpgradeable for uint256;
 
     uint256 private constant ONE = 1;
     uint32 private constant MAX_WEIGHT = 1000000;
@@ -378,7 +375,7 @@ contract BancorFormula {
         xi = (xi * _x) >> _precision;
         res += xi * 0x0000000000000000000000000000001; // add x^33 * (33! / 33!)
 
-        return res / 0x688589cc0e9505e2f2fee5580000000 + _x + (ONE << _precision); ///ide by 33! and then add x^1 / 1! + x^0 / 0!
+        return res / 0x688589cc0e9505e2f2fee5580000000 + _x + (ONE << _precision); // divide by 33! and then add x^1 / 1! + x^0 / 0!
     }
 
     /**
@@ -511,7 +508,7 @@ contract BancorFormula {
         res += z * 0x0000000000000014; // add y^19 * (20! / 19!)
         z = (z * y) / FIXED_1;
         res += z * 0x0000000000000001; // add y^20 * (20! / 20!)
-        res = res / 0x21c3677c82b40000 + y + FIXED_1; ///ide by 20! and then add y^1 / 1! + y^0 / 0!
+        res = res / 0x21c3677c82b40000 + y + FIXED_1; // divide by 20! and then add y^1 / 1! + y^0 / 0!
 
         if ((x & 0x010000000000000000000000000000000) != 0)
             res = (res * 0x1c3d6a24ed82218787d624d3e5eba95f9) / 0x18ebef9eac820ae8682b9793ac6d1e776; // multiply by e^2^(-3)

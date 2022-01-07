@@ -25,7 +25,6 @@ import "arb-bridge-peripherals/contracts/tokenbridge/libraries/aeERC20.sol";
   * @author Sperax Foundation
   */
 contract USDsL2V2 is aeERC20, OwnableUpgradeable, IArbToken, IUSDs, ReentrancyGuardUpgradeable {
-    using SafeMathUpgradeable for uint256;
     using StableMath for uint256;
 
     event TotalSupplyUpdated(

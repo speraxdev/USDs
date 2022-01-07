@@ -14,7 +14,6 @@ import "../interfaces/IStrategy.sol";
  */
 abstract contract InitializableAbstractStrategy is IStrategy, Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeable {
     using SafeERC20Upgradeable for IERC20Upgradeable;
-    using SafeMathUpgradeable for uint;
 
     event PTokenAdded(address indexed _asset, address _pToken);
     event PTokenRemoved(address indexed _asset, address _pToken);
