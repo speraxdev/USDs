@@ -19,7 +19,6 @@ import "../utils/BancorFormula.sol";
  */
 contract VaultCoreToolsV2 is Initializable {
 	using SafeERC20Upgradeable for ERC20Upgradeable;
-	using SafeMathUpgradeable for uint;
 	using StableMath for uint;
 
 	BancorFormula public BancorInstance;
