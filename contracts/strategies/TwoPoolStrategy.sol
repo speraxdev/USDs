@@ -178,7 +178,7 @@ contract TwoPoolStrategy is InitializableAbstractStrategy {
         require(_recipient != address(0), "Invalid recipient");
         require(supportsCollateral(_asset), "Unsupported collateral");
         (uint256 contractPTokens, , uint256 totalPTokens) = _getTotalPTokens();
-        int128 poolCoinIndex = int128(_getPoolCoinIndex(_asset));
+        int128 poolCoinIndex = int128(int256(_getPoolCoinIndex(_asset)));
         uint256 assetInterest = checkInterestEarned(_asset);
         require(assetInterest > 0, "No interest earned");
         uint256 maxAmount = curvePool.calc_withdraw_one_coin(
@@ -204,7 +204,7 @@ contract TwoPoolStrategy is InitializableAbstractStrategy {
         uint256 balance_before = IERC20(_asset).balanceOf(address(this));
         curvePool.remove_liquidity_one_coin(
             maxBurnedPTokens,
-            int128(_getPoolCoinIndex(_asset)),
+            int128(int256(_getPoolCoinIndex(_asset))),
             minRedeemAmount
         );
         uint256 _amount_received = IERC20(_asset).balanceOf(address(this))-(balance_before);
@@ -258,7 +258,7 @@ contract TwoPoolStrategy is InitializableAbstractStrategy {
         if (totalPTokens > lpAssetThreshold) {
             balance = curvePool.calc_withdraw_one_coin(
                 totalPTokens,
-                int128(poolCoinIndex)
+                int128(int256(poolCoinIndex))
             );
         }
     }
@@ -284,7 +284,7 @@ contract TwoPoolStrategy is InitializableAbstractStrategy {
         if (totalPTokens > lpAssetThreshold) {
             maxAmount = curvePool.calc_withdraw_one_coin(
                 totalPTokens,
-                int128(poolCoinIndex)
+                int128(int256(poolCoinIndex))
             );
         }
         uint256 assetInterest;
@@ -317,7 +317,7 @@ contract TwoPoolStrategy is InitializableAbstractStrategy {
         if (totalPTokens > lpAssetThreshold) {
             maxAmount = curvePool.calc_withdraw_one_coin(
                 totalPTokens,
-                int128(_getPoolCoinIndex(_asset))
+                int128(int256(_getPoolCoinIndex(_asset)))
             );
         }
         uint256 maxBurnedPTokens = totalPTokens*(_amount)/(maxAmount);
@@ -341,7 +341,7 @@ contract TwoPoolStrategy is InitializableAbstractStrategy {
         uint256 balance_before = IERC20(_asset).balanceOf(address(this));
         curvePool.remove_liquidity_one_coin(
             maxBurnedPTokens,
-            int128(_getPoolCoinIndex(_asset)),
+            int128(int256(_getPoolCoinIndex(_asset))),
             minRedeemAmount
         );
         uint256 _amount_received = IERC20(_asset).balanceOf(address(this))-(balance_before);
@@ -370,7 +370,7 @@ contract TwoPoolStrategy is InitializableAbstractStrategy {
         pToken.safeApprove(platformAddress, type (uint256).max);
         // Gauge for LP token
         pToken.safeApprove(address(curveGauge), 0);
-        pToken.safeApprove(address(curveGauge), uint256(-1));
+        pToken.safeApprove(address(curveGauge), type (uint256).max);
     }
 
     /**
@@ -418,7 +418,8 @@ contract TwoPoolStrategy is InitializableAbstractStrategy {
         uint256 assetPrice_prec = oracle.getCollateralPrice_prec(_asset);
         uint256 assetPrice = oracle.getCollateralPrice(_asset);
         expectedAssetAmt = lpTokenAmt*(curvePool.get_virtual_price())*(assetPrice_prec)/(assetPrice)/(1e18) //get_virtual_price()'s precsion
-            .scaleBy(int8(ERC20(_asset).decimals() - 18));
+           // .scaleBy(int8(ERC20(_asset).decimals() - 18))
+          ;
     }
 
     /**
@@ -434,10 +435,10 @@ contract TwoPoolStrategy is InitializableAbstractStrategy {
         uint256 assetPrice_prec = oracle.getCollateralPrice_prec(_asset);
         uint256 assetPrice = oracle.getCollateralPrice(_asset);
         expectedPtokenAmt = assetAmt
-            .scaleBy(int8(18 - ERC20(_asset).decimals()))
-            .mul(assetPrice)
-            .mul(1e18)
-            .div(curvePool.get_virtual_price())
-            .div(assetPrice_prec);
+          //  .scaleBy(int8(18 - ERC20(_asset).decimals()))
+            *(assetPrice)
+            *(1e18)
+            /(curvePool.get_virtual_price())
+            /(assetPrice_prec);
     }
 }

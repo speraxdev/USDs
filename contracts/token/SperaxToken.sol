@@ -47,7 +47,7 @@ contract SperaxToken is ERC20Pausable, MintPausable, Ownable {
      * @dev Initialize the contract give all tokens to the deployer
      */
     constructor(string memory _name, string memory _symbol, uint256 _initialSupply) 
-    ERC20(_name, _symbol) public {
+    ERC20(_name, _symbol)  {
         _mint(_msgSender(), _initialSupply * (10 ** 18));
     }
 
@@ -105,7 +105,8 @@ contract SperaxToken is ERC20Pausable, MintPausable, Ownable {
      * `amount`.
      */
     function burnFrom(address account, uint256 amount) public {
-        uint256 decreasedAllowance = allowance(account, _msgSender()).sub(amount, "SperaxToken: burn amount exceeds allowance");
+      //  uint256 decreasedAllowance = allowance(account, _msgSender()).sub(amount, "SperaxToken: burn amount exceeds allowance");
+      uint256 decreasedAllowance = allowance(account, _msgSender())-(amount);
 
         _approve(account, _msgSender(), decreasedAllowance);
         _burn(account, amount);
@@ -147,7 +148,7 @@ contract SperaxToken is ERC20Pausable, MintPausable, Ownable {
         require(account != address(0), "SperaxToken: release zero address");
 
         TimeLock storage timelock = _timelock[account];
-        timelock.amount = timelock.amount.sub(releaseAmount);
+        timelock.amount = timelock.amount-(releaseAmount);
         if(timelock.amount == 0) {
             timelock.releaseTime = 0;
         }
@@ -211,11 +212,11 @@ contract SperaxToken is ERC20Pausable, MintPausable, Ownable {
 
         // Check whether the locked amount is triggered
         TimeLock storage timelock = _timelock[from];
-        if(timelock.releaseTime != 0 && balanceOf(from).sub(amount) < timelock.amount) {
+        if(timelock.releaseTime != 0 && balanceOf(from)-(amount) < timelock.amount) {
             require(block.timestamp >= timelock.releaseTime, "SperaxToken: current time is before from account release time");
 
             // Update the locked `amount` if the current time reaches the release time
-            timelock.amount = balanceOf(from).sub(amount);
+            timelock.amount = balanceOf(from)-(amount);
             if(timelock.amount == 0) {
                 timelock.releaseTime = 0;
             }

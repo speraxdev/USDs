@@ -20,7 +20,7 @@ contract MintPausable is Context {
     /**
      * @dev Initializes the contract in unpaused state.
      */
-    constructor() internal {
+    constructor() {
         _mintPaused = false;
     }
 

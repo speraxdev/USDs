@@ -23,7 +23,6 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/Create2.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
 import "arb-bridge-eth/contracts/bridge/interfaces/IInbox.sol";
 import "arb-bridge-eth/contracts/libraries/ProxyUtil.sol";
@@ -242,7 +241,7 @@ abstract contract L1ArbitrumGateway is L1ArbitrumMessenger, TokenGateway {
         uint256 prevBalance = IERC20(_l1Token).balanceOf(address(this));
         IERC20(_l1Token).safeTransferFrom(_from, address(this), _amount);
         uint256 postBalance = IERC20(_l1Token).balanceOf(address(this));
-        return SafeMath.sub(postBalance, prevBalance);
+        return (postBalance - prevBalance);
     }
 
     function getOutboundCalldata(
