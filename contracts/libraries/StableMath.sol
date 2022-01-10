@@ -23,7 +23,7 @@ library StableMath {
      * @param adjustment Amount to adjust by e.g. scaleBy(1e18, -1) == 1e17
      */
     function scaleBy(uint256 x, int256 adjustment)
-        internal
+        public
         pure
         returns (uint256)
     {

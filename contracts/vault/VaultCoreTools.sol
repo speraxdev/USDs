@@ -59,9 +59,9 @@ contract VaultCoreTools is Initializable {
 				/(_vaultContract.chi_beta_prec())
 				/(precisionUSDs)
 				/(precisionUSDs);
-			(, afterB) = _vaultContract.chiInit()-(chiAdjustmentB); //trysub
+			( afterB) = _vaultContract.chiInit()-(chiAdjustmentB); //trysub
 		}
-		(, chiTarget_) = afterB-(chiAdjustmentA);//trysub
+		( chiTarget_) = afterB-(chiAdjustmentA);//trysub
 		if (chiTarget_ > _vaultContract.chi_prec()) {
 			chiTarget_ = _vaultContract.chi_prec();
 		}
