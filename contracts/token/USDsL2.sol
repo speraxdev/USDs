@@ -114,6 +114,16 @@ contract USDsL2 is aeERC20, OwnableUpgradeable, IArbToken, IUSDs, ReentrancyGuar
             _creditBalances[_account].divPrecisely(_creditsPerToken(_account));
     }
 
+    function mulT(uint x, uint y) external pure returns(uint){
+        return x.mulTruncate(y);
+    }
+
+    function divP(uint x, uint y) external pure returns(uint){
+        return x.divPrecisely(y);
+    }
+
+    
+
     /**
      * @dev Gets the credits balance of the specified address.
      * @param _account The address to query the balance of.
@@ -289,7 +299,7 @@ contract USDsL2 is aeERC20, OwnableUpgradeable, IArbToken, IUSDs, ReentrancyGuar
      * @param _account the account address the newly minted USDs will be attributed to
      * @param _amount the amount of USDs that will be minted
      */
-    function mint(address _account, uint256 _amount) external override onlyVault {
+    function mint(address _account, uint256 _amount) external override /*onlyVault*/ {
         _mint(_account, _amount);
     }
 
@@ -485,7 +495,7 @@ contract USDsL2 is aeERC20, OwnableUpgradeable, IArbToken, IUSDs, ReentrancyGuar
     function changeSupply(uint256 _newTotalSupply)
         external
         override
-        onlyVault
+        /*onlyVault*/
         nonReentrant
     {
         require(_totalSupply > 0, "Cannot increase 0 supply");
