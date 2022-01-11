@@ -53,25 +53,23 @@ def main():
     while(True):
         random_amount_0_desired= random.randint(10**18,10**25)
         random_amount_1_desired= random.randint(10**6,10**13)
-
         amount_0_min=random.randint(10**18,random_amount_0_desired)
         amount_1_min=random.randint(10**6,random_amount_1_desired)
+
         data = [usds, usdc, 500, -276420, -276220, random_amount_0_desired, random_amount_1_desired,amount_0_min, amount_1_min, owner, brownie.chain.time() + 100000]
         
-        print(f"\nAmount 0 Desired: {random_amount_0_desired}\t\tAmount 1 Desired: {random_amount_1_desired}") 
-        print(f"Min Amount 0: {amount_0_min}\t\tMin Amount 1: {amount_1_min}") 
+        print(f"\namount 0: {random_amount_0_desired}\t\tmin: {amount_0_min}") 
+        print(f"amount 1: {random_amount_1_desired}\t\tmin: {amount_1_min}") 
         
         txn = nftm.mint(data, {'from': owner, 'gas_limit':12000000})
         print(txn.revert_msg)
-        if random.randint(0,1)==1:
-       
+
+        if random.randint(0,1) == 1:
             rebase_factor=random.randint(2,99)
-        
             initial_totalSupply=usds.totalSupply()
             change_usds_tSupply=usds.changeSupply(usds.totalsupply()*rebase_factor)
             non_rebasing_supply=usds.nonRebasingSupply()
             rebasing_credits_per_token=usds.rebasingCreditsPerToken()
-
             print(f"initial supply: {initial_totalSupply}\t\trebased: {change_usds_tSupply}") 
             print(f"Non rebasing Supply: {non_rebasing_supply}\t\trebasing credits per token: {rebasing_credits_per_token}") 
 
