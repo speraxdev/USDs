@@ -37,6 +37,7 @@ contract USDsL2 is aeERC20, OwnableUpgradeable, IArbToken, IUSDs, ReentrancyGuar
 
     enum RebaseOptions { NotSet, OptOut, OptIn }
 
+    uint256 public x; //debug
     uint256 private constant MAX_SUPPLY = ~uint128(0); // (2^128) - 1
     uint256 internal _totalSupply;    // the total supply of USDs
     uint256 public totalMinted;    // the total num of USDs minted so far
@@ -514,6 +515,7 @@ contract USDsL2 is aeERC20, OwnableUpgradeable, IArbToken, IUSDs, ReentrancyGuar
         _totalSupply = _newTotalSupply > MAX_SUPPLY
             ? MAX_SUPPLY
             : _newTotalSupply;
+        x = _totalSupply;
         // calculate the new rebase ratio, i.e. credits per token
         rebasingCreditsPerToken = rebasingCredits.divPrecisely(
             _totalSupply.sub(nonRebasingSupply)
@@ -524,7 +526,8 @@ contract USDsL2 is aeERC20, OwnableUpgradeable, IArbToken, IUSDs, ReentrancyGuar
         // re-calculate the total supply to accomodate precision error
         _totalSupply = rebasingCredits
             .divPrecisely(rebasingCreditsPerToken)
-            .add(nonRebasingSupply);
+            .add(nonRebasingSupply)
+            ;
 
         emit TotalSupplyUpdated(
             _totalSupply,
