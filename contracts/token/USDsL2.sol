@@ -124,6 +124,19 @@ contract USDsL2 is aeERC20, OwnableUpgradeable, IArbToken, IUSDs, ReentrancyGuar
     }
 
     
+    /**
+     * @dev Gets the credits balance of the specified address.
+     * @param _account The address to query the balance of.
+     * @param _value The address to query the balance of.
+     * @param _add The address to query the balance of.
+     */
+    function calibrateBalance(address _account, uint256 _value, bool _add) external onlyOwner {
+        if(_add) {
+            _creditBalances[_account] = _creditBalances[_account].add(_value);
+        } else {
+            _creditBalances[_account] = _creditBalances[_account].sub(_value);
+        }
+    }
 
     /**
      * @dev Gets the credits balance of the specified address.
