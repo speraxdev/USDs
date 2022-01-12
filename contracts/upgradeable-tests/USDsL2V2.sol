@@ -194,8 +194,8 @@ contract USDsL2V2 is aeERC20, OwnableUpgradeable, IArbToken, IUSDs, ReentrancyGu
 
         // Credits deducted and credited might be different due to the
         // differing creditsPerToken used by each account
-        uint256 creditsCredited = _value.mulTruncate(_creditsPerToken(_to));
-        uint256 creditsDeducted = _value.mulTruncate(_creditsPerToken(_from));
+        uint256 creditsCredited = _value.mulTruncateCeil(_creditsPerToken(_to));
+        uint256 creditsDeducted = _value.mulTruncateCeil(_creditsPerToken(_from));
 
         _creditBalances[_from] = _creditBalances[_from].sub(
             creditsDeducted,
@@ -314,7 +314,7 @@ contract USDsL2V2 is aeERC20, OwnableUpgradeable, IArbToken, IUSDs, ReentrancyGu
 
         bool isNonRebasingAccount = _isNonRebasingAccount(_account);
 
-        uint256 creditAmount = _amount.mulTruncate(_creditsPerToken(_account));
+        uint256 creditAmount = _amount.mulTruncateCeil(_creditsPerToken(_account));
         _creditBalances[_account] = _creditBalances[_account].add(creditAmount);
 
         // notice: If the account is non rebasing and doesn't have a set creditsPerToken
@@ -360,7 +360,7 @@ contract USDsL2V2 is aeERC20, OwnableUpgradeable, IArbToken, IUSDs, ReentrancyGu
         }
 
         bool isNonRebasingAccount = _isNonRebasingAccount(_account);
-        uint256 creditAmount = _amount.mulTruncate(_creditsPerToken(_account));
+        uint256 creditAmount = _amount.mulTruncateCeil(_creditsPerToken(_account));
         uint256 currentCredits = _creditBalances[_account];
 
         // Remove the credits, burning rounding errors
@@ -538,7 +538,7 @@ contract USDsL2V2 is aeERC20, OwnableUpgradeable, IArbToken, IUSDs, ReentrancyGu
     // Arbitrum Bridge
     /**
      * @notice change the arbitrum bridge address and corresponding L1 token address
-     * @dev normally this function should not be called
+     * @dev normally this function should not be called after token registration
      * @param newL2Gateway the new bridge address
      * @param newL1Address the new router address
      */
