@@ -14,45 +14,44 @@ import sys
 #  usds.changeSupply(2*usds.totalSupply())
 
 # usdt = '0xfd086bc7cd5c481dcc9c85ebe478a1c0b69fcbb9'
-usds = None
-usdc = None 
-nftm = None
-owner = None
-pool = None
 factory = brownie.interface.IUniswapV3Factory('0x1F98431c8aD98523631AE4a59f267346ea31F984') 
+usds = brownie.Contract.from_abi('USDs', '0xD74f5255D557944cf7Dd0E45FF521520002D5748', USDsL2.abi)
+usdc = brownie.Contract.from_abi('USDC', '0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8', MockToken.abi)
+nftm =  brownie.interface.INonfungiblePositionManager('0xC36442b4a4522E871399CD717aBDD847Ab11FE88')
+owner = brownie.accounts.at('0xc28c6970D8A345988e8335b1C229dEA3c802e0a6')
 def signal_handler(signal, frame):
     sys.exit(0)
 
 def main():
     signal.signal(signal.SIGINT, signal_handler)
+    pool =  factory.getPool(usds,usdc, 500)
+    
 
-
-    global usds, usdc, nftm, owner, pool
-    if not usds:
-        owner = brownie.accounts.add(os.getenv("0x07e3180be78c83d77dfa4dfee2debe9e301a84f67549e9b2a2b0043125015218")) # minter: '0x07e3180be78c83d77dfa4dfee2debe9e301a84f67549e9b2a2b0043125015218'
+    # global usds, usdc, nftm, owner
+    # if not usds:
+        # owner = brownie.accounts.add(os.getenv("0x07e3180be78c83d77dfa4dfee2debe9e301a84f67549e9b2a2b0043125015218")) # minter: '0x07e3180be78c83d77dfa4dfee2debe9e301a84f67549e9b2a2b0043125015218'
         
-        usdc =  MockToken.deploy(
-            "USDc Token",
-            "USDc",
-            6,
-            {'from': owner}
-        )
-        while(True):
-            usds = USDsL2.deploy({
-                'from': owner
-            })
-            if(usds.address.lower() < usdc.address.lower()):
-                break
+        # usdc =  MockToken.deploy(
+        #     "USDc Token",
+        #     "USDc",
+        #     6,
+        #     {'from': owner}
+        # )
+        # while(True):
+        #     usds = USDsL2.deploy({
+        #         'from': owner
+        #     })
+        #     if(usds.address.lower() < usdc.address.lower()):
+        #         break
         
-        print('usdsL2: ', usds)
-        nftm = brownie.interface.INonfungiblePositionManager('0xC36442b4a4522E871399CD717aBDD847Ab11FE88')
-        usds.initialize('USDs', 'S', '0xB4F9A869fcfDc8D301E5a8f2fcDB655addEE3bCb', '0xB4F9A869fcfDc8D301E5a8f2fcDB655addEE3bCb', '0xB4F9A869fcfDc8D301E5a8f2fcDB655addEE3bCb', {'from':owner})
-        usds.mint(owner, 10**26, {'from':owner})
-        txn = nftm.createAndInitializePoolIfNecessary(usds, usdc, 500, 79224306130848112672356, {'from': owner})
-        pool =  factory.getPool(usds,usdc, 500)
+        # print('usdsL2: ', usds)
+        # nftm = brownie.interface.INonfungiblePositionManager('0xC36442b4a4522E871399CD717aBDD847Ab11FE88')
+        # usds.initialize('USDs', 'S', '0xB4F9A869fcfDc8D301E5a8f2fcDB655addEE3bCb', '0xB4F9A869fcfDc8D301E5a8f2fcDB655addEE3bCb', '0xB4F9A869fcfDc8D301E5a8f2fcDB655addEE3bCb', {'from':owner})
+        # usds.mint(owner, 10**26, {'from':owner})
+        # txn = nftm.createAndInitializePoolIfNecessary(usds, usdc, 500, 79224306130848112672356, {'from': owner})
         
-        usds.approve(nftm.address, 10**28, {'from':owner})
-        usdc.approve(nftm.address, 10**28, {'from': owner})    
+        # usds.approve(nftm.address, 10**28, {'from':owner})
+        # usdc.approve(nftm.address, 10**28, {'from': owner})    
         
     #   $ brownie run ./scripts/hypothesis_test.py --network arbitrum-main-fork -t -I  
     #   data = [usds, usdc, 500, -276420, -276220, 9999979817270147043, 9048980, 5243166300392573143, 4268818, owner, chain.time() + 100000]
