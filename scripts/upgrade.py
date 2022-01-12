@@ -45,30 +45,33 @@ def main():
     signal.signal(signal.SIGINT, signal_handler)
 
     # proxy admin account
-    admin = accounts.load(
-        click.prompt(
-            "admin account",
-            type=click.Choice(accounts.load())
-        )
-    )
+    # admin = accounts.load(
+    #     click.prompt(
+    #         "admin account",
+    #         type=click.Choice(accounts.load())
+    #     )
+    # )
+    admin = accounts.at('0x42d2f9f84eeb86574aa4e9fcccfd74066d809600')
     print(f"admin account: {admin.address}\n")
 
     # contract owner account
-    owner = accounts.load(
-        click.prompt(
-            "owner account",
-            type=click.Choice(accounts.load())
-        )
-    )
+    # owner = accounts.load(
+    #     click.prompt(
+    #         "owner account",
+    #         type=click.Choice(accounts.load())
+    #     )
+    # )
+    owner = accounts.at('0xc28c6970D8A345988e8335b1C229dEA3c802e0a6')
     print(f"contract owner account: {owner.address}\n")
 
     # fee vault account
-    fee_vault = accounts.load(
-        click.prompt(
-            "fee_vault account",
-            type=click.Choice(accounts.load())
-        )
-    )
+    # fee_vault = accounts.load(
+    #     click.prompt(
+    #         "fee_vault account",
+    #         type=click.Choice(accounts.load())
+    #     )
+    # )
+    fee_vault = accounts.at('0x4F987B24bD2194a574bB3F57b4e66B7f7eD36196')
     print(f"fee_vault account: {fee_vault.address}\n")
 
 
@@ -126,7 +129,7 @@ def main():
     print(f"\n{network.show_active()}:\n")
 
     # proxy admin contract
-    proxy_admin = ProxyAdmin[-1]
+    proxy_admin = brownie.Contract.from_abi('ProxyAdmin', '0x3E49925A79CbFb68BAa5bc9DFb4f7D955D1ddF25', ProxyAdmin.abi)
     print(f"\n proxy_admin address: {proxy_admin.address}\n")
 
     if vault_tools_proxy_upgrade:
@@ -256,7 +259,7 @@ def main():
         print(f"original {USDs} proxy address: {usds_proxy.address}")
         print(f"upgraded {USDs} proxy address: {new_usds_proxy.address}")
         print(f"upgraded {USDs} implementation address: {new_usds.address}")
-        print(f"{USDs} version: {new_usds_proxy.version()}")
+        # print(f"{USDs} version: {new_usds_proxy.version()}")
         onlyDevelopment(lambda: print(f"vaultAddress is still (should be {vitalik_address}): {usds_proxy.vaultAddress()}\n"))
 
     if oracle_proxy_upgrade:
