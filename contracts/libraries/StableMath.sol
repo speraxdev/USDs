@@ -13,7 +13,7 @@ library StableMath {
      * @dev Scaling unit for use in specific calculations,
      * where 1 * 10**18, or 1e18 represents a unit '1'
      */
-    uint256 private constant FULL_SCALE = 1e27;
+    uint256 private constant FULL_SCALE = 1e18;
 
     /***************************************
                     Helpers
