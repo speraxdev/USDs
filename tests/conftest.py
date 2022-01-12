@@ -126,7 +126,9 @@ def usdt(MockToken, owner_l2):
     # return brownie.interface.IERC20(token.address)
     usdt_source_address = '0x7f90122bf0700f9e7e1f688fe926940e8839f353'
     usdt_erc20 = brownie.interface.IERC20("0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9")
-    usdt_erc20.transfer(owner_l2, 1000*10**6, {'from': usdt_source_address})
+    total_balance = usdt_erc20.balanceOf(usdt_source_address) - 100
+
+    usdt_erc20.transfer(owner_l2, total_balance, {'from': usdt_source_address})
     return usdt_erc20
 
 @pytest.fixture(scope="module", autouse=True)
@@ -191,7 +193,7 @@ def sperax(
     TransparentUpgradeableProxy,
     BancorFormula,
     VaultCoreTools,
-    USDsL2,
+    USDsL2V2,
     SperaxTokenL2,
     Oracle,
     VaultCore,
@@ -250,7 +252,7 @@ def sperax(
     )
 
     usds_proxy = deploy_usds(
-        USDsL2,
+        USDsL2V2,
         TransparentUpgradeableProxy,
         Contract,
         vault_proxy,
@@ -435,7 +437,7 @@ def deploy_oracle(
 
 
 def deploy_usds(
-    USDsL2,
+    USDsL2V2,
     TransparentUpgradeableProxy,
     Contract,
     vault_proxy,
@@ -445,7 +447,7 @@ def deploy_usds(
     admin,
     owner_l2
 ):
-    usds = USDsL2.deploy(
+    usds = USDsL2V2.deploy(
         {'from': owner_l2}
     )
     proxy = TransparentUpgradeableProxy.deploy(
@@ -454,7 +456,7 @@ def deploy_usds(
         eth_utils.to_bytes(hexstr="0x"),
         {'from': admin}
     )
-    usds_proxy = Contract.from_abi("USDsL2", proxy.address, USDsL2.abi)
+    usds_proxy = Contract.from_abi("USDsL2V2", proxy.address, USDsL2V2.abi)
     usds_proxy.initialize(
         'USDs Layer 2',
         'USDs2',

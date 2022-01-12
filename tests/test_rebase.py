@@ -67,7 +67,7 @@ def test_withdraw_from_strategy(sperax, usdt, owner_l2, accounts):
     # transfer usdt and spa to eoa_holder and contract_holder
     usdt_source_address = '0x7f90122bf0700f9e7e1f688fe926940e8839f353'
     usdt_erc20 = brownie.interface.IERC20("0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9")
-    usdt_erc20.transfer(eoa_holder, 1000000*10**6, {'from': usdt_source_address})
+    usdt_erc20.transfer(eoa_holder, 1000000*10**6, {'from': owner_l2})
     spa.transfer(eoa_holder, 4*10**18, {'from': owner_l2})
     # mint some USDs for eoa_holder and contract_holder
     mintUSDs(10000 * 10**18, usds_proxy, spa, vault_proxy, eoa_holder, usdt)
@@ -109,8 +109,8 @@ def test_allocate(sperax, usdt, owner_l2, accounts):
     # transfer usdt and spa to eoa_holder and contract_holder
     usdt_source_address = '0x7f90122bf0700f9e7e1f688fe926940e8839f353'
     usdt_erc20 = brownie.interface.IERC20("0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9")
-    usdt_erc20.transfer(eoa_holder, 1000000*10**6, {'from': usdt_source_address})
-    usdt_erc20.transfer(contract_holder, 1000000*10**6, {'from': usdt_source_address})
+    usdt_erc20.transfer(eoa_holder, 1000000*10**6, {'from': owner_l2})
+    usdt_erc20.transfer(contract_holder, 1000000*10**6, {'from': owner_l2})
     spa.transfer(eoa_holder, 4*10**18, {'from': owner_l2})
     spa.transfer(contract_holder, 4*10**18, {'from': owner_l2})
     # mint some USDs for eoa_holder and contract_holder
