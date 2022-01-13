@@ -1,12 +1,15 @@
 from brownie import (
     VaultCoreTools,
+    BancorFormula,
     accounts,
-    interface
+    interface,
+    Contract
 )
 import sys
 import os
 
 vaultCoreAddr = '0xF783DD830A4650D2A8594423F123250652340E3f'
+bancorAddr = '0x4c58845BeF21E772eeE8B370e378df64fA660CD3'
 vaultCoreTools = None
 
 def custom_print(message, value):
@@ -28,6 +31,7 @@ def main():
     owner = accounts.add(os.getenv('LOCAL_ACCOUNT_PRIVATE_KEY')) # minter: '0x07e3180be78c83d77dfa4dfee2debe9e301a84f67549e9b2a2b0043125015218'
     vaultCore = interface.IVaultCore(vaultCoreAddr)
     oracle = interface.IOracle(vaultCore.oracleAddr())
+    bancor = Contract.from_abi('BancorFormula', bancorAddr, BancorFormula.abi)
     # Vault core constants
     chi_alpha = vaultCore.chi_alpha()
     chi_beta = vaultCore.chi_beta() 
@@ -51,6 +55,7 @@ def main():
     global vaultCoreTools 
     if not vaultCoreTools:
         vaultCoreTools = VaultCoreTools.deploy({'from': owner});
+        vaultCoreTools.initialize(bancorAddr)
     print('vaultCoreTools deployed at: ', vaultCoreTools)
     while(True):
         try:
@@ -158,11 +163,15 @@ def main():
             a = swap_fee_a * usds_in_out_ratio_prec / swap_fee_a_prec
             calc_swap_fee_out = swap_fee_prec / 1000
             if(usds_in_out_ratio > a): 
-                calc_swap_fee_out = min(swap_fee_prec, swap_fee_A ** (usds_in_out_ratio - a) )
-            
+                exp = bancor.power(swap_fee_A, swap_fee_A_prec, (usds_in_out_ratio - a), usds_in_out_ratio_prec)
+                custom_print('exp[0]', exp[0])
+                custom_print('exp[1]', exp[1])  
+                ret = int(int((exp[0] * swap_fee_prec) >> exp[1])/100) 
+                custom_print('ret', ret) 
+                calc_swap_fee_out = min(swap_fee_prec, ret)
+            custom_print('calc_swap_fee_out: ', calc_swap_fee_out)
             txn = vaultCoreTools.calculateSwapFeeOut(vaultCoreAddr)
             custom_print('\ncalculateSwapFeeOut: ', txn.return_value)
-            custom_print('calc_swap_fee_out: ', calc_swap_fee_out)
             assert_calculation(calc_swap_fee_out, txn.return_value)
             print_events(txn)
             

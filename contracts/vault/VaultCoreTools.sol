@@ -213,6 +213,7 @@ contract VaultCoreTools is Initializable {
 				emit Debug(func, "else_if1_fee", fee);
 				return fee;
 			}
+			emit Debug(func, "else_exponentWithPrec", exponentWithPrec);
 			(uint powResWithPrec, uint8 powResPrec) = BancorInstance.power(
 				uint(_vaultContract.swapFee_A()), uint(_vaultContract.swapFee_A_prec()), uint32(exponentWithPrec), USDsInOutRatio_prec
 			);
