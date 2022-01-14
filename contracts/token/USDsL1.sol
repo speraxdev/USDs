@@ -58,7 +58,7 @@ contract USDsL1 is Initializable, ERC20Upgradeable, OwnableUpgradeable, ICustomT
     /// @dev we only set shouldRegisterGateway to true when in `registerTokenOnL2`
     function isArbitrumEnabled() external view override returns (uint8) {
         require(shouldRegisterGateway, "NOT_EXPECTED_CALL");
-        return uint8(0xa4b1);
+        return uint8(uint256(0xa4b1));
     }
 
     /**
@@ -95,13 +95,13 @@ contract USDsL1 is Initializable, ERC20Upgradeable, OwnableUpgradeable, ICustomT
             creditBackAddress
         );
 
-        L1GatewayRouter(router).setGateway{value:valueForRouter}(
-            bridge,
-            maxGas,
-            gasPriceBid,
-            maxSubmissionCostForRouter,
-            creditBackAddress
-        );
+        // L1GatewayRouter(router).setGateway{value:valueForRouter}(
+        //     bridge,
+        //     maxGas,
+        //     gasPriceBid,
+        //     maxSubmissionCostForRouter,
+        //     creditBackAddress
+        // );
 
         shouldRegisterGateway = prev;
     }

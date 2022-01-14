@@ -1,12 +1,13 @@
-// SPDX-License-Identifier: MIT
-pragma solidity >=0.6.11 <0.9.0;
+// SPDX-License-Identifier: agpl-3.0
+pragma solidity ^0.8.7;
 
+import { SafeMath } from "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
 // Based on StableMath from Stability Labs Pty. Ltd.
 // https://github.com/mstable/mStable-contracts/blob/master/contracts/shared/StableMath.sol
 
 library StableMath {
-
+    using SafeMath for uint256;
 
     /**
      * @dev Scaling unit for use in specific calculations,
@@ -20,17 +21,18 @@ library StableMath {
 
     /**
      * @dev Adjust the scale of an integer
-     * @param adjustment Amount to adjust by e.g. scaleBy(1e18, -1) == 1e17
+     * @param to Decimals to scale to
+     * @param from Decimals to scale from
      */
-    function scaleBy(uint256 x, int256 adjustment)
-        public
-        pure
-        returns (uint256)
-    {
-        if (adjustment > 0) {
-            x = x*(10**uint256(adjustment));
-        } else if (adjustment < 0) {
-            x = x/(10**uint256(adjustment * -1));
+    function scaleBy(
+        uint256 x,
+        uint256 to,
+        uint256 from
+    ) internal pure returns (uint256) {
+        if (to > from) {
+            x = x.mul(10**(to - from));
+        } else if (to < from) {
+            x = x.div(10**(from - to));
         }
         return x;
     }
@@ -66,9 +68,9 @@ library StableMath {
     ) internal pure returns (uint256) {
         // e.g. assume scale = fullScale
         // z = 10e18 * 9e17 = 9e36
-        uint256 z = x*(y);
-        // return 9e38 / 1e18 = 9e18
-        return z/(scale);
+        uint256 z = x.mul(y);
+        // return 9e36 / 1e18 = 9e18
+        return z.div(scale);
     }
 
     /**
@@ -84,11 +86,11 @@ library StableMath {
         returns (uint256)
     {
         // e.g. 8e17 * 17268172638 = 138145381104e17
-        uint256 scaled = x*(y);
+        uint256 scaled = x.mul(y);
         // e.g. 138145381104e17 + 9.99...e17 = 138145381113.99...e17
-        uint256 ceil = scaled+(FULL_SCALE-(1));
+        uint256 ceil = scaled.add(FULL_SCALE.sub(1));
         // e.g. 13814538111.399...e18 / 1e18 = 13814538111
-        return ceil/(FULL_SCALE);
+        return ceil.div(FULL_SCALE);
     }
 
     /**
@@ -105,8 +107,8 @@ library StableMath {
         returns (uint256)
     {
         // e.g. 8e18 * 1e18 = 8e36
-        uint256 z = x*(FULL_SCALE);
+        uint256 z = x.mul(FULL_SCALE);
         // e.g. 8e36 / 10e18 = 8e17
-        return z/(y);
+        return z.div(y);
     }
 }

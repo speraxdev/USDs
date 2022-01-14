@@ -161,7 +161,7 @@ contract USDsL2 is aeERC20, OwnableUpgradeable, IArbToken, IUSDs, ReentrancyGuar
         require(_value <= balanceOf(_from), "Transfer greater than balance");
 
         // notice: allowance balnce check depends on "sub" non-negative check
-        _allowances[_from][msg.sender] = _allowances[_from][msg.sender].sub(
+        _allowances[_from][msg.sender] = _allowances[_from][msg.sender]-(
             _value
         );
 
@@ -191,25 +191,24 @@ contract USDsL2 is aeERC20, OwnableUpgradeable, IArbToken, IUSDs, ReentrancyGuar
         uint256 creditsCredited = _value.mulTruncate(_creditsPerToken(_to));
         uint256 creditsDeducted = _value.mulTruncate(_creditsPerToken(_from));
 
-        _creditBalances[_from] = _creditBalances[_from].sub(
-            creditsDeducted,
-            "Transfer amount exceeds balance"
-        );
-        _creditBalances[_to] = _creditBalances[_to].add(creditsCredited);
+        _creditBalances[_from] = _creditBalances[_from]-(
+            creditsDeducted
+        );//"Transfer amount exceeds balance"
+        _creditBalances[_to] = _creditBalances[_to]+(creditsCredited);
 
         // update global stats
         if (isNonRebasingTo && !isNonRebasingFrom) {
             // Transfer to non-rebasing account from rebasing account, credits
             // are removed from the non rebasing tally
-            nonRebasingSupply = nonRebasingSupply.add(_value);
+            nonRebasingSupply = nonRebasingSupply+(_value);
             // Update rebasingCredits by subtracting the deducted amount
-            rebasingCredits = rebasingCredits.sub(creditsDeducted);
+            rebasingCredits = rebasingCredits-(creditsDeducted);
         } else if (!isNonRebasingTo && isNonRebasingFrom) {
             // Transfer to rebasing account from non-rebasing account
             // Decreasing non-rebasing credits by the amount that was sent
-            nonRebasingSupply = nonRebasingSupply.sub(_value);
+            nonRebasingSupply = nonRebasingSupply-(_value);
             // Update rebasingCredits by adding the credited amount
-            rebasingCredits = rebasingCredits.add(creditsCredited);
+            rebasingCredits = rebasingCredits+(creditsCredited);
         }
     }
 
@@ -257,7 +256,7 @@ contract USDsL2 is aeERC20, OwnableUpgradeable, IArbToken, IUSDs, ReentrancyGuar
         returns (bool)
     {
         _allowances[msg.sender][_spender] = _allowances[msg.sender][_spender]
-            .add(_addedValue);
+            +(_addedValue);
         emit Approval(msg.sender, _spender, _allowances[msg.sender][_spender]);
         return true;
     }
@@ -276,7 +275,7 @@ contract USDsL2 is aeERC20, OwnableUpgradeable, IArbToken, IUSDs, ReentrancyGuar
         if (_subtractedValue >= oldValue) {
             _allowances[msg.sender][_spender] = 0;
         } else {
-            _allowances[msg.sender][_spender] = oldValue.sub(_subtractedValue);
+            _allowances[msg.sender][_spender] = oldValue-(_subtractedValue);
         }
         emit Approval(msg.sender, _spender, _allowances[msg.sender][_spender]);
         return true;
@@ -309,20 +308,20 @@ contract USDsL2 is aeERC20, OwnableUpgradeable, IArbToken, IUSDs, ReentrancyGuar
         bool isNonRebasingAccount = _isNonRebasingAccount(_account);
 
         uint256 creditAmount = _amount.mulTruncate(_creditsPerToken(_account));
-        _creditBalances[_account] = _creditBalances[_account].add(creditAmount);
+        _creditBalances[_account] = _creditBalances[_account]+(creditAmount);
 
         // notice: If the account is non rebasing and doesn't have a set creditsPerToken
         //          then set it i.e. this is a mint from a fresh contract
 
         // update global stats
         if (isNonRebasingAccount) {
-            nonRebasingSupply = nonRebasingSupply.add(_amount);
+            nonRebasingSupply = nonRebasingSupply+(_amount);
         } else {
-            rebasingCredits = rebasingCredits.add(creditAmount);
+            rebasingCredits = rebasingCredits+(creditAmount);
         }
 
-        _totalSupply = _totalSupply.add(_amount);
-        totalMinted = totalMinted.add(_amount);
+        _totalSupply = _totalSupply+(_amount);
+        totalMinted = totalMinted+(_amount);
 
         require(_totalSupply < MAX_SUPPLY, "Max supply");
 
@@ -364,7 +363,7 @@ contract USDsL2 is aeERC20, OwnableUpgradeable, IArbToken, IUSDs, ReentrancyGuar
             // Handle dust from rounding
             _creditBalances[_account] = 0;
         } else if (currentCredits > creditAmount) {
-            _creditBalances[_account] = _creditBalances[_account].sub(
+            _creditBalances[_account] = _creditBalances[_account]-(
                 creditAmount
             );
         } else {
@@ -373,13 +372,13 @@ contract USDsL2 is aeERC20, OwnableUpgradeable, IArbToken, IUSDs, ReentrancyGuar
 
         // Remove from the credit tallies and non-rebasing supply
         if (isNonRebasingAccount) {
-            nonRebasingSupply = nonRebasingSupply.sub(_amount);
+            nonRebasingSupply = nonRebasingSupply-(_amount);
         } else {
-            rebasingCredits = rebasingCredits.sub(creditAmount);
+            rebasingCredits = rebasingCredits-(creditAmount);
         }
 
-        _totalSupply = _totalSupply.sub(_amount);
-        totalBurnt = totalBurnt.add(_amount);
+        _totalSupply = _totalSupply-(_amount);
+        totalBurnt = totalBurnt+(_amount);
         emit Transfer(_account, address(0), _amount);
     }
 
@@ -422,9 +421,9 @@ contract USDsL2 is aeERC20, OwnableUpgradeable, IArbToken, IUSDs, ReentrancyGuar
             // Set fixed credits per token for this account
             nonRebasingCreditsPerToken[_account] = rebasingCreditsPerToken;
             // Update non rebasing supply
-            nonRebasingSupply = nonRebasingSupply.add(balanceOf(_account));
+            nonRebasingSupply = nonRebasingSupply+(balanceOf(_account));
             // Update credit tallies
-            rebasingCredits = rebasingCredits.sub(_creditBalances[_account]);
+            rebasingCredits = rebasingCredits-(_creditBalances[_account]);
         }
     }
 
@@ -438,17 +437,17 @@ contract USDsL2 is aeERC20, OwnableUpgradeable, IArbToken, IUSDs, ReentrancyGuar
 
         // Convert balance into the same amount at the current exchange rate
         uint256 newCreditBalance = _creditBalances[toOptIn]
-            .mul(rebasingCreditsPerToken)
-            .div(_creditsPerToken(toOptIn));
+            *(rebasingCreditsPerToken)
+            /(_creditsPerToken(toOptIn));
 
         // Decreasing non rebasing supply
-        nonRebasingSupply = nonRebasingSupply.sub(balanceOf(toOptIn));
+        nonRebasingSupply = nonRebasingSupply-(balanceOf(toOptIn));
 
         _creditBalances[toOptIn] = newCreditBalance;
 
         // Increase rebasing credits, totalSupply remains unchanged so no
         // adjustment necessary
-        rebasingCredits = rebasingCredits.add(_creditBalances[toOptIn]);
+        rebasingCredits = rebasingCredits+(_creditBalances[toOptIn]);
 
         rebaseState[toOptIn] = RebaseOptions.OptIn;
 
@@ -463,13 +462,13 @@ contract USDsL2 is aeERC20, OwnableUpgradeable, IArbToken, IUSDs, ReentrancyGuar
         require(!_isNonRebasingAccount(toOptOut), "Account has not opted in");
 
         // Increase non rebasing supply
-        nonRebasingSupply = nonRebasingSupply.add(balanceOf(toOptOut));
+        nonRebasingSupply = nonRebasingSupply+(balanceOf(toOptOut));
         // Set fixed credits per token
         nonRebasingCreditsPerToken[toOptOut] = rebasingCreditsPerToken;
 
         // Decrease rebasing credits, total supply remains unchanged so no
         // adjustment necessary
-        rebasingCredits = rebasingCredits.sub(_creditBalances[toOptOut]);
+        rebasingCredits = rebasingCredits-(_creditBalances[toOptOut]);
 
         // Mark explicitly opted out of rebasing
         rebaseState[toOptOut] = RebaseOptions.OptOut;
@@ -504,7 +503,7 @@ contract USDsL2 is aeERC20, OwnableUpgradeable, IArbToken, IUSDs, ReentrancyGuar
             : _newTotalSupply;
         // calculate the new rebase ratio, i.e. credits per token
         rebasingCreditsPerToken = rebasingCredits.divPrecisely(
-            _totalSupply.sub(nonRebasingSupply)
+            _totalSupply-(nonRebasingSupply)
         );
 
         require(rebasingCreditsPerToken > 0, "Invalid change in supply");
@@ -512,7 +511,7 @@ contract USDsL2 is aeERC20, OwnableUpgradeable, IArbToken, IUSDs, ReentrancyGuar
         // re-calculate the total supply to accomodate precision error
         _totalSupply = rebasingCredits
             .divPrecisely(rebasingCreditsPerToken)
-            .add(nonRebasingSupply);
+            +(nonRebasingSupply);
 
         emit TotalSupplyUpdated(
             _totalSupply,
@@ -522,11 +521,11 @@ contract USDsL2 is aeERC20, OwnableUpgradeable, IArbToken, IUSDs, ReentrancyGuar
     }
 
     function mintedViaUsers() external view override returns (uint256) {
-        return totalMinted.sub(mintedViaGateway);
+        return totalMinted-(mintedViaGateway);
     }
 
     function burntViaUsers() external view override returns (uint256) {
-        return totalBurnt.sub(burntViaGateway);
+        return totalBurnt-(burntViaGateway);
     }
 
     // Arbitrum Bridge
@@ -549,11 +548,11 @@ contract USDsL2 is aeERC20, OwnableUpgradeable, IArbToken, IUSDs, ReentrancyGuar
 
     function bridgeMint(address account, uint256 amount) external override onlyGateway {
         _mint(account, amount);
-        mintedViaGateway = mintedViaGateway.add(mintedViaGateway);
+        mintedViaGateway = mintedViaGateway+(mintedViaGateway);
     }
 
     function bridgeBurn(address account, uint256 amount) external override onlyGateway {
         _burn(account, amount);
-        burntViaGateway = burntViaGateway.add(burntViaGateway);
+        burntViaGateway = burntViaGateway+(burntViaGateway);
     }
 }

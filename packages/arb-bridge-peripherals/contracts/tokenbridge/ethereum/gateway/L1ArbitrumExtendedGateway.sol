@@ -68,43 +68,43 @@ abstract contract L1ArbitrumExtendedGateway is L1ArbitrumGateway {
      * @param _newData data to be used in inboundEscrowAndCall
      * @param _data optional data for external call upon transfering the exit
      */
-    function transferExitAndCall(
-        uint256 _exitNum,
-        address _initialDestination,
-        address _newDestination,
-        bytes calldata _newData,
-        bytes calldata _data
-    ) external {
-        // the initial data doesn't make a difference when transfering you exit
-        // since the L2 bridge gives a unique exit ID to each exit
-        (address expectedSender, ) = getExternalCall(_exitNum, _initialDestination, "");
+    // function transferExitAndCall(
+    //     uint256 _exitNum,
+    //     address _initialDestination,
+    //     address _newDestination,
+    //     bytes calldata _newData,
+    //     bytes calldata _data
+    // ) external {
+    //     // the initial data doesn't make a difference when transfering you exit
+    //     // since the L2 bridge gives a unique exit ID to each exit
+    //     (address expectedSender, ) = getExternalCall(_exitNum, _initialDestination, "");
 
-        // if you want to transfer your exit, you must be the current destination
-        require(msg.sender == expectedSender, "NOT_EXPECTED_SENDER");
-        // the inboundEscrowAndCall functionality has been disabled, so no data is allowed
-        require(_newData.length == 0, "NO_DATA_ALLOWED");
+    //     // if you want to transfer your exit, you must be the current destination
+    //     require(msg.sender == expectedSender, "NOT_EXPECTED_SENDER");
+    //     // the inboundEscrowAndCall functionality has been disabled, so no data is allowed
+    //     require(_newData.length == 0, "NO_DATA_ALLOWED");
 
-        setRedirectedExit(_exitNum, _initialDestination, _newDestination, _newData);
+    //     setRedirectedExit(_exitNum, _initialDestination, _newDestination, _newData);
 
-        if (_data.length > 0) {
-            require(_newDestination.isContract(), "TO_NOT_CONTRACT");
-            bool success = ITradeableExitReceiver(_newDestination).onExitTransfer(
-                expectedSender,
-                _exitNum,
-                _data
-            );
-            require(success, "TRANSFER_HOOK_FAIL");
-        }
+    //     if (_data.length > 0) {
+    //         require(_newDestination.isContract(), "TO_NOT_CONTRACT");
+    //         bool success = ITradeableExitReceiver(_newDestination).onExitTransfer(
+    //             expectedSender,
+    //             _exitNum,
+    //             _data
+    //         );
+    //         require(success, "TRANSFER_HOOK_FAIL");
+    //     }
 
-        emit WithdrawRedirected(
-            expectedSender,
-            _newDestination,
-            _exitNum,
-            _newData,
-            _data,
-            _data.length > 0
-        );
-    }
+    //     emit WithdrawRedirected(
+    //         expectedSender,
+    //         _newDestination,
+    //         _exitNum,
+    //         _newData,
+    //         _data,
+    //         _data.length > 0
+    //     );
+    // }
 
     /// @notice this does not verify if the external call was already done
     function getExternalCall(

@@ -13,10 +13,11 @@ pytest:
     revert_traceback: true
 compiler:
     solc:
+        version: 0.8.11
         optimizer:
             enabled: true
             runs: 100
-      
+            
         remappings:
           - "@openzeppelin/contracts-upgradeable=OpenZeppelin/openzeppelin-contracts-upgradeable@4.4.1/contracts"
           - "@openzeppelin/contracts=OpenZeppelin/openzeppelin-contracts@4.4.1/contracts"

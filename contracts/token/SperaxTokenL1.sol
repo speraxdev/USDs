@@ -24,7 +24,7 @@ contract SperaxTokenL1 is ERC20, Ownable, ICustomToken {
         _;
     }
 
-    constructor(string memory name_, string memory symbol_, address _spaAddress, address _bridge, address _router) ERC20(name_, symbol_) public {
+    constructor(string memory name_, string memory symbol_, address _spaAddress, address _bridge, address _router) ERC20(name_, symbol_)  {
         spaAddress = _spaAddress;
         bridge = _bridge;
         router = _router;
@@ -65,7 +65,7 @@ contract SperaxTokenL1 is ERC20, Ownable, ICustomToken {
     /// @dev we only set shouldRegisterGateway to true when in `registerTokenOnL2`
     function isArbitrumEnabled() external view override returns (uint8) {
         require(shouldRegisterGateway, "NOT_EXPECTED_CALL");
-        return uint8(0xa4b1);
+        return uint8(uint256(0xa4b1));
     }
 
     /**
@@ -107,13 +107,13 @@ contract SperaxTokenL1 is ERC20, Ownable, ICustomToken {
             creditBackAddress
         );
 
-        L1GatewayRouter(router).setGateway{value:valueForRouter}(
-            bridge,
-            maxGas,
-            gasPriceBid,
-            maxSubmissionCostForRouter,
-            creditBackAddress
-        );
+        // L1GatewayRouter(router).setGateway{value:valueForRouter}(
+        //     bridge,
+        //     maxGas,
+        //     gasPriceBid,
+        //     maxSubmissionCostForRouter,
+        //     creditBackAddress
+        // );
 
         shouldRegisterGateway = prev;
     }

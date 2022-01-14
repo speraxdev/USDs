@@ -50,7 +50,7 @@ contract SperaxTokenL2 is ERC20Pausable, MintPausable, Ownable, IArbToken {
      * @param _l2Gateway address of SperaxTokenL1 on L1
      */
     constructor(string memory _name, string memory _symbol, address _l2Gateway, address _l1Address)
-        ERC20(_name, _symbol) public {
+        ERC20(_name, _symbol)  {
         l2Gateway = _l2Gateway;
         l1Address = _l1Address;
     }
@@ -108,8 +108,8 @@ contract SperaxTokenL2 is ERC20Pausable, MintPausable, Ownable, IArbToken {
      * - the caller must have allowance for ``accounts``'s tokens of at least
      * `amount`.
      */
-    function burnFrom(address account, uint256 amount) public {
-        uint256 decreasedAllowance = allowance(account, _msgSender()).sub(amount, "SperaxToken: burn amount exceeds allowance");
+    function burnFrom(address account, uint256 amount) public  {
+        uint256 decreasedAllowance = allowance(account, _msgSender())-(amount);//"SperaxToken: burn amount exceeds allowance"
 
         _approve(account, _msgSender(), decreasedAllowance);
         _burn(account, amount);
@@ -151,7 +151,7 @@ contract SperaxTokenL2 is ERC20Pausable, MintPausable, Ownable, IArbToken {
         require(account != address(0), "SperaxToken: release zero address");
 
         TimeLock storage timelock = _timelock[account];
-        timelock.amount = timelock.amount.sub(releaseAmount);
+        timelock.amount = timelock.amount-(releaseAmount);
         if(timelock.amount == 0) {
             timelock.releaseTime = 0;
         }
@@ -215,7 +215,7 @@ contract SperaxTokenL2 is ERC20Pausable, MintPausable, Ownable, IArbToken {
 
         // Check whether the locked amount is triggered
         TimeLock storage timelock = _timelock[from];
-        if(timelock.releaseTime != 0 && balanceOf(from).sub(amount) < timelock.amount) {
+        if(timelock.releaseTime != 0 && balanceOf(from)-(amount) < timelock.amount) {
             require(block.timestamp >= timelock.releaseTime, "SperaxToken: current time is before from account release time");
 
             // Update the locked `amount` if the current time reaches the release time

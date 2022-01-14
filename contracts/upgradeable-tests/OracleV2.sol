@@ -91,7 +91,7 @@ contract OracleV2 is Initializable, IOracle, OwnableUpgradeable {
     function initialize(address _priceFeedUSDC, address _SPAaddr, address _USDCaddr, address _chainlinkFlags) public initializer {
         OwnableUpgradeable.__Ownable_init();
         updatePeriod = 12 hours;
-        lastUpdateTime = uint32(now % 2**32);
+        lastUpdateTime = uint32(block.timestamp % 2**32);
         priceFeedUSDC = AggregatorV3Interface(_priceFeedUSDC);
         SPAaddr = _SPAaddr;
         SPA_prec = uint128(10)**18;
@@ -164,7 +164,7 @@ contract OracleV2 is Initializable, IOracle, OwnableUpgradeable {
      * @dev USDsInOutRatio is accurate after one iteration
      */
     function updateInOutRatio() external override {
-        uint32 currTime = uint32(now % 2 ** 32);
+        uint32 currTime = uint32(block.timestamp % 2 ** 32);
         uint32 timeElapsed = currTime - lastUpdateTime;
         require(currTime >= lastUpdateTime, "updateInOutRatio: error last update happened in the future");
         require(timeElapsed >= updatePeriod, "updateInOutRatio: the time elapsed is too short.");
@@ -172,14 +172,14 @@ contract OracleV2 is Initializable, IOracle, OwnableUpgradeable {
         uint32 indexOld = (indexNew + 1) % (FREQUENCY + 1);
         USDsInflow[indexNew] = IUSDs(USDsAddr).mintedViaUsers();
         USDsOutflow[indexNew] = IUSDs(USDsAddr).burntViaUsers();
-        uint USDsInflow_average = USDsInflow[indexNew].sub(USDsInflow[indexOld]);
-        uint USDsOutflow_average = USDsOutflow[indexNew].sub(USDsOutflow[indexOld]);
+        uint USDsInflow_average = USDsInflow[indexNew]-(USDsInflow[indexOld]);
+        uint USDsOutflow_average = USDsOutflow[indexNew]-(USDsOutflow[indexOld]);
         if (USDsInflow_average == 0 && USDsOutflow_average == 0) {
             USDsInOutRatio = USDsInOutRatio_prec;
         } else if (USDsInflow_average == 0 && USDsOutflow_average > 0) {
             USDsInOutRatio = 10 * USDsInOutRatio_prec;
         } else {
-            USDsInOutRatio = USDsOutflow_average.mul(USDsInOutRatio_prec).div(USDsInflow_average);
+            USDsInOutRatio = USDsOutflow_average*(USDsInOutRatio_prec)/(USDsInflow_average);
         }
         lastUpdateTime = currTime;
         updateNextIndex = indexOld;
@@ -212,10 +212,10 @@ contract OracleV2 is Initializable, IOracle, OwnableUpgradeable {
             movingAvgShortPeriod
         );
         return _getCollateralPrice(SPAoracleQuoteTokenAddr)
-            .mul(quoteTokenAmtPerSPA)
-            .mul(SPAprice_prec)
-            .div(SPAoracleQuoteToken_prec)
-            .div(USDCprice_prec);
+            *(quoteTokenAmtPerSPA)
+            *(SPAprice_prec)
+            /(SPAoracleQuoteToken_prec)
+            /(USDCprice_prec);
     }
 
     function getUSDsPrice() external view override returns (uint) {
@@ -236,10 +236,10 @@ contract OracleV2 is Initializable, IOracle, OwnableUpgradeable {
             movingAvgShortPeriod
         );
         return _getCollateralPrice(USDsOracleQuoteTokenAddr)
-            .mul(quoteTokenAmtPerUSDs)
-            .mul(USDsPrice_prec)
-            .div(USDsOracleQuoteToken_prec)
-            .div(USDCprice_prec);
+            *(quoteTokenAmtPerUSDs)
+            *(USDsPrice_prec)
+            /(USDsOracleQuoteToken_prec)
+            /(USDCprice_prec);
     }
 
     function getUSDsPrice_average() external view override returns (uint) {
@@ -260,10 +260,10 @@ contract OracleV2 is Initializable, IOracle, OwnableUpgradeable {
             movingAvgLongPeriod
         );
         return _getCollateralPrice(USDsOracleQuoteTokenAddr)
-            .mul(quoteTokenAmtPerUSDs)
-            .mul(USDsPrice_prec)
-            .div(USDsOracleQuoteToken_prec)
-            .div(USDCprice_prec);
+            *(quoteTokenAmtPerUSDs)
+            *(USDsPrice_prec)
+            /(USDsOracleQuoteToken_prec)
+            /(USDCprice_prec);
     }
     function getCollateralPrice_prec(address collateralAddr) external view override returns (uint) {
         collateralStruct memory  collateralInfo = collateralsInfo[collateralAddr];

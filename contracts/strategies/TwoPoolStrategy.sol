@@ -417,8 +417,8 @@ contract TwoPoolStrategy is InitializableAbstractStrategy {
     ) internal view returns (uint256 expectedAssetAmt) {
         uint256 assetPrice_prec = oracle.getCollateralPrice_prec(_asset);
         uint256 assetPrice = oracle.getCollateralPrice(_asset);
-        expectedAssetAmt = lpTokenAmt*(curvePool.get_virtual_price())*(assetPrice_prec)/(assetPrice)/(1e18) //get_virtual_price()'s precsion
-           // .scaleBy(int8(ERC20(_asset).decimals() - 18))
+        expectedAssetAmt = lpTokenAmt*(curvePool.get_virtual_price())*(assetPrice_prec)/(assetPrice) //get_virtual_price()'s precsion
+        .scaleBy(ERC20(_asset).decimals(), 18)
           ;
     }
 
@@ -435,7 +435,7 @@ contract TwoPoolStrategy is InitializableAbstractStrategy {
         uint256 assetPrice_prec = oracle.getCollateralPrice_prec(_asset);
         uint256 assetPrice = oracle.getCollateralPrice(_asset);
         expectedPtokenAmt = assetAmt
-          //  .scaleBy(int8(18 - ERC20(_asset).decimals()))
+         .scaleBy(18, ERC20(_asset).decimals())
             *(assetPrice)
             *(1e18)
             /(curvePool.get_virtual_price())

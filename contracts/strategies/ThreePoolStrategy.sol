@@ -430,8 +430,7 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
             *(curvePool.get_virtual_price())
             *(assetPrice_prec)
             /(assetPrice)
-            /(1e18) //get_virtual_price()'s precsion
-           // .scaleBy(int8(ERC20(_asset).decimals() - 18))
+           .scaleBy(ERC20(_asset).decimals() ,18) /(1e18)
             ;
     }
 
@@ -448,7 +447,7 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
         uint256 assetPrice_prec = oracle.getCollateralPrice_prec(_asset);
         uint256 assetPrice = oracle.getCollateralPrice(_asset);
         expectedPtokenAmt = assetAmt
-           // .scaleBy(int8(18 - ERC20(_asset).decimals()))
+            .scaleBy(18, ERC20(_asset).decimals())
             *(assetPrice)
             *(1e18)
             /(curvePool.get_virtual_price())

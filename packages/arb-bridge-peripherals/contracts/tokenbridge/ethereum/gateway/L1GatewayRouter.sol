@@ -151,14 +151,14 @@ contract L1GatewayRouter is WhitelistConsumer, L1ArbitrumMessenger, GatewayRoute
      * @param  _maxSubmissionCost base submission cost  L2 retryable tick3et 
      * @return Retryable ticket ID
      */
-    function setGateway(
-        address _gateway,
-        uint256 _maxGas,
-        uint256 _gasPriceBid,
-        uint256 _maxSubmissionCost
-    ) external payable returns (uint256) {
-        return setGateway(_gateway, _maxGas, _gasPriceBid, _maxSubmissionCost, msg.sender);
-    }
+    // function setGateway(
+    //     address _gateway,
+    //     uint256 _maxGas,
+    //     uint256 _gasPriceBid,
+    //     uint256 _maxSubmissionCost
+    // ) external payable returns (uint256) {
+    //     return setGateway(_gateway, _maxGas, _gasPriceBid, _maxSubmissionCost, msg.sender);
+    // }
 
     /**
      * @notice Allows L1 Token contract to trustlessly register its gateway.
@@ -169,41 +169,41 @@ contract L1GatewayRouter is WhitelistConsumer, L1ArbitrumMessenger, GatewayRoute
      * param _creditBackAddress address for crediting back overpayment of _maxSubmissionCost
      * return Retryable ticket ID
      */
-    function setGateway(
-        address _gateway,
-        uint256 _maxGas,
-        uint256 _gasPriceBid,
-        uint256 _maxSubmissionCost,
-        address _creditBackAddress
-    ) public payable returns (uint256) {
-        require(
-            ArbitrumEnabledToken(msg.sender).isArbitrumEnabled() == uint8(0xa4b1),
-            "NOT_ARB_ENABLED"
-        );
-        require(_gateway.isContract(), "NOT_TO_CONTRACT");
+    // function setGateway(
+    //     address _gateway,
+    //     uint256 _maxGas,
+    //     uint256 _gasPriceBid,
+    //     uint256 _maxSubmissionCost,
+    //     address _creditBackAddress
+    // ) public payable returns (uint256) {
+    //     require(
+    //         ArbitrumEnabledToken(msg.sender).isArbitrumEnabled() == uint8(uint256(0xa4b1)),
+    //         "NOT_ARB_ENABLED"
+    //     );
+    //     require(_gateway.isContract(), "NOT_TO_CONTRACT");
 
-        address currGateway = l1TokenToGateway[msg.sender];
-        if (currGateway != address(0)) {
-            // if gateway is already set, don't allow it to set a different gateway
-            require(currGateway == _gateway, "NO_UPDATE_TO_DIFFERENT_ADDR");
-        }
+    //     address currGateway = l1TokenToGateway[msg.sender];
+    //     if (currGateway != address(0)) {
+    //         // if gateway is already set, don't allow it to set a different gateway
+    //         require(currGateway == _gateway, "NO_UPDATE_TO_DIFFERENT_ADDR");
+    //     }
 
-        address[] memory _tokenArr = new address[](1);
-        _tokenArr[0] = address(msg.sender);
+    //     address[] memory _tokenArr = new address[](1);
+    //     _tokenArr[0] = address(msg.sender);
 
-        address[] memory _gatewayArr = new address[](1);
-        _gatewayArr[0] = _gateway;
+    //     address[] memory _gatewayArr = new address[](1);
+    //     _gatewayArr[0] = _gateway;
 
-        return
-            _setGateways(
-                _tokenArr,
-                _gatewayArr,
-                _maxGas,
-                _gasPriceBid,
-                _maxSubmissionCost,
-                _creditBackAddress
-            );
-    }
+    //     return
+    //         _setGateways(
+    //             _tokenArr,
+    //             _gatewayArr,
+    //             _maxGas,
+    //             _gasPriceBid,
+    //             _maxSubmissionCost,
+    //             _creditBackAddress
+    //         );
+    // }
 
     function setGateways(
         address[] memory _token,
