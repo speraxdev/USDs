@@ -124,14 +124,14 @@ contract VaultCoreToolsV2 is Initializable {
 		} else {
 			uint exponentWithPrec = USDsInOutRatio - uint(_vaultContract.swapFee_a()).mul(uint(USDsInOutRatio_prec)).div(uint(_vaultContract.swapFee_a_prec()));
 			if (exponentWithPrec >= 2^32) {
-				return uint(_vaultContract.swapFee_prec());
+				return uint(15000000000); // 1.5%
 			}
 			(uint powResWithPrec, uint8 powResPrec) = BancorInstance.power(
 				uint(_vaultContract.swapFee_A()), uint(_vaultContract.swapFee_A_prec()), uint32(exponentWithPrec), USDsInOutRatio_prec
 			);
 			uint toReturn = uint(powResWithPrec.mul(uint(_vaultContract.swapFee_prec())) >> powResPrec) / 100;
-			if (toReturn >= uint(_vaultContract.swapFee_prec())) {
-				return uint(_vaultContract.swapFee_prec());
+			if (toReturn >= uint(15000000000)) {
+				return uint(15000000000); // 1.5%
 			} else {
 				return toReturn;
 			}
@@ -193,8 +193,8 @@ contract VaultCoreToolsV2 is Initializable {
 			uint temp3 = temp2.mul(swapFee_prec).div(precisionUSDs).div(precisionUSDs);
 			uint temp4 = temp3.div(100);
 			uint temp5 = swapFee_prec / 1000 + temp4;
-			if (temp5 >= swapFee_prec) {
-				return swapFee_prec;
+			if (temp5 >= uint(15000000000)) {
+				return uint(15000000000); // 1.5%
 			} else {
 				return temp5;
 			}
