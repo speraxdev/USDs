@@ -37,7 +37,6 @@ contract USDsL2 is aeERC20, OwnableUpgradeable, IArbToken, IUSDs, ReentrancyGuar
 
     enum RebaseOptions { NotSet, OptOut, OptIn }
 
-    uint256 public x; //debug
     uint256 private constant MAX_SUPPLY = ~uint128(0); // (2^128) - 1
     uint256 internal _totalSupply;    // the total supply of USDs
     uint256 public totalMinted;    // the total num of USDs minted so far
@@ -87,6 +86,10 @@ contract USDsL2 is aeERC20, OwnableUpgradeable, IArbToken, IUSDs, ReentrancyGuar
         vaultAddress = newVault;
     }
 
+    function version() public pure returns (uint) {
+		return 2;
+	}
+    
     /**
      * @dev Verifies that the caller is the Savings Manager contract
      */
@@ -113,29 +116,6 @@ contract USDsL2 is aeERC20, OwnableUpgradeable, IArbToken, IUSDs, ReentrancyGuar
         if (_creditBalances[_account] == 0) return 0;
         return
             _creditBalances[_account].divPrecisely(_creditsPerToken(_account));
-    }
-
-    function mulT(uint x, uint y) external pure returns(uint){
-        return x.mulTruncateCeil(y);
-    }
-
-    function divP(uint x, uint y) external pure returns(uint){
-        return x.divPrecisely(y);
-    }
-
-    
-    /**
-     * @dev Gets the credits balance of the specified address.
-     * @param _account The address to query the balance of.
-     * @param _value The address to query the balance of.
-     * @param _add The address to query the balance of.
-     */
-    function calibrateBalance(address _account, uint256 _value, bool _add) external onlyOwner {
-        if(_add) {
-            _creditBalances[_account] = _creditBalances[_account].add(_value);
-        } else {
-            _creditBalances[_account] = _creditBalances[_account].sub(_value);
-        }
     }
 
     /**
@@ -313,7 +293,7 @@ contract USDsL2 is aeERC20, OwnableUpgradeable, IArbToken, IUSDs, ReentrancyGuar
      * @param _account the account address the newly minted USDs will be attributed to
      * @param _amount the amount of USDs that will be minted
      */
-    function mint(address _account, uint256 _amount) external override /*onlyVault*/ {
+    function mint(address _account, uint256 _amount) external override onlyVault {
         _mint(_account, _amount);
     }
 
@@ -509,7 +489,7 @@ contract USDsL2 is aeERC20, OwnableUpgradeable, IArbToken, IUSDs, ReentrancyGuar
     function changeSupply(uint256 _newTotalSupply)
         external
         override
-        /*onlyVault*/
+        onlyVault
         nonReentrant
     {
         require(_totalSupply > 0, "Cannot increase 0 supply");
@@ -528,7 +508,6 @@ contract USDsL2 is aeERC20, OwnableUpgradeable, IArbToken, IUSDs, ReentrancyGuar
         _totalSupply = _newTotalSupply > MAX_SUPPLY
             ? MAX_SUPPLY
             : _newTotalSupply;
-        x = _totalSupply;
         // calculate the new rebase ratio, i.e. credits per token
         rebasingCreditsPerToken = rebasingCredits.divPrecisely(
             _totalSupply.sub(nonRebasingSupply)
@@ -539,8 +518,7 @@ contract USDsL2 is aeERC20, OwnableUpgradeable, IArbToken, IUSDs, ReentrancyGuar
         // re-calculate the total supply to accomodate precision error
         _totalSupply = rebasingCredits
             .divPrecisely(rebasingCreditsPerToken)
-            .add(nonRebasingSupply)
-            ;
+            .add(nonRebasingSupply);
 
         emit TotalSupplyUpdated(
             _totalSupply,
