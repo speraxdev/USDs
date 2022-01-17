@@ -205,18 +205,18 @@ contract L1GatewayRouter is WhitelistConsumer, L1ArbitrumMessenger, GatewayRoute
     //         );
     // }
 
-    function setGateways(
-        address[] memory _token,
-        address[] memory _gateway,
-        uint256 _maxGas,
-        uint256 _gasPriceBid,
-        uint256 _maxSubmissionCost
-    ) external payable onlyOwner returns (uint256) {
-        // it is assumed that token and gateway are both contracts
-        // require(_token[i].isContract() && _gateway[i].isContract(), "NOT_CONTRACT");
-        return
-            _setGateways(_token, _gateway, _maxGas, _gasPriceBid, _maxSubmissionCost, msg.sender);
-    }
+    // function setGateways(
+    //     address[] memory _token,
+    //     address[] memory _gateway,
+    //     uint256 _maxGas,
+    //     uint256 _gasPriceBid,
+    //     uint256 _maxSubmissionCost
+    // ) external payable onlyOwner returns (uint256) {
+    //     // it is assumed that token and gateway are both contracts
+    //     // require(_token[i].isContract() && _gateway[i].isContract(), "NOT_CONTRACT");
+    //     return
+    //         _setGateways(_token, _gateway, _maxGas, _gasPriceBid, _maxSubmissionCost, msg.sender);
+    // }
 
     function outboundTransfer(
         address _token,

@@ -24,7 +24,7 @@ contract SperaxTokenL1 is ERC20, Ownable, ICustomToken {
         _;
     }
 
-    constructor(string memory name_, string memory symbol_, address _spaAddress, address _bridge, address _router) ERC20(name_, symbol_)  {
+    constructor(string memory name_, string memory symbol_, address _spaAddress, address _bridge, address _router) ERC20(name_, symbol_) public {
         spaAddress = _spaAddress;
         bridge = _bridge;
         router = _router;
