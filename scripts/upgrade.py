@@ -62,15 +62,6 @@ def main():
     )
     print(f"contract owner account: {owner.address}\n")
 
-    # fee vault account
-    fee_vault = accounts.load(
-        click.prompt(
-            "fee_vault account",
-            type=click.Choice(accounts.load())
-        )
-    )
-    print(f"fee_vault account: {fee_vault.address}\n")
-
 
     usds_proxy_address = getAddressFromNetwork(
         testnetAddresses.upgrade.USDs_l2_proxy,
@@ -168,8 +159,18 @@ def main():
         # print(f"{vault_core_tools} version: {new_vault_tools_proxy.version()}")
 
     if vault_proxy_upgrade:
-        confirm(f"Confirm that the {vault_core}'s proxy address is {vault_proxy_address}")
+        # fee vault account
+        fee_vault = accounts.load(
+            click.prompt(
+                "fee_vault account",
+                type=click.Choice(accounts.load())
+            )
+        )
+        print(f"fee_vault account: {fee_vault.address}\n")
 
+
+        confirm(f"Confirm that the {vault_core}'s proxy address is {vault_proxy_address}")
+        
         vault_proxy = Contract.from_abi(
             vault_core,
             vault_proxy_address,
