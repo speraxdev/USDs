@@ -126,7 +126,7 @@ def main():
     print(f"\n{network.show_active()}:\n")
 
     # proxy admin contract
-    proxy_admin = ProxyAdmin[-1]
+    proxy_admin = brownie.Contract.from_abi('ProxyAdmin', '0x3E49925A79CbFb68BAa5bc9DFb4f7D955D1ddF25', ProxyAdmin.abi)
     print(f"\n proxy_admin address: {proxy_admin.address}\n")
 
     if vault_tools_proxy_upgrade:
@@ -165,7 +165,7 @@ def main():
         print(f"original {vault_core_tools} proxy address: {vault_tools_proxy.address}")
         print(f"upgraded {vault_core_tools} proxy address: {new_vault_tools_proxy.address}")
         print(f"upgraded {vault_core_tools} implementation address: {new_vault_tools.address}")
-        print(f"{vault_core_tools} version: {new_vault_tools_proxy.version()}")
+        # print(f"{vault_core_tools} version: {new_vault_tools_proxy.version()}")
 
     if vault_proxy_upgrade:
         confirm(f"Confirm that the {vault_core}'s proxy address is {vault_proxy_address}")
@@ -179,7 +179,7 @@ def main():
         version_contract_name, version_contract =  getContractToUpgrade(vault_core)
 
         # we only want to do these state changes in testnet
-        onlyDevelopment(lambda: vault_test_state_change(vault_proxy, owner))
+        # onlyDevelopment(lambda: vault_test_state_change(vault_proxy, owner))
 
         print(f"upgrade {vault_core} contract:\n")
         new_vault = version_contract.deploy(
@@ -207,8 +207,8 @@ def main():
         print(f"original {vault_core} proxy address: {vault_proxy.address}")
         print(f"upgraded {vault_core} proxy address: {new_vault_proxy.address}")
         print(f"upgraded {vault_core} implementation address: {new_vault.address}")
-        print(f"{vault_core} version: {new_vault_proxy.version()}")
-        onlyDevelopment(lambda: print(f"mintRedeemAllowed is still (should be false): {vault_proxy.mintRedeemAllowed()}\n"))
+        # print(f"{vault_core} version: {new_vault_proxy.version()}")
+        # onlyDevelopment(lambda: print(f"mintRedeemAllowed is still (should be false): {vault_proxy.mintRedeemAllowed()}\n"))
 
     if usds_proxy_upgrade:
         confirm(f"Confirm that the {USDs}' proxy address is {usds_proxy_address}")
@@ -229,7 +229,7 @@ def main():
         version_contract_name, version_contract =  getContractToUpgrade(USDs)
 
         # change vault address to verify state changes persist (only in testnet)
-        onlyDevelopment(lambda: USDs_test_state_change(usds_proxy, owner))
+        # onlyDevelopment(lambda: USDs_test_state_change(usds_proxy, owner))
 
         new_usds = version_contract.deploy(
             {'from': owner, 'gas_limit': 1500000000}
@@ -257,8 +257,8 @@ def main():
         print(f"original {USDs} proxy address: {usds_proxy.address}")
         print(f"upgraded {USDs} proxy address: {new_usds_proxy.address}")
         print(f"upgraded {USDs} implementation address: {new_usds.address}")
-        print(f"{USDs} version: {new_usds_proxy.version()}")
-        onlyDevelopment(lambda: print(f"vaultAddress is still (should be {vitalik_address}): {usds_proxy.vaultAddress()}\n"))
+        # print(f"{USDs} version: {new_usds_proxy.version()}")
+        # onlyDevelopment(lambda: print(f"vaultAddress is still (should be {vitalik_address}): {usds_proxy.vaultAddress()}\n"))
 
     if oracle_proxy_upgrade:
         confirm(f"Confirm that the {oracle}'s proxy address is {oracle_proxy_address}")
@@ -271,7 +271,7 @@ def main():
 
         version_contract_name, version_contract =  getContractToUpgrade(oracle)
         # change vault address to verify state changes persist
-        onlyDevelopment(lambda: oracle_test_state_change(oracle_proxy, owner))
+        # onlyDevelopment(lambda: oracle_test_state_change(oracle_proxy, owner))
 
         print(f"upgrade {oracle} contract:\n")
         new_oracle = version_contract.deploy(
@@ -299,5 +299,5 @@ def main():
         print(f"original {oracle} proxy address: {oracle_proxy.address}")
         print(f"upgraded {oracle} proxy address: {new_oracle_proxy.address}")
         print(f"upgraded {oracle} implementation address: {new_oracle.address}")
-        print(f"{oracle}  version: {new_oracle_proxy.version()}")
-        onlyDevelopment(lambda: print(f"VaultAddr is still (should be {vitalik_address}): {oracle_proxy.VaultAddr()}\n"))
+        # print(f"{oracle}  version: {new_oracle_proxy.version()}")
+        # onlyDevelopment(lambda: print(f"VaultAddr is still (should be {vitalik_address}): {oracle_proxy.VaultAddr()}\n"))
