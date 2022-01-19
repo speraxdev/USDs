@@ -455,14 +455,14 @@ def deploy_usds(
         {'from': admin}
     )
     usds_proxy = Contract.from_abi("USDsL2", proxy.address, USDsL2.abi)
-    usds_proxy.initialize(
-        'USDs Layer 2',
-        'USDs2',
-        vault_proxy.address,
-        l2_gateway,
-        usds1,
-        {'from': owner_l2}
-    )
+    #TODO: Check double Initialization# usds_proxy.initialize(
+    #     'USDs Layer 2',
+    #     'USDs2',
+    #     vault_proxy.address,
+    #     l2_gateway,
+    #     usds1,
+    #     {'from': owner_l2}
+    # )
     return usds_proxy
 
 def deploy_strategies(

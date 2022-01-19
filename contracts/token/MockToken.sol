@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.11;
 
-import "ERC20WithDecimals.sol";
+import "../token/ERC20WithDecimals.sol";
 contract MockToken is ERC20WithDecimals {
     constructor(
         string memory name_,
@@ -9,8 +9,8 @@ contract MockToken is ERC20WithDecimals {
         uint8 decimals_
     ) 
     
-    public ERC20(name_, symbol_)
-    public ERC20WithDecimals(decimals_)
+     public ERC20(name_, symbol_)
+            ERC20WithDecimals(decimals_)
     
      {
         uint256 amount = 10000000000 * (10 ** uint(decimals_));
