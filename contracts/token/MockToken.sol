@@ -1,15 +1,19 @@
-// // SPDX-License-Identifier: MIT
-// pragma solidity ^0.8.7;
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.11;
 
-// import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-// contract MockToken is ERC20 {
-//     constructor(
-//         string memory name_,
-//         string memory symbol_,
-//         uint8 decimals
-//     ) public ERC20(name_, symbol_) {
-//         _setupDecimals(decimals);
-//         uint256 amount = 10000000000 * (10 ** uint(decimals));
-//          _mint(_msgSender(), amount);
-//     }
-// }
+import "ERC20WithDecimals.sol";
+contract MockToken is ERC20WithDecimals {
+    constructor(
+        string memory name_,
+        string memory symbol_,
+        uint8 decimals_
+    ) 
+    
+    public ERC20(name_, symbol_)
+    public ERC20WithDecimals(decimals_)
+    
+     {
+        uint256 amount = 10000000000 * (10 ** uint(decimals_));
+         _mint(_msgSender(), amount);
+    }
+}
