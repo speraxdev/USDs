@@ -1,7 +1,6 @@
-// Upgraded Date: 12-23-2021
-// Commit: https://github.com/Sperax/USDs/commit/1718d0d3c94fcac60f586c4f2fc850d71cada367
-// Changes: USDsInOutRatio calculation debug
-// Implementation Contract Address: 0x8e5562724BCcDB8E6DF5749927EC28C2123E7d76
+// Deployed Date: 12-22-2021
+// Commit: https://github.com/Sperax/USDs/commit/a9edd45b6c1ccbc421d4903cddceb22c15d399ff
+// Implementation Contract Address: N/A
 
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.6.12;
@@ -26,7 +25,7 @@ import "../libraries/OracleLibrary.sol";
  * @dev providing records of USDs inflow and outflow ratio
  * @author Sperax Inc
  */
-contract OracleV2 is Initializable, IOracle, OwnableUpgradeable {
+contract OracleV1 is Initializable, IOracle, OwnableUpgradeable {
     using SafeMathUpgradeable for uint;
     uint public override USDsInOutRatio; // USDsInOutRatio is accurate after 24 hours (one iteration)
     uint32 public constant override USDsInOutRatio_prec = 10**6;
@@ -168,7 +167,7 @@ contract OracleV2 is Initializable, IOracle, OwnableUpgradeable {
     /**
      * @notice update the price of tokenA to the latest
      * @dev the price would be updated only once per updatePeriod time
-     * @dev USDsInOutRatio is accurate after one iteration
+     * @dev USDsInOutRatio is accurate after 24 hours (one iteration)
      */
     function updateInOutRatio() external override {
         uint32 currTime = uint32(now % 2 ** 32);
@@ -181,10 +180,8 @@ contract OracleV2 is Initializable, IOracle, OwnableUpgradeable {
         USDsOutflow[indexNew] = IUSDs(USDsAddr).burntViaUsers();
         uint USDsInflow_average = USDsInflow[indexNew].sub(USDsInflow[indexOld]);
         uint USDsOutflow_average = USDsOutflow[indexNew].sub(USDsOutflow[indexOld]);
-        if (USDsInflow_average == 0 && USDsOutflow_average == 0) {
+        if (USDsInOutRatio == 0) {
             USDsInOutRatio = USDsInOutRatio_prec;
-        } else if (USDsInflow_average == 0 && USDsOutflow_average > 0) {
-            USDsInOutRatio = 10 * USDsInOutRatio_prec;
         } else {
             USDsInOutRatio = USDsOutflow_average.mul(USDsInOutRatio_prec).div(USDsInflow_average);
         }

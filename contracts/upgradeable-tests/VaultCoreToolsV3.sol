@@ -1,3 +1,8 @@
+// Upgraded Date: 01-17-2022
+// Commit: https://github.com/Sperax/USDs/commit/345e238ace1e700f54057dfc87f5d7e6e0d281bb
+// Changes: Capped swap fee at 1.5%
+// Implementation Contract Address: 0x8dBfA19750d43497785E41f73132fEaB5DeDEbed
+
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.6.12;
 
@@ -10,14 +15,13 @@ import "../interfaces/IVaultCore.sol";
 import "../libraries/StableMath.sol";
 import "../utils/BancorFormula.sol";
 
-
 /**
  * @title supporting VaultCore of USDs protocol
  * @dev calculation of chi, swap fees associated with USDs's mint and redeem
  * @dev view functions of USDs's mint and redeem
  * @author Sperax Foundation
  */
-contract VaultCoreTools is Initializable {
+contract VaultCoreToolsV3 is Initializable {
 	using SafeERC20Upgradeable for ERC20Upgradeable;
 	using SafeMathUpgradeable for uint;
 	using StableMath for uint;

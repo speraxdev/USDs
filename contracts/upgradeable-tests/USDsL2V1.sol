@@ -1,11 +1,9 @@
-// Upgraded Date: 01-12-2021
-// Commit: https://github.com/Sperax/USDs/commit/53e725fd24c8614b4e66e53d175caee897a5eea5
-// Changes: changed from mulTruncate() to mulTruncateCeil() to fix the rebase issue
-// Implementation Contract Address: 0xa78D7b5c4E50b1CCaBc5de123DB5083B24232f8C
+// Deployed Date: 12-22-2021
+// Commit: https://github.com/Sperax/USDs/commit/a9edd45b6c1ccbc421d4903cddceb22c15d399ff
+// Implementation Contract Address: 0xd06eCa6B1c7F47F8848e96FD9C9ECB17c54E650C
 
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.6.12;
-
 
 import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
@@ -29,7 +27,7 @@ import "arb-bridge-peripherals/contracts/tokenbridge/libraries/aeERC20.sol";
   * @dev inspired by OUSD: https://github.com/OriginProtocol/origin-dollar/blob/master/contracts/contracts/token/OUSD.sol
   * @author Sperax Foundation
   */
-contract USDsL2V2 is aeERC20, OwnableUpgradeable, IArbToken, IUSDs, ReentrancyGuardUpgradeable {
+contract USDsL2V1 is aeERC20, OwnableUpgradeable, IArbToken, IUSDs, ReentrancyGuardUpgradeable {
     using SafeMathUpgradeable for uint256;
     using StableMath for uint256;
 
@@ -90,10 +88,6 @@ contract USDsL2V2 is aeERC20, OwnableUpgradeable, IArbToken, IUSDs, ReentrancyGu
     function changeVault(address newVault) external onlyOwner {
         vaultAddress = newVault;
     }
-
-    function version() public pure returns (uint) {
-		return 2;
-	}
 
     /**
      * @dev Verifies that the caller is the Savings Manager contract
@@ -199,8 +193,8 @@ contract USDsL2V2 is aeERC20, OwnableUpgradeable, IArbToken, IUSDs, ReentrancyGu
 
         // Credits deducted and credited might be different due to the
         // differing creditsPerToken used by each account
-        uint256 creditsCredited = _value.mulTruncateCeil(_creditsPerToken(_to));
-        uint256 creditsDeducted = _value.mulTruncateCeil(_creditsPerToken(_from));
+        uint256 creditsCredited = _value.mulTruncate(_creditsPerToken(_to));
+        uint256 creditsDeducted = _value.mulTruncate(_creditsPerToken(_from));
 
         _creditBalances[_from] = _creditBalances[_from].sub(
             creditsDeducted,
@@ -319,7 +313,7 @@ contract USDsL2V2 is aeERC20, OwnableUpgradeable, IArbToken, IUSDs, ReentrancyGu
 
         bool isNonRebasingAccount = _isNonRebasingAccount(_account);
 
-        uint256 creditAmount = _amount.mulTruncateCeil(_creditsPerToken(_account));
+        uint256 creditAmount = _amount.mulTruncate(_creditsPerToken(_account));
         _creditBalances[_account] = _creditBalances[_account].add(creditAmount);
 
         // notice: If the account is non rebasing and doesn't have a set creditsPerToken
@@ -365,7 +359,7 @@ contract USDsL2V2 is aeERC20, OwnableUpgradeable, IArbToken, IUSDs, ReentrancyGu
         }
 
         bool isNonRebasingAccount = _isNonRebasingAccount(_account);
-        uint256 creditAmount = _amount.mulTruncateCeil(_creditsPerToken(_account));
+        uint256 creditAmount = _amount.mulTruncate(_creditsPerToken(_account));
         uint256 currentCredits = _creditBalances[_account];
 
         // Remove the credits, burning rounding errors

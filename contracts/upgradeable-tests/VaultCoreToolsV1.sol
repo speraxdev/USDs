@@ -1,3 +1,7 @@
+// Deployed Date: 12-22-2021
+// Commit: https://github.com/Sperax/USDs/commit/a9edd45b6c1ccbc421d4903cddceb22c15d399ff
+// Implementation Contract Address: N/A
+
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.6.12;
 
@@ -10,14 +14,13 @@ import "../interfaces/IVaultCore.sol";
 import "../libraries/StableMath.sol";
 import "../utils/BancorFormula.sol";
 
-
 /**
  * @title supporting VaultCore of USDs protocol
  * @dev calculation of chi, swap fees associated with USDs's mint and redeem
  * @dev view functions of USDs's mint and redeem
  * @author Sperax Foundation
  */
-contract VaultCoreTools is Initializable {
+contract VaultCoreToolsV1 is Initializable {
 	using SafeERC20Upgradeable for ERC20Upgradeable;
 	using SafeMathUpgradeable for uint;
 	using StableMath for uint;
@@ -40,26 +43,13 @@ contract VaultCoreTools is Initializable {
 		) public view returns (uint chiTarget_) {
 		IVaultCore _vaultContract = IVaultCore(_VaultCoreContract);
 		uint chiAdjustmentA = blockPassed.mul(_vaultContract.chi_alpha());
+		uint chiAdjustmentB;
 		uint afterB;
 		if (priceUSDs >= precisionUSDs) {
-			uint chiAdjustmentB = uint(_vaultContract.chi_beta())
-				.mul(uint(_vaultContract.chi_prec()))
-				.mul(priceUSDs - precisionUSDs)
-				.mul(priceUSDs - precisionUSDs);
-			chiAdjustmentB = chiAdjustmentB
-				.div(_vaultContract.chi_beta_prec())
-				.div(precisionUSDs)
-				.div(precisionUSDs);
+			chiAdjustmentB = uint(_vaultContract.chi_beta()).mul(uint(_vaultContract.chi_prec())).mul(priceUSDs - precisionUSDs).mul(priceUSDs - precisionUSDs).div(_vaultContract.chi_beta_prec());
 			afterB = _vaultContract.chiInit().add(chiAdjustmentB);
 		} else {
-			uint chiAdjustmentB = uint(_vaultContract.chi_beta())
-				.mul(uint(_vaultContract.chi_prec()))
-				.mul(precisionUSDs - priceUSDs)
-				.mul(precisionUSDs - priceUSDs);
-			chiAdjustmentB = chiAdjustmentB
-				.div(_vaultContract.chi_beta_prec())
-				.div(precisionUSDs)
-				.div(precisionUSDs);
+			chiAdjustmentB = uint(_vaultContract.chi_beta()).mul(uint(_vaultContract.chi_prec())).mul(precisionUSDs - priceUSDs).mul(precisionUSDs - priceUSDs).div(_vaultContract.chi_beta_prec());
 			(, afterB) = _vaultContract.chiInit().trySub(chiAdjustmentB);
 		}
 		(, chiTarget_) = afterB.trySub(chiAdjustmentA);
@@ -124,14 +114,14 @@ contract VaultCoreTools is Initializable {
 		} else {
 			uint exponentWithPrec = USDsInOutRatio - uint(_vaultContract.swapFee_a()).mul(uint(USDsInOutRatio_prec)).div(uint(_vaultContract.swapFee_a_prec()));
 			if (exponentWithPrec >= 2^32) {
-				return uint(15000000000); // 1.5%
+				return uint(_vaultContract.swapFee_prec());
 			}
 			(uint powResWithPrec, uint8 powResPrec) = BancorInstance.power(
 				uint(_vaultContract.swapFee_A()), uint(_vaultContract.swapFee_A_prec()), uint32(exponentWithPrec), USDsInOutRatio_prec
 			);
-			uint toReturn = uint(powResWithPrec.mul(uint(_vaultContract.swapFee_prec())) >> powResPrec) / 100;
-			if (toReturn >= uint(15000000000)) {
-				return uint(15000000000); // 1.5%
+			uint toReturn = uint(powResWithPrec >> powResPrec).mul(uint(_vaultContract.swapFee_prec())) / 100;
+			if (toReturn >= uint(_vaultContract.swapFee_prec())) {
+				return uint(_vaultContract.swapFee_prec());
 			} else {
 				return toReturn;
 			}
@@ -193,8 +183,8 @@ contract VaultCoreTools is Initializable {
 			uint temp3 = temp2.mul(swapFee_prec).div(precisionUSDs).div(precisionUSDs);
 			uint temp4 = temp3.div(100);
 			uint temp5 = swapFee_prec / 1000 + temp4;
-			if (temp5 >= uint(15000000000)) {
-				return uint(15000000000); // 1.5%
+			if (temp5 >= swapFee_prec) {
+				return swapFee_prec;
 			} else {
 				return temp5;
 			}

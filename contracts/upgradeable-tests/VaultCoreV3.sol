@@ -1,7 +1,7 @@
-// Upgraded Date: 01-03-2021 or 01-04-2021
-// Commit: https://github.com/Sperax/USDs/commit/71366d06c5234f022a881de6747651111061ff1b
-// Changes: Changed from using mapping of structs to using mapping of addresses
-// Implementation Contract Address: 0x1285276889a226a6d4B1C18b85082db4dd51251E
+// Upgraded Date: 01-04-2021
+// Commit: https://github.com/Sperax/USDs/commit/3423ae0177c292a47f0939ee5a6b24a18c145643
+// Changes: Added missing parameters update in updateCollateralInfo()
+// Implementation Contract Address: 0xE0A1f2Ed69A739B52a493B244d8ac27F555E0b55
 
 
 // SPDX-License-Identifier: MIT
@@ -24,7 +24,7 @@ import "../vault/VaultCoreTools.sol";
  * @dev Live on Arbitrum Layer 2
  * @author Sperax Foundation
  */
-contract VaultCoreV2 is Initializable, OwnableUpgradeable, AccessControlUpgradeable, ReentrancyGuardUpgradeable, IVaultCore {
+contract VaultCoreV3 is Initializable, OwnableUpgradeable, AccessControlUpgradeable, ReentrancyGuardUpgradeable, IVaultCore {
 	using SafeERC20Upgradeable for IERC20Upgradeable;
 	using SafeMathUpgradeable for uint;
 	using StableMath for uint;

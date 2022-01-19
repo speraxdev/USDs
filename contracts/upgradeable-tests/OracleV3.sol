@@ -1,7 +1,7 @@
 // Upgraded Date: 12-23-2021
-// Commit: https://github.com/Sperax/USDs/commit/1718d0d3c94fcac60f586c4f2fc850d71cada367
-// Changes: USDsInOutRatio calculation debug
-// Implementation Contract Address: 0x8e5562724BCcDB8E6DF5749927EC28C2123E7d76
+// Commit: https://github.com/Sperax/USDs/commit/f4cc9828ee0d74bab988588cae9651b873f15286
+// Changes: Added corner cases handling on USDsInOutRatio calculation
+// Implementation Contract Address: 0x6ADA84B88Ba38EAce0B574D9623ec2A31d6f039d
 
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.6.12;
@@ -26,7 +26,7 @@ import "../libraries/OracleLibrary.sol";
  * @dev providing records of USDs inflow and outflow ratio
  * @author Sperax Inc
  */
-contract OracleV2 is Initializable, IOracle, OwnableUpgradeable {
+contract OracleV3 is Initializable, IOracle, OwnableUpgradeable {
     using SafeMathUpgradeable for uint;
     uint public override USDsInOutRatio; // USDsInOutRatio is accurate after 24 hours (one iteration)
     uint32 public constant override USDsInOutRatio_prec = 10**6;
