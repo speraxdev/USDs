@@ -14,7 +14,7 @@ import "../interfaces/IStrategy.sol";
 import "../interfaces/IVaultCore.sol";
 import "../interfaces/IUSDs.sol";
 import "../interfaces/IBuyback.sol";
-import "./VaultCoreTools.sol";
+import "./VaultCoreToolsV1.sol";
 
 /**
  * @title Vault of USDs protocol
@@ -361,7 +361,7 @@ contract VaultCoreV1 is Initializable, OwnableUpgradeable, AccessControlUpgradea
 		uint deadline
 	) internal whenMintRedeemAllowed {
 		// calculate all necessary related quantities based on user inputs
-		(uint SPABurnAmt, uint collateralDepAmt, uint USDsAmt, uint swapFeeAmount) = VaultCoreTools(vaultCoreToolsAddr).mintView(collateralAddr, valueAmt, valueType, address(this));
+		(uint SPABurnAmt, uint collateralDepAmt, uint USDsAmt, uint swapFeeAmount) = VaultCoreToolsV1(vaultCoreToolsAddr).mintView(collateralAddr, valueAmt, valueType, address(this));
 		// slippageUSDs is the minimum value of the minted USDs
 		// slippageCollat is the maximum value of the required collateral
 		// slippageSPA is the maximum value of the required spa
@@ -422,7 +422,7 @@ contract VaultCoreV1 is Initializable, OwnableUpgradeable, AccessControlUpgradea
 		uint slippageSPA,
 		uint deadline
 	) internal whenMintRedeemAllowed {
-		(uint SPAMintAmt, uint collateralUnlockedAmt, uint USDsBurntAmt, uint swapFeeAmount) = VaultCoreTools(vaultCoreToolsAddr).redeemView(collateralAddr, USDsAmt, address(this), oracleAddr);
+		(uint SPAMintAmt, uint collateralUnlockedAmt, uint USDsBurntAmt, uint swapFeeAmount) = VaultCoreToolsV1(vaultCoreToolsAddr).redeemView(collateralAddr, USDsAmt, address(this), oracleAddr);
 		// slippageCollat is the minimum value of the unlocked collateral
 		// slippageSPA is the minimum value of the minted spa
 		require(collateralUnlockedAmt >= slippageCollat, "Collateral amount is lower than the maximum slippage");
