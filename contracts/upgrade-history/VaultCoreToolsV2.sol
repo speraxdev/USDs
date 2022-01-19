@@ -1,3 +1,10 @@
+// Upgraded Date: 12-23-2021
+// Commit: https://github.com/Sperax/USDs/commit/fc7bccd52a96569ae05d00c4d25a1eda001604eb
+//		   https://github.com/Sperax/USDs/commit/43a3940bf1a6b196d5ddb6a9ce0c4c614addf0c1
+// Changes: Fixed chiTarget calculation bug
+//          Fixed swap out fee calculation order
+// Implementation Contract Address: 0xB4A3B0Faf0Ab53df58001804DdA5Bfc6a3D59008
+
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.6.12;
 
@@ -10,14 +17,13 @@ import "../interfaces/IVaultCore.sol";
 import "../libraries/StableMath.sol";
 import "../utils/BancorFormula.sol";
 
-
 /**
  * @title supporting VaultCore of USDs protocol
  * @dev calculation of chi, swap fees associated with USDs's mint and redeem
  * @dev view functions of USDs's mint and redeem
  * @author Sperax Foundation
  */
-contract VaultCoreTools is Initializable {
+contract VaultCoreToolsV2 is Initializable {
 	using SafeERC20Upgradeable for ERC20Upgradeable;
 	using SafeMathUpgradeable for uint;
 	using StableMath for uint;
