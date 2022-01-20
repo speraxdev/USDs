@@ -9,8 +9,8 @@
 import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import '../interfaces/IOracle.sol';
-import { ICurve3Pool } from "./ICurve3Pool.sol";
-import { ICurveGauge } from "./ICurveGauge.sol";
+import { ICurve3Pool } from "../interfaces/ICurve3Pool.sol";
+import { ICurveGauge } from "../interfaces/ICurveGauge.sol";
 import { InitializableAbstractStrategy } from "./InitializableAbstractStrategy.sol";
 import { StableMath } from "../libraries/StableMath.sol";
 
