@@ -11,6 +11,7 @@ import "../interfaces/IVaultCore.sol";
 import "../interfaces/IUSDs.sol";
 import "../interfaces/IBuyback.sol";
 import "./VaultCoreTools.sol";
+import "../interfaces/ICurveGauge.sol";
 
 /**
  * @title Vault of USDs protocol
@@ -57,6 +58,8 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 	uint32 public override swapFee_A;
 	uint16 public override constant swapFee_A_prec = 10**4;
 	uint8 public override constant allocatePercentage_prec = 10**2;
+	address public constant crvGaugeAddress = 0xbF7E49483881C76487b0989CD7d9A8239B20CA41;
+	address public constant crvToken = 0x11cDb42B0EB46D95f990BeDD4695A6e3fA034978;
 
 	event ParametersUpdated(uint _chiInit, uint32 _chi_beta, uint32 _chi_gamma, uint32 _swapFee_p, uint32 _swapFee_theta, uint32 _swapFee_a, uint32 _swapFee_A);
 	event USDsMinted(address indexed wallet, uint indexed USDsAmt, uint collateralAmt, uint SPAsAmt, uint feeAmt);
@@ -519,7 +522,7 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 		address rewardTokenAddress = strategy.rewardTokenAddress();
         if (rewardTokenAddress != address(0)) {
             uint liquidationThreshold = strategy.rewardLiquidationThreshold();
-			uint rewardTokenAmount = IERC20Upgradeable(rewardTokenAddress).balanceOf(address(this));
+			uint rewardTokenAmount = ICurveGauge(crvGaugeAddress).claimable_reward(address(strategy), crvToken);
 			if (rewardTokenAmount > liquidationThreshold) {
 				strategy.collectRewardToken();
 				uint rewardAmt = IERC20Upgradeable(rewardTokenAddress).balanceOf(address(this));
