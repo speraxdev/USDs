@@ -160,13 +160,7 @@ def main():
 
     if vault_proxy_upgrade:
         # fee vault account
-        fee_vault = accounts.load(
-            click.prompt(
-                "fee_vault account",
-                type=click.Choice(accounts.load())
-            )
-        )
-        print(f"fee_vault account: {fee_vault.address}\n")
+        fee_vault = "0x4F987B24bD2194a574bB3F57b4e66B7f7eD36196"
 
 
         confirm(f"Confirm that the {vault_core}'s proxy address is {vault_proxy_address}")
