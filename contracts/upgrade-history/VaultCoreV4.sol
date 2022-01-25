@@ -10,7 +10,7 @@ import "../interfaces/IStrategy.sol";
 import "../interfaces/IVaultCore.sol";
 import "../interfaces/IUSDs.sol";
 import "../interfaces/IBuyback.sol";
-import "./VaultCoreTools.sol";
+import "./VaultCoreToolsV3.sol";
 import "../interfaces/ICurveGauge.sol";
 
 /**
@@ -19,7 +19,7 @@ import "../interfaces/ICurveGauge.sol";
  * @dev Live on Arbitrum Layer 2
  * @author Sperax Foundation
  */
-contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeable, ReentrancyGuardUpgradeable, IVaultCore {
+contract VaultCoreV4 is Initializable, OwnableUpgradeable, AccessControlUpgradeable, ReentrancyGuardUpgradeable, IVaultCore {
 	using SafeERC20Upgradeable for IERC20Upgradeable;
 	using SafeMathUpgradeable for uint;
 	using StableMath for uint;
@@ -375,7 +375,7 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 		uint deadline
 	) internal whenMintRedeemAllowed {
 		// calculate all necessary related quantities based on user inputs
-		(uint SPABurnAmt, uint collateralDepAmt, uint USDsAmt, uint swapFeeAmount) = VaultCoreTools(vaultCoreToolsAddr).mintView(collateralAddr, valueAmt, valueType, address(this));
+		(uint SPABurnAmt, uint collateralDepAmt, uint USDsAmt, uint swapFeeAmount) = VaultCoreToolsV3(vaultCoreToolsAddr).mintView(collateralAddr, valueAmt, valueType, address(this));
 		// slippageUSDs is the minimum value of the minted USDs
 		// slippageCollat is the maximum value of the required collateral
 		// slippageSPA is the maximum value of the required spa
@@ -436,7 +436,7 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 		uint slippageSPA,
 		uint deadline
 	) internal whenMintRedeemAllowed {
-		(uint SPAMintAmt, uint collateralUnlockedAmt, uint USDsBurntAmt, uint swapFeeAmount) = VaultCoreTools(vaultCoreToolsAddr).redeemView(collateralAddr, USDsAmt, address(this), oracleAddr);
+		(uint SPAMintAmt, uint collateralUnlockedAmt, uint USDsBurntAmt, uint swapFeeAmount) = VaultCoreToolsV3(vaultCoreToolsAddr).redeemView(collateralAddr, USDsAmt, address(this), oracleAddr);
 		// slippageCollat is the minimum value of the unlocked collateral
 		// slippageSPA is the minimum value of the minted spa
 		require(collateralUnlockedAmt >= slippageCollat, "Collateral amount is lower than the maximum slippage");
