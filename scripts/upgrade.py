@@ -184,7 +184,7 @@ def main():
         proxy_admin.upgrade(
             vault_proxy.address,
             new_vault.address,
-            {'from': admin, 'gas_limit': 1000000000}
+            {'from': admin, 'gas_limit': 100000000}
         )
         new_vault.initialize(
             mainnetAddresses.deploy.L2_SPA,
