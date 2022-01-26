@@ -1,4 +1,9 @@
+// Upgraded Date: 01-04-2021
+// Commit: https://github.com/Sperax/USDs/commit/746cf7facdeaba40b5d74011ab0a9a5c91390d3b
+// Changes: Debug the CRV collecting process
+// Implementation Contract Address: 0x4bc6be8D8D79720467127CA30B958753828e138a
 // SPDX-License-Identifier: MIT
+
 pragma solidity >=0.6.12;
 import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
