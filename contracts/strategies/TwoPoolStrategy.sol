@@ -518,7 +518,7 @@ contract TwoPoolStrategy is InitializableAbstractStrategy {
         }
         maxReturn = balanceNoSwap_originalToken > balanceSwap_originalToken ?
             balanceNoSwap_originalToken : balanceSwap_swappedToken;
-        returnAsset = balanceNoSwap_originalToken > balanceNoSwap_originalToken ?
+        returnAsset = balanceNoSwap_originalToken > balanceSwap_originalToken ?
             assetsMapped[supportedAssetIndex] : assetsMapped[index_swappedToken];
     }
 }
