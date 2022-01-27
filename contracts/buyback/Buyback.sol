@@ -46,12 +46,12 @@ contract Buyback is IBuyback, Ownable {
     }
 
     struct inputTokenStruct {
-		address inputTokenAddr;
-		bool supported;
+        address inputTokenAddr;
+        bool supported;
         uint8 hopNum;
         address intermediateToken1;
         address intermediateToken2;
-		uint24 poolFee1;
+        uint24 poolFee1;
         uint24 poolFee2;
         uint24 poolFee3;
 	}
