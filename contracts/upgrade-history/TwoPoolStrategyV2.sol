@@ -323,7 +323,7 @@ contract TwoPoolStrategyV2 is InitializableAbstractStrategyV2 {
         // Calculate how many platform tokens we need to withdraw the asset
         // amount in the worst case (i.e withdrawing all LP tokens)
         require(totalPTokens > 0, "Insufficient 2CRV balance");
-        uint256 maxAmount;
+        uint256 maxAmount = 0;
         if (totalPTokens > lpAssetThreshold) {
             maxAmount = curvePool.calc_withdraw_one_coin(
                 totalPTokens,
@@ -498,9 +498,9 @@ contract TwoPoolStrategyV2 is InitializableAbstractStrategyV2 {
         (, , uint256 totalPTokens) = _getTotalPTokens();
         uint256 index_swappedToken =
             supportedAssetIndex == 1 ? 0 : 1;
-        uint256 balanceNoSwap_originalToken;
-        uint256 balanceSwap_swappedToken;
-        uint256 balanceSwap_originalToken;
+        uint256 balanceNoSwap_originalToken = 0;
+        uint256 balanceSwap_swappedToken = 0;
+        uint256 balanceSwap_originalToken = 0;
         if (totalPTokens > lpAssetThreshold) {
             balanceNoSwap_originalToken = curvePool.calc_withdraw_one_coin(
                 totalPTokens,
