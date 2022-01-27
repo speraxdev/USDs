@@ -1,10 +1,13 @@
+// Changes: now the contract collects yield in the token with higher return,
+//          instead of in the original invested token
+//          (collectInterest ABI changed)
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.6.12;
 
 /**
  * @title Platform interface to integrate with lending platform like Compound, AAVE etc.
  */
-interface IStrategy {
+interface IStrategyV2 {
     /**
      * @dev Deposit the given collateral to platform
      * @param _collateral collateral address

@@ -11,11 +11,11 @@ import "@openzeppelin/contracts-upgradeable/token/ERC20/SafeERC20Upgradeable.sol
 import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import "../interfaces/ISperaxToken.sol";
-import "../interfaces/IStrategy.sol";
+import "./interfaces/IStrategyV2.sol";
 import "../interfaces/IVaultCore.sol";
-import "../interfaces/IUSDs.sol";
+import "./interfaces/IUSDsV2.sol";
 import "../interfaces/IBuyback.sol";
-import "./VaultCoreTools.sol";
+import "./VaultCoreToolsV4.sol";
 import "../interfaces/ICurveGauge.sol";
 
 /**
@@ -24,7 +24,7 @@ import "../interfaces/ICurveGauge.sol";
  * @dev Live on Arbitrum Layer 2
  * @author Sperax Foundation
  */
-contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeable, ReentrancyGuardUpgradeable, IVaultCore {
+contract VaultCoreV5 is Initializable, OwnableUpgradeable, AccessControlUpgradeable, ReentrancyGuardUpgradeable, IVaultCore {
 	using SafeERC20Upgradeable for IERC20Upgradeable;
 	using SafeMathUpgradeable for uint;
 	using StableMath for uint;
@@ -136,7 +136,7 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 	/**
 	 * @dev contract initializer
 	 * @param _SPAaddr SperaxTokenL2 address
-	 * @param _vaultCoreToolsAddr VaultCoreTools address
+	 * @param _vaultCoreToolsAddr VaultCoreToolsV4 address
 	 * @param _feeVault address of wallet storing swap fees
 	 */
 	function initialize(address _SPAaddr, address _vaultCoreToolsAddr, address _feeVault) public initializer {
@@ -380,7 +380,7 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 		uint deadline
 	) internal whenMintRedeemAllowed {
 		// calculate all necessary related quantities based on user inputs
-		(uint SPABurnAmt, uint collateralDepAmt, uint USDsAmt, uint swapFeeAmount) = VaultCoreTools(vaultCoreToolsAddr).mintView(collateralAddr, valueAmt, valueType, address(this));
+		(uint SPABurnAmt, uint collateralDepAmt, uint USDsAmt, uint swapFeeAmount) = VaultCoreToolsV4(vaultCoreToolsAddr).mintView(collateralAddr, valueAmt, valueType, address(this));
 		// slippageUSDs is the minimum value of the minted USDs
 		// slippageCollat is the maximum value of the required collateral
 		// slippageSPA is the maximum value of the required spa
@@ -394,12 +394,12 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 		// if it it not mintWithETH, stake collaterals
 		IERC20Upgradeable(collateralAddr).safeTransferFrom(msg.sender, address(this), collateralDepAmt);
 		// mint USDs and collect swapIn fees
-		IUSDs(USDsAddr).mint(msg.sender, USDsAmt);
-		IUSDs(USDsAddr).mint(feeVault, swapFeeAmount);
+		IUSDsV2(USDsAddr).mint(msg.sender, USDsAmt);
+		IUSDsV2(USDsAddr).mint(feeVault, swapFeeAmount);
 
-		uint priceColla = IOracle(oracleAddr).getCollateralPrice(collateralAddr);
-		uint priceSPA = IOracle(oracleAddr).getSPAprice();
-		uint priceUSDs = IOracle(oracleAddr).getUSDsPrice();
+		uint priceColla = IOracleV2(oracleAddr).getCollateralPrice(collateralAddr);
+		uint priceSPA = IOracleV2(oracleAddr).getSPAprice();
+		uint priceUSDs = IOracleV2(oracleAddr).getUSDsPrice();
 
 		emit USDsMinted(msg.sender, USDsAmt, collateralAddr, collateralDepAmt, SPABurnAmt, swapFeeAmount);
 		emit TotalValueLocked(totalValueLocked(), totalValueInVault(), totalValueInStrategies());
@@ -441,7 +441,7 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 		uint slippageSPA,
 		uint deadline
 	) internal whenMintRedeemAllowed {
-		(uint SPAMintAmt, uint collateralUnlockedAmt, uint USDsBurntAmt, uint swapFeeAmount) = VaultCoreTools(vaultCoreToolsAddr).redeemView(collateralAddr, USDsAmt, address(this), oracleAddr);
+		(uint SPAMintAmt, uint collateralUnlockedAmt, uint USDsBurntAmt, uint swapFeeAmount) = VaultCoreToolsV4(vaultCoreToolsAddr).redeemView(collateralAddr, USDsAmt, address(this), oracleAddr);
 		// slippageCollat is the minimum value of the unlocked collateral
 		// slippageSPA is the minimum value of the minted spa
 		require(collateralUnlockedAmt >= slippageCollat, "Collateral amount is lower than the maximum slippage");
@@ -455,19 +455,19 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 		if (IERC20Upgradeable(collateralAddr).balanceOf(address(this)) >= collateralUnlockedAmt) {
 			IERC20Upgradeable(collateralAddr).safeTransfer(msg.sender, collateralUnlockedAmt);
 		} else if (collateral.defaultStrategyAddr != address(0)) {
-			IStrategy strategy = IStrategy(collateral.defaultStrategyAddr);
+			IStrategyV2 strategy = IStrategyV2(collateral.defaultStrategyAddr);
 			if (strategy.supportsCollateral(collateralAddr)) {
 				strategy.withdraw(msg.sender, collateralAddr, collateralUnlockedAmt);
 			}
 		} else {
 			revert("No enough collateral in Vault or Strategy");
 		}
-		IUSDs(USDsAddr).burn(msg.sender, USDsBurntAmt);
+		IUSDsV2(USDsAddr).burn(msg.sender, USDsBurntAmt);
 		IERC20Upgradeable(USDsAddr).safeTransferFrom(msg.sender, feeVault, swapFeeAmount);
 
-		uint priceColla = IOracle(oracleAddr).getCollateralPrice(collateralAddr);
-		uint priceSPA = IOracle(oracleAddr).getSPAprice();
-		uint priceUSDs = IOracle(oracleAddr).getUSDsPrice();
+		uint priceColla = IOracleV2(oracleAddr).getCollateralPrice(collateralAddr);
+		uint priceSPA = IOracleV2(oracleAddr).getSPAprice();
+		uint priceUSDs = IOracleV2(oracleAddr).getUSDsPrice();
 
 		emit USDsRedeemed(msg.sender, USDsBurntAmt, collateralAddr, collateralUnlockedAmt, SPAMintAmt, swapFeeAmount);
 		emit TotalValueLocked(totalValueLocked(), totalValueInVault(), totalValueInStrategies());
@@ -486,15 +486,15 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 		uint USDsOldSupply = IERC20Upgradeable(USDsAddr).totalSupply();
 		if (USDsIncrement > 0) {
 			uint USDsNewSupply = IERC20Upgradeable(USDsAddr).totalSupply().add(USDsIncrement);
-			IUSDs(USDsAddr).burnExclFromOutFlow(address(this), USDsIncrement);
-			IUSDs(USDsAddr).changeSupply(USDsNewSupply);
+			IUSDsV2(USDsAddr).burnExclFromOutFlow(address(this), USDsIncrement);
+			IUSDsV2(USDsAddr).changeSupply(USDsNewSupply);
 			emit Rebase(USDsOldSupply, USDsNewSupply);
 		} else {
 			emit Rebase(USDsOldSupply, USDsOldSupply);
 		}
 
-		uint priceSPA = IOracle(oracleAddr).getSPAprice();
-		uint priceUSDs = IOracle(oracleAddr).getUSDsPrice();
+		uint priceSPA = IOracleV2(oracleAddr).getSPAprice();
+		uint priceUSDs = IOracleV2(oracleAddr).getUSDsPrice();
 
 		emit SPAprice(priceSPA);
 		emit USDsPrice(priceUSDs);
@@ -505,12 +505,12 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 	 * @dev harvest interest and reward token earned in strategies
 	 */
 	function _harvest() internal returns (uint USDsIncrement) {
-		IStrategy strategy;
+		IStrategyV2 strategy;
 		collateralStruct memory collateral;
 		for (uint y = 0; y < allCollateralAddr.length; y++) {
 			collateral = collateralsInfo[allCollateralAddr[y]];
 			if (collateral.defaultStrategyAddr != address(0)) {
-				strategy = IStrategy(collateral.defaultStrategyAddr);
+				strategy = IStrategyV2(collateral.defaultStrategyAddr);
 				if (collateral.rebaseAllowed && strategy.supportsCollateral(collateral.collateralAddr)) {
 					uint USDsIncrement_viaReward = _harvestReward(strategy);
 					uint USDsIncrement_viaInterest = _harvestInterest(strategy, collateral.collateralAddr);
@@ -523,7 +523,7 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 	/**
 	 * @dev harvest reward token earned in strategies
 	 */
-	function _harvestReward(IStrategy strategy) internal returns (uint USDsIncrement_viaReward) {
+	function _harvestReward(IStrategyV2 strategy) internal returns (uint USDsIncrement_viaReward) {
 		address rewardTokenAddress = strategy.rewardTokenAddress();
         if (rewardTokenAddress != address(0)) {
             uint liquidationThreshold = strategy.rewardLiquidationThreshold();
@@ -542,7 +542,7 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 	/**
 	 * @dev harvest interesed earned in strategies
 	 */
-	function _harvestInterest(IStrategy strategy, address collateralAddr) internal returns (uint USDsIncrement_viaInterest) {
+	function _harvestInterest(IStrategyV2 strategy, address collateralAddr) internal returns (uint USDsIncrement_viaInterest) {
 		collateralStruct memory collateral = collateralsInfo[collateralAddr];
 		uint liquidationThreshold = strategy.interestLiquidationThreshold();
 		uint interestEarned = strategy.checkInterestEarned(collateralAddr);
@@ -557,12 +557,12 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 	 * @dev allocate collateral on this contract into strategies.
 	 */
 	function allocate() external whenAllocationAllowed onlyOwner nonReentrant {
-		IStrategy strategy;
+		IStrategyV2 strategy;
 		collateralStruct memory collateral;
 		for (uint y = 0; y < allCollateralAddr.length; y++) {
 			collateral = collateralsInfo[allCollateralAddr[y]];
 			if (collateral.defaultStrategyAddr != address(0)) {
-				strategy = IStrategy(collateral.defaultStrategyAddr);
+				strategy = IStrategyV2(collateral.defaultStrategyAddr);
 				if (collateral.allocationAllowed && strategy.supportsCollateral(collateral.collateralAddr)) {
 					uint amtInStrategy = strategy.checkBalance(collateral.collateralAddr);
 					uint amtInVault = IERC20Upgradeable(collateral.collateralAddr).balanceOf(address(this));
@@ -586,8 +586,8 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 	function collateralRatio() public view override returns (uint ratio) {
 		uint totalValueLocked = totalValueLocked();
 		uint USDsSupply = IERC20Upgradeable(USDsAddr).totalSupply();
-		uint priceUSDs = uint(IOracle(oracleAddr).getUSDsPrice());
-		uint precisionUSDs = IOracle(oracleAddr).getUSDsPrice_prec();
+		uint priceUSDs = uint(IOracleV2(oracleAddr).getUSDsPrice());
+		uint precisionUSDs = IOracleV2(oracleAddr).getUSDsPrice_prec();
 		uint USDsValue = USDsSupply.mul(priceUSDs).div(precisionUSDs);
 		ratio = totalValueLocked.mul(chi_prec).div(USDsValue);
 	}
@@ -614,8 +614,8 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 	 */
 	function _valueInVault(address _collateralAddr) internal view returns (uint value) {
 		collateralStruct memory collateral = collateralsInfo[_collateralAddr];
-		uint priceColla = IOracle(oracleAddr).getCollateralPrice(collateral.collateralAddr);
-		uint precisionColla = IOracle(oracleAddr).getCollateralPrice_prec(collateral.collateralAddr);
+		uint priceColla = IOracleV2(oracleAddr).getCollateralPrice(collateral.collateralAddr);
+		uint precisionColla = IOracleV2(oracleAddr).getCollateralPrice_prec(collateral.collateralAddr);
 		uint collateralAddrDecimal = uint(ERC20Upgradeable(collateral.collateralAddr).decimals());
 		uint collateralTotalValueInVault = IERC20Upgradeable(collateral.collateralAddr).balanceOf(address(this)).mul(priceColla).div(precisionColla);
 		uint collateralTotalValueInVault_18 = collateralTotalValueInVault.mul(10**(uint(18).sub(collateralAddrDecimal)));
@@ -640,12 +640,12 @@ contract VaultCore is Initializable, OwnableUpgradeable, AccessControlUpgradeabl
 		if (collateral.defaultStrategyAddr == address(0)) {
 			return 0;
 		}
-		IStrategy strategy = IStrategy(collateral.defaultStrategyAddr);
+		IStrategyV2 strategy = IStrategyV2(collateral.defaultStrategyAddr);
 		if (!strategy.supportsCollateral(collateral.collateralAddr)) {
 			return 0;
 		}
-		uint priceColla = IOracle(oracleAddr).getCollateralPrice(collateral.collateralAddr);
-		uint precisionColla = IOracle(oracleAddr).getCollateralPrice_prec(collateral.collateralAddr);
+		uint priceColla = IOracleV2(oracleAddr).getCollateralPrice(collateral.collateralAddr);
+		uint precisionColla = IOracleV2(oracleAddr).getCollateralPrice_prec(collateral.collateralAddr);
 		uint collateralAddrDecimal = uint(ERC20Upgradeable(collateral.collateralAddr).decimals());
 		uint collateralTotalValueInStrategy = strategy.checkBalance(collateral.collateralAddr).mul(priceColla).div(precisionColla);
 		uint collateralTotalValueInStrategy_18 = collateralTotalValueInStrategy.mul(10**(uint(18).sub(collateralAddrDecimal)));

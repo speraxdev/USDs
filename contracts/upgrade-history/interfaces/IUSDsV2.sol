@@ -1,11 +1,9 @@
-// Current version: 1
-// This contract's version: 2
-// Changes: removed rebase's impact on USDs outflow
+// Changes: added burnExclFromOutFlow, thus removed rebase's impact on USDs outflow
 
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.6.12;
 
-interface IUSDs {
+interface IUSDsV2 {
     function mint(address _account, uint256 _amount) external;
     function burn(address _account, uint256 _amount) external;
     function burnExclFromOutFlow(address _account, uint256 _amount) external;

@@ -1,3 +1,6 @@
+// Changes: now the contract collects yield in the token with higher return,
+//          instead of in the original invested token
+//          (collectInterest ABI changed)
 // SPDX-License-Identifier: agpl-3.0
 pragma solidity ^0.6.12;
 
@@ -7,12 +10,12 @@ import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/SafeERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
-import "../interfaces/IStrategy.sol";
+import "./IStrategyV2.sol";
 /**
  * @title USDs Strategies abstract contract
  * @author Sperax Foundation
  */
-abstract contract InitializableAbstractStrategy is IStrategy, Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeable {
+abstract contract InitializableAbstractStrategyV2 is IStrategyV2, Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeable {
     using SafeERC20Upgradeable for IERC20Upgradeable;
     using SafeMathUpgradeable for uint;
 

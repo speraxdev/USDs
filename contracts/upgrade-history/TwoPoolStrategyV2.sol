@@ -1,5 +1,5 @@
-// Current version: 1
-// This contract's version: 2
+// Changes: now the contract collects yield in the token with higher return,
+//          instead of in the original invested token
 // SPDX-License-Identifier: MIT
 /**
  * @title Curve 2Pool Strategy
@@ -10,13 +10,13 @@
 
 import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
-import '../interfaces/IOracle.sol';
+import './interfaces/IOracleV2.sol';
 import { ICurve2Pool } from "../interfaces/ICurve2Pool.sol";
 import { ICurveGauge } from "../interfaces/ICurveGauge.sol";
-import { InitializableAbstractStrategy } from "./InitializableAbstractStrategy.sol";
+import { InitializableAbstractStrategyV2 } from "./interfaces/InitializableAbstractStrategyV2.sol";
 import { StableMath } from "../libraries/StableMath.sol";
 
-contract TwoPoolStrategy is InitializableAbstractStrategy {
+contract TwoPoolStrategyV2 is InitializableAbstractStrategyV2 {
     using StableMath for uint256;
     using SafeERC20 for IERC20;
 
@@ -30,7 +30,7 @@ contract TwoPoolStrategy is InitializableAbstractStrategy {
 
     ICurveGauge public curveGauge;
     ICurve2Pool public curvePool;
-    IOracle public oracle;
+    IOracleV2 public oracle;
 
     /**
      * Initializer for setting up strategy internal state. This overrides the
@@ -61,8 +61,8 @@ contract TwoPoolStrategy is InitializableAbstractStrategy {
         // abstractSetPToken calls will fail
         curveGauge = ICurveGauge(_crvGaugeAddress);
         supportedAssetIndex = _supportedAssetIndex;
-        oracle = IOracle(_oracleAddr);
-        InitializableAbstractStrategy._initialize(
+        oracle = IOracleV2(_oracleAddr);
+        InitializableAbstractStrategyV2._initialize(
             _platformAddress,
             _vaultAddress,
             _rewardTokenAddress,
