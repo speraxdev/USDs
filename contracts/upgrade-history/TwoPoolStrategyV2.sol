@@ -197,13 +197,9 @@ contract TwoPoolStrategyV2 is InitializableAbstractStrategyV2 {
                 assetInterest
             );
         }
-        uint256 maxAmount = curvePool.calc_withdraw_one_coin(
-            totalPTokens,
-            int128(_getPoolCoinIndex(returnAsset))
-        );
         uint256 maxBurnedPTokens = totalPTokens
             .mul(assetInterest)
-            .div(maxAmount);
+            .div(maxReturn);
         // Not enough in this contract or in the Gauge, can't proceed
         require(totalPTokens >= maxBurnedPTokens, "Insufficient 2CRV balance");
         // We have enough LP tokens, make sure they are all on this contract
