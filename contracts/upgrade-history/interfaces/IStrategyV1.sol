@@ -4,7 +4,7 @@ pragma solidity ^0.6.12;
 /**
  * @title Platform interface to integrate with lending platform like Compound, AAVE etc.
  */
-interface IStrategy {
+interface IStrategyV1 {
     /**
      * @dev Deposit the given collateral to platform
      * @param _collateral collateral address
@@ -29,7 +29,7 @@ interface IStrategy {
     function collectInterest(
         address _recipient,
         address _asset
-    ) external returns (address interestAsset, uint256 interetAmt);
+    ) external;
 
     /**
      * @dev Returns the current balance of the given collateral.

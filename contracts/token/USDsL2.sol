@@ -1,3 +1,7 @@
+// Current version: 2
+// This contract's version: 3
+// Changes: removed rebase's impact on USDs outflow
+
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.6.12;
 
@@ -336,6 +340,14 @@ contract USDsL2 is aeERC20, OwnableUpgradeable, IArbToken, IUSDs, ReentrancyGuar
      */
     function burn(address account, uint256 amount) external override onlyVault {
         _burn(account, amount);
+    }
+
+    /**
+     * @dev Burns tokens, decreasing totalSupply. TotalBurnt unchanged.
+     */
+    function burnExclFromOutFlow(address account, uint256 amount) external override onlyVault {
+        _burn(account, amount);
+        totalBurnt = totalBurnt.sub(amount);
     }
 
     /**

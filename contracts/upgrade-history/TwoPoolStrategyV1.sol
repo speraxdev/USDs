@@ -1,5 +1,3 @@
-// Current version: 1
-// This contract's version: 2
 // SPDX-License-Identifier: MIT
 /**
  * @title Curve 2Pool Strategy
@@ -10,13 +8,13 @@
 
 import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
-import '../interfaces/IOracle.sol';
+import './interfaces/IOracleV1.sol';
 import { ICurve2Pool } from "../interfaces/ICurve2Pool.sol";
 import { ICurveGauge } from "../interfaces/ICurveGauge.sol";
-import { InitializableAbstractStrategy } from "./InitializableAbstractStrategy.sol";
+import { InitializableAbstractStrategyV1 } from "./interfaces/InitializableAbstractStrategyV1.sol";
 import { StableMath } from "../libraries/StableMath.sol";
 
-contract TwoPoolStrategy is InitializableAbstractStrategy {
+contract TwoPoolStrategyV1 is InitializableAbstractStrategyV1 {
     using StableMath for uint256;
     using SafeERC20 for IERC20;
 
@@ -30,11 +28,11 @@ contract TwoPoolStrategy is InitializableAbstractStrategy {
 
     ICurveGauge public curveGauge;
     ICurve2Pool public curvePool;
-    IOracle public oracle;
+    IOracleV1 public oracle;
 
     /**
      * Initializer for setting up strategy internal state. This overrides the
-     * InitializableAbstractStrategy initializer as Curve strategies don't fit
+     * InitializableAbstractStrategyV1 initializer as Curve strategies don't fit
      * well within that abstraction.
      * @param _platformAddress Address of the Curve 2Pool
      * @param _vaultAddress Address of the vault
@@ -61,8 +59,8 @@ contract TwoPoolStrategy is InitializableAbstractStrategy {
         // abstractSetPToken calls will fail
         curveGauge = ICurveGauge(_crvGaugeAddress);
         supportedAssetIndex = _supportedAssetIndex;
-        oracle = IOracle(_oracleAddr);
-        InitializableAbstractStrategy._initialize(
+        oracle = IOracleV1(_oracleAddr);
+        InitializableAbstractStrategyV1._initialize(
             _platformAddress,
             _vaultAddress,
             _rewardTokenAddress,
@@ -174,32 +172,21 @@ contract TwoPoolStrategy is InitializableAbstractStrategy {
     /**
      * @dev Collect interest earned from 2Pool
      * @param _recipient Address to receive withdrawn asset
-     * @param _asset Asset type deposited into this strategy contract
+     * @param _asset Address of asset to withdraw
      */
     function collectInterest(
         address _recipient,
         address _asset
-    ) external override onlyVault nonReentrant returns (
-        address interestAsset,
-        uint256 interestAmt
-    ) {
+    ) external override onlyVault nonReentrant {
         require(_recipient != address(0), "Invalid recipient");
         require(supportsCollateral(_asset), "Unsupported collateral");
         (uint256 contractPTokens, , uint256 totalPTokens) = _getTotalPTokens();
+        int128 poolCoinIndex = int128(_getPoolCoinIndex(_asset));
         uint256 assetInterest = checkInterestEarned(_asset);
         require(assetInterest > 0, "No interest earned");
-        (uint256 maxReturn, address returnAsset) = _checkMaxReturn();
-        interestAsset = returnAsset;
-        if (returnAsset != _asset) {
-            assetInterest = _convertBewteen(
-                supportedAssetIndex,
-                _getPoolCoinIndex(returnAsset),
-                assetInterest
-            );
-        }
         uint256 maxAmount = curvePool.calc_withdraw_one_coin(
             totalPTokens,
-            int128(_getPoolCoinIndex(returnAsset))
+            poolCoinIndex
         );
         uint256 maxBurnedPTokens = totalPTokens
             .mul(assetInterest)
@@ -217,23 +204,23 @@ contract TwoPoolStrategy is InitializableAbstractStrategy {
         (contractPTokens, , ) = _getTotalPTokens();
         maxBurnedPTokens = maxBurnedPTokens < contractPTokens ?
                            maxBurnedPTokens : contractPTokens;
-        uint256 minRedeemAmount =
-            _getExpectedAssetAmt(maxBurnedPTokens, returnAsset)
+        uint256 expectedAssetAmt = _getExpectedAssetAmt(maxBurnedPTokens, _asset);
+        uint256 minRedeemAmount = expectedAssetAmt
             .mul(lpAssetSlippage)
             .div(10000000);
-        uint256 balance_before = IERC20(returnAsset).balanceOf(address(this));
+        uint256 balance_before = IERC20(_asset).balanceOf(address(this));
         curvePool.remove_liquidity_one_coin(
             maxBurnedPTokens,
-            int128(_getPoolCoinIndex(returnAsset)),
+            int128(_getPoolCoinIndex(_asset)),
             minRedeemAmount
         );
-        interestAmt = IERC20(returnAsset).balanceOf(address(this))
+        uint256 _amount_received = IERC20(_asset).balanceOf(address(this))
             .sub(balance_before);
-        IERC20(returnAsset).safeTransfer(_recipient, interestAmt);
+        IERC20(_asset).safeTransfer(_recipient, _amount_received);
         emit InterestCollected(
-            returnAsset,
+            _asset,
             address(assetToPToken[_asset]),
-            interestAmt
+            _amount_received
         );
     }
 
@@ -272,15 +259,13 @@ contract TwoPoolStrategy is InitializableAbstractStrategy {
         returns (uint256 balance)
     {
         require(supportsCollateral(_asset), "Unsupported collateral");
-        (uint256 maxReturn, address returnAsset) = _checkMaxReturn();
-        if (_asset != returnAsset) {
-            balance = _convertBewteen(
-                _getPoolCoinIndex(returnAsset),
-                supportedAssetIndex,
-                maxReturn
+        (, , uint256 totalPTokens) = _getTotalPTokens();
+        uint256 poolCoinIndex = _getPoolCoinIndex(_asset);
+        if (totalPTokens > lpAssetThreshold) {
+            balance = curvePool.calc_withdraw_one_coin(
+                totalPTokens,
+                int128(poolCoinIndex)
             );
-        } else {
-            balance = maxReturn;
         }
     }
 
@@ -297,9 +282,20 @@ contract TwoPoolStrategy is InitializableAbstractStrategy {
         returns (uint256)
     {
         require(supportsCollateral(_asset), "Unsupported collateral");
-        uint256 balance = checkBalance(_asset);
-        if (balance > allocatedAmt[_asset]) {
-            return balance.sub(allocatedAmt[_asset]);
+        // Calculate how many platform tokens we need to withdraw the asset
+        // amount in the worst case (i.e withdrawing all LP tokens)
+        (, , uint256 totalPTokens) = _getTotalPTokens();
+        uint256 poolCoinIndex = _getPoolCoinIndex(_asset);
+        uint256 maxAmount;
+        if (totalPTokens > lpAssetThreshold) {
+            maxAmount = curvePool.calc_withdraw_one_coin(
+                totalPTokens,
+                int128(poolCoinIndex)
+            );
+        }
+        uint256 assetInterest;
+        if (maxAmount > allocatedAmt[_asset]) {
+            return assetInterest = maxAmount.sub(allocatedAmt[_asset]);
         } else {
             return 0;
         }
@@ -454,71 +450,5 @@ contract TwoPoolStrategy is InitializableAbstractStrategy {
             .mul(1e18)
             .div(curvePool.get_virtual_price())
             .div(assetPrice_prec);
-    }
-
-    /**
-     * @notice Convert between USDC and USDT using Chainlink oracle
-     * @dev The calculation here assume two tokens have the same decimals
-     * @param index_from Index of the token to convert from
-     * @param index_to Index of the token to convert to
-     * @param amount_from amount of the token to convert from
-     * @return amount_to amount of the token to convert to
-     */
-    function _convertBewteen(
-        uint256 index_from,
-        uint256 index_to,
-        uint256 amount_from
-    ) internal view returns (uint256 amount_to) {
-        require(index_from != index_to, 'Conversion between the same asset');
-        address token_from = assetsMapped[index_from];
-        address token_to = assetsMapped[index_to];
-        uint256 tokenPrice_from = oracle.getCollateralPrice(token_from);
-        uint256 tokenPrice_to = oracle.getCollateralPrice(token_to);
-        uint256 tokenPricePrecision_from = oracle
-            .getCollateralPrice_prec(token_from);
-        uint256 tokenPricePrecision_to = oracle
-            .getCollateralPrice_prec(token_to);
-        amount_to = amount_from
-            .mul(tokenPrice_from)
-            .mul(tokenPricePrecision_to)
-            .div(tokenPrice_to)
-            .div(tokenPricePrecision_from);
-    }
-
-    /**
-     * @notice Get the total asset value held in the platform
-     * @return maxReturn The amount of maximum returnAsset token redeemable
-     * @return returnAsset The token that lp tokens are redeemed to
-     */
-    function _checkMaxReturn()
-        internal
-        view
-        returns (uint256 maxReturn, address returnAsset)
-    {
-        (, , uint256 totalPTokens) = _getTotalPTokens();
-        uint256 index_swappedToken =
-            supportedAssetIndex == 1 ? 0 : 1;
-        uint256 balanceNoSwap_originalToken;
-        uint256 balanceSwap_swappedToken;
-        uint256 balanceSwap_originalToken;
-        if (totalPTokens > lpAssetThreshold) {
-            balanceNoSwap_originalToken = curvePool.calc_withdraw_one_coin(
-                totalPTokens,
-                int128(supportedAssetIndex)
-            );
-            balanceSwap_swappedToken = curvePool.calc_withdraw_one_coin(
-                totalPTokens,
-                int128(index_swappedToken)
-            );
-            balanceSwap_originalToken = _convertBewteen(
-                supportedAssetIndex,
-                index_swappedToken,
-                balanceSwap_swappedToken
-            );
-        }
-        maxReturn = balanceNoSwap_originalToken > balanceSwap_originalToken ?
-            balanceNoSwap_originalToken : balanceSwap_swappedToken;
-        returnAsset = balanceNoSwap_originalToken > balanceNoSwap_originalToken ?
-            assetsMapped[supportedAssetIndex] : assetsMapped[index_swappedToken];
     }
 }

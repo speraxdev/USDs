@@ -1,7 +1,8 @@
+// Changes: removed incorrect and not-in-used getUSDCPrice() and getUSDCprice_prec()
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.6.12;
 
-interface IOracle {
+interface IOracleV2 {
     function getCollateralPrice(address collateralAddr) external view returns (uint);
     function getSPAprice() external view returns (uint);
     function getUSDsPrice() external view returns (uint);

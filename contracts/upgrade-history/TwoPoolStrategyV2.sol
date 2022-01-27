@@ -1,40 +1,42 @@
+// Changes: now the contract collects yield in the token with higher return,
+//          instead of in the original invested token
 // SPDX-License-Identifier: MIT
 /**
- * @title Curve 3Pool Strategy
- * @notice Investment strategy for investing stablecoins via Curve 3Pool
+ * @title Curve 2Pool Strategy
+ * @notice Investment strategy for investing stablecoins via Curve 2Pool
  * @author Sperax Inc
  */
  pragma solidity ^0.6.12;
 
 import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
-import '../interfaces/IOracle.sol';
-import { ICurve3Pool } from "../interfaces/ICurve3Pool.sol";
+import './interfaces/IOracleV2.sol';
+import { ICurve2Pool } from "../interfaces/ICurve2Pool.sol";
 import { ICurveGauge } from "../interfaces/ICurveGauge.sol";
-import { InitializableAbstractStrategy } from "./InitializableAbstractStrategy.sol";
+import { InitializableAbstractStrategyV2 } from "./interfaces/InitializableAbstractStrategyV2.sol";
 import { StableMath } from "../libraries/StableMath.sol";
 
-contract ThreePoolStrategy is InitializableAbstractStrategy {
+contract TwoPoolStrategyV2 is InitializableAbstractStrategyV2 {
     using StableMath for uint256;
     using SafeERC20 for IERC20;
 
     event SlippageChanged(uint256 newSlippage);
     event ThresholdChanged(uint256 newThreshold);
 
+    // minimum LP needed when calculating LP to asset conversion
     uint256 public lpAssetThreshold = 3000;
     uint256 public lpAssetSlippage = 9800000;
     uint256 internal supportedAssetIndex;
 
-    ICurveGauge internal curveGauge;
-    ICurve3Pool internal curvePool;
-    IOracle internal oracle;
-
+    ICurveGauge public curveGauge;
+    ICurve2Pool public curvePool;
+    IOracleV2 public oracle;
 
     /**
      * Initializer for setting up strategy internal state. This overrides the
      * InitializableAbstractStrategy initializer as Curve strategies don't fit
      * well within that abstraction.
-     * @param _platformAddress Address of the Curve 3pool
+     * @param _platformAddress Address of the Curve 2Pool
      * @param _vaultAddress Address of the vault
      * @param _rewardTokenAddress Address of CRV
      * @param _assets Addresses of supported assets. MUST be passed in the same
@@ -44,7 +46,7 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
      * @param _crvGaugeAddress Address of the Curve DAO gauge for this pool
      */
     function initialize(
-        address _platformAddress, // 3Pool address
+        address _platformAddress, // 2Pool address
         address _vaultAddress,
         address _rewardTokenAddress, // CRV
         address[] calldata _assets,
@@ -53,21 +55,21 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
         uint256 _supportedAssetIndex,
         address _oracleAddr
     ) external initializer {
-        require(_assets.length == 3, "Must have exactly three assets");
-        require(_supportedAssetIndex < 3, "_supportedAssetIndex exceeds 2");
+        require(_assets.length == 2, "Must have exactly two assets");
+        require(_supportedAssetIndex < 2, "_supportedAssetIndex exceeds 2");
         // Should be set prior to abstract initialize call otherwise
         // abstractSetPToken calls will fail
         curveGauge = ICurveGauge(_crvGaugeAddress);
         supportedAssetIndex = _supportedAssetIndex;
-        oracle = IOracle(_oracleAddr);
-        InitializableAbstractStrategy._initialize(
+        oracle = IOracleV2(_oracleAddr);
+        InitializableAbstractStrategyV2._initialize(
             _platformAddress,
             _vaultAddress,
             _rewardTokenAddress,
             _assets,
             _pTokens
         );
-        curvePool = ICurve3Pool(platformAddress);
+        curvePool = ICurve2Pool(platformAddress);
     }
 
     /**
@@ -115,7 +117,7 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
     }
 
     /**
-     * @dev Deposit asset into the Curve 3Pool
+     * @dev Deposit asset into the Curve 2Pool
      * @param _asset Address of asset to deposit
      * @param _amount Amount of asset to deposit
      */
@@ -127,9 +129,9 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
     {
         require(supportsCollateral(_asset), "Unsupported collateral");
         require(_amount > 0, "Must deposit something");
-        // 3Pool requires passing deposit amounts for all 3 assets, set to 0 for
+        // 2Pool requires passing deposit amounts for both 2 assets, set to 0 for
         // all
-        uint256[3] memory _amounts;
+        uint256[2] memory _amounts;
         uint256 poolCoinIndex = _getPoolCoinIndex(_asset);
         // Set the amount on the asset we want to deposit
         _amounts[poolCoinIndex] = _amount;
@@ -137,9 +139,9 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
         uint256 minMintAmount = expectedPtokenAmt
             .mul(lpAssetSlippage)
             .div(10000000);
-        // Do the deposit to 3pool
+        // Do the deposit to 2Pool
         // triger to deposit LP tokens
-        curvePool.add_liquidity(_amounts, 0); //TODO: change to minMintAmount
+        curvePool.add_liquidity(_amounts, minMintAmount);
         allocatedAmt[_asset] = allocatedAmt[_asset].add(_amount);
         // Deposit into Gauge
         IERC20 pToken = IERC20(assetToPToken[_asset]);
@@ -158,7 +160,7 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
     }
 
     /**
-     * @dev Withdraw asset from Curve 3Pool
+     * @dev Withdraw asset from Curve 2Pool
      * @param _asset Address of asset to withdraw
      * @param _amount Amount of asset to withdraw
      */
@@ -170,29 +172,40 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
     }
 
     /**
-     * @dev Collect interest earned from 3Pool
+     * @dev Collect interest earned from 2Pool
      * @param _recipient Address to receive withdrawn asset
-     * @param _asset Address of asset to withdraw
+     * @param _asset Asset type deposited into this strategy contract
      */
     function collectInterest(
         address _recipient,
         address _asset
-    ) external override onlyVault nonReentrant {
+    ) external override onlyVault nonReentrant returns (
+        address interestAsset,
+        uint256 interestAmt
+    ) {
         require(_recipient != address(0), "Invalid recipient");
         require(supportsCollateral(_asset), "Unsupported collateral");
         (uint256 contractPTokens, , uint256 totalPTokens) = _getTotalPTokens();
-        uint256 poolCoinIndex = _getPoolCoinIndex(_asset);
         uint256 assetInterest = checkInterestEarned(_asset);
         require(assetInterest > 0, "No interest earned");
+        (uint256 maxReturn, address returnAsset) = _checkMaxReturn();
+        interestAsset = returnAsset;
+        if (returnAsset != _asset) {
+            assetInterest = _convertBewteen(
+                supportedAssetIndex,
+                _getPoolCoinIndex(returnAsset),
+                assetInterest
+            );
+        }
         uint256 maxAmount = curvePool.calc_withdraw_one_coin(
             totalPTokens,
-            poolCoinIndex
+            int128(_getPoolCoinIndex(returnAsset))
         );
         uint256 maxBurnedPTokens = totalPTokens
             .mul(assetInterest)
             .div(maxAmount);
         // Not enough in this contract or in the Gauge, can't proceed
-        require(totalPTokens >= maxBurnedPTokens, "Insufficient 3CRV balance");
+        require(totalPTokens >= maxBurnedPTokens, "Insufficient 2CRV balance");
         // We have enough LP tokens, make sure they are all on this contract
         if (contractPTokens < maxBurnedPTokens) {
             // Not enough of pool token exists on this contract, some must be
@@ -204,23 +217,23 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
         (contractPTokens, , ) = _getTotalPTokens();
         maxBurnedPTokens = maxBurnedPTokens < contractPTokens ?
                            maxBurnedPTokens : contractPTokens;
-        uint256 expectedAssetAmt = _getExpectedAssetAmt(maxBurnedPTokens, _asset);
-        uint256 minRedeemAmount = expectedAssetAmt
+        uint256 minRedeemAmount =
+            _getExpectedAssetAmt(maxBurnedPTokens, returnAsset)
             .mul(lpAssetSlippage)
             .div(10000000);
-        uint256 balance_before = IERC20(_asset).balanceOf(address(this));
+        uint256 balance_before = IERC20(returnAsset).balanceOf(address(this));
         curvePool.remove_liquidity_one_coin(
             maxBurnedPTokens,
-            _getPoolCoinIndex(_asset),
+            int128(_getPoolCoinIndex(returnAsset)),
             minRedeemAmount
         );
-        uint256 _amount_received = IERC20(_asset).balanceOf(address(this))
+        interestAmt = IERC20(returnAsset).balanceOf(address(this))
             .sub(balance_before);
-        IERC20(_asset).safeTransfer(_recipient, _amount_received);
+        IERC20(returnAsset).safeTransfer(_recipient, interestAmt);
         emit InterestCollected(
-            _asset,
+            returnAsset,
             address(assetToPToken[_asset]),
-            _amount_received
+            interestAmt
         );
     }
 
@@ -250,7 +263,7 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
     /**
      * @dev Get the total asset value held in the platform
      * @param _asset      Address of the asset
-     * @return balance    Total value of the asset in the platform
+     * @return balance    Total amount of the asset in the platform
      */
     function checkBalance(address _asset)
         public
@@ -259,15 +272,15 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
         returns (uint256 balance)
     {
         require(supportsCollateral(_asset), "Unsupported collateral");
-        // Calculate how many asset we get in return after withdrawing
-        // all LP tokens
-        (, , uint256 totalPTokens) = _getTotalPTokens();
-        uint256 poolCoinIndex = _getPoolCoinIndex(_asset);
-        if (totalPTokens > lpAssetThreshold) {
-            balance = curvePool.calc_withdraw_one_coin(
-                totalPTokens,
-                poolCoinIndex
+        (uint256 maxReturn, address returnAsset) = _checkMaxReturn();
+        if (_asset != returnAsset) {
+            balance = _convertBewteen(
+                _getPoolCoinIndex(returnAsset),
+                supportedAssetIndex,
+                maxReturn
             );
+        } else {
+            balance = maxReturn;
         }
     }
 
@@ -284,27 +297,16 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
         returns (uint256)
     {
         require(supportsCollateral(_asset), "Unsupported collateral");
-        // Calculate how many platform tokens we need to withdraw the asset
-        // amount in the worst case (i.e withdrawing all LP tokens)
-        (uint256 contractPTokens, , uint256 totalPTokens) = _getTotalPTokens();
-        uint256 poolCoinIndex = _getPoolCoinIndex(_asset);
-        uint256 maxAmount;
-        if (totalPTokens > lpAssetThreshold) {
-            maxAmount = curvePool.calc_withdraw_one_coin(
-                totalPTokens,
-                poolCoinIndex
-            );
-        }
-        uint256 assetInterest;
-        if (maxAmount > allocatedAmt[_asset]) {
-            return assetInterest = maxAmount.sub(allocatedAmt[_asset]);
+        uint256 balance = checkBalance(_asset);
+        if (balance > allocatedAmt[_asset]) {
+            return balance.sub(allocatedAmt[_asset]);
         } else {
             return 0;
         }
     }
 
     /**
-     * @dev Withdraw asset from Curve 3Pool
+     * @dev Withdraw asset from Curve 2Pool
      * @param _recipient Address to receive withdrawn asset
      * @param _asset Address of asset to withdraw
      * @param _amount Amount of asset to withdraw
@@ -320,17 +322,17 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
         (uint256 contractPTokens, , uint256 totalPTokens) = _getTotalPTokens();
         // Calculate how many platform tokens we need to withdraw the asset
         // amount in the worst case (i.e withdrawing all LP tokens)
-        require(totalPTokens > 0, "Insufficient 3CRV balance");
+        require(totalPTokens > 0, "Insufficient 2CRV balance");
         uint256 maxAmount;
         if (totalPTokens > lpAssetThreshold) {
             maxAmount = curvePool.calc_withdraw_one_coin(
                 totalPTokens,
-                _getPoolCoinIndex(_asset)
+                int128(_getPoolCoinIndex(_asset))
             );
         }
         uint256 maxBurnedPTokens = totalPTokens.mul(_amount).div(maxAmount);
         // Not enough in this contract or in the Gauge, can't proceed
-        require(totalPTokens >= maxBurnedPTokens, "Insufficient 3CRV balance");
+        require(totalPTokens >= maxBurnedPTokens, "Insufficient 2CRV balance");
         // We have enough LP tokens, make sure they are all on this contract
         if (contractPTokens < maxBurnedPTokens) {
             // Not enough of pool token exists on this contract, some must be
@@ -349,7 +351,7 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
         uint256 balance_before = IERC20(_asset).balanceOf(address(this));
         curvePool.remove_liquidity_one_coin(
             maxBurnedPTokens,
-            _getPoolCoinIndex(_asset),
+            int128(_getPoolCoinIndex(_asset)),
             minRedeemAmount
         );
         uint256 _amount_received = IERC20(_asset).balanceOf(address(this))
@@ -366,15 +368,15 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
     /**
      * @dev Call the necessary approvals for the Curve pool and gauge
      * @param _asset Address of the asset
-     * @param _pToken Address of the corresponding platform token (i.e. 3CRV)
+     * @param _pToken Address of the corresponding platform token (i.e. 2CRV)
      */
     function _abstractSetPToken(address _asset, address _pToken) override internal {
         IERC20 asset = IERC20(_asset);
         IERC20 pToken = IERC20(_pToken);
-        // 3Pool for asset (required for adding liquidity)
+        // 2Pool for asset (required for adding liquidity)
         asset.safeApprove(platformAddress, 0);
         asset.safeApprove(platformAddress, uint256(-1));
-        // 3Pool for LP token (required for removing liquidity)
+        // 2Pool for LP token (required for removing liquidity)
         pToken.safeApprove(platformAddress, 0);
         pToken.safeApprove(platformAddress, uint256(-1));
         // Gauge for LP token
@@ -383,7 +385,7 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
     }
 
     /**
-     * @dev Calculate the total platform token balance (i.e. 3CRV) that exist in
+     * @dev Calculate the total platform token balance (i.e. 2CRV) that exist in
      * this contract or is staked in the Gauge (or in other words, the total
      * amount platform tokens we own).
      */
@@ -404,10 +406,10 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
     }
 
     /**
-     * @dev Get the index of the coin in 3pool
+     * @dev Get the index of the coin in 2Pool
      */
     function _getPoolCoinIndex(address _asset) internal view returns (uint256) {
-        for (uint256 i = 0; i < 3; i++) {
+        for (uint256 i = 0; i < 2; i++) {
             if (assetsMapped[i] == _asset) return i;
         }
         revert("Unsupported collateral");
@@ -452,5 +454,71 @@ contract ThreePoolStrategy is InitializableAbstractStrategy {
             .mul(1e18)
             .div(curvePool.get_virtual_price())
             .div(assetPrice_prec);
+    }
+
+    /**
+     * @notice Convert between USDC and USDT using Chainlink oracle
+     * @dev The calculation here assume two tokens have the same decimals
+     * @param index_from Index of the token to convert from
+     * @param index_to Index of the token to convert to
+     * @param amount_from amount of the token to convert from
+     * @return amount_to amount of the token to convert to
+     */
+    function _convertBewteen(
+        uint256 index_from,
+        uint256 index_to,
+        uint256 amount_from
+    ) internal view returns (uint256 amount_to) {
+        require(index_from != index_to, 'Conversion between the same asset');
+        address token_from = assetsMapped[index_from];
+        address token_to = assetsMapped[index_to];
+        uint256 tokenPrice_from = oracle.getCollateralPrice(token_from);
+        uint256 tokenPrice_to = oracle.getCollateralPrice(token_to);
+        uint256 tokenPricePrecision_from = oracle
+            .getCollateralPrice_prec(token_from);
+        uint256 tokenPricePrecision_to = oracle
+            .getCollateralPrice_prec(token_to);
+        amount_to = amount_from
+            .mul(tokenPrice_from)
+            .mul(tokenPricePrecision_to)
+            .div(tokenPrice_to)
+            .div(tokenPricePrecision_from);
+    }
+
+    /**
+     * @notice Get the total asset value held in the platform
+     * @return maxReturn The amount of maximum returnAsset token redeemable
+     * @return returnAsset The token that lp tokens are redeemed to
+     */
+    function _checkMaxReturn()
+        internal
+        view
+        returns (uint256 maxReturn, address returnAsset)
+    {
+        (, , uint256 totalPTokens) = _getTotalPTokens();
+        uint256 index_swappedToken =
+            supportedAssetIndex == 1 ? 0 : 1;
+        uint256 balanceNoSwap_originalToken;
+        uint256 balanceSwap_swappedToken;
+        uint256 balanceSwap_originalToken;
+        if (totalPTokens > lpAssetThreshold) {
+            balanceNoSwap_originalToken = curvePool.calc_withdraw_one_coin(
+                totalPTokens,
+                int128(supportedAssetIndex)
+            );
+            balanceSwap_swappedToken = curvePool.calc_withdraw_one_coin(
+                totalPTokens,
+                int128(index_swappedToken)
+            );
+            balanceSwap_originalToken = _convertBewteen(
+                supportedAssetIndex,
+                index_swappedToken,
+                balanceSwap_swappedToken
+            );
+        }
+        maxReturn = balanceNoSwap_originalToken > balanceSwap_originalToken ?
+            balanceNoSwap_originalToken : balanceSwap_swappedToken;
+        returnAsset = balanceNoSwap_originalToken > balanceNoSwap_originalToken ?
+            assetsMapped[supportedAssetIndex] : assetsMapped[index_swappedToken];
     }
 }

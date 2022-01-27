@@ -67,7 +67,7 @@ testnet_upgrade_addresses = UpgradeAddresses(
 
 testnet_third_party_addresses = ThirdPartyAddresses(
     '0x9b014455AcC2Fe90c52803849d0002aeEC184a06', #l2_gateway
-    '0x5f0423B1a6935dc5596e7A24d98532b67A0AeFd8', #chainlink_usdc_price_feed
+    '0xe020609A0C31f4F96dCBB8DF9882218952dD95c4', #chainlink_usdc_price_feed
     '0x09b98f8b2395d076514037ff7d39a091a536206c', #usdc_arbitrum
     '0x491B1dDA0A8fa069bbC1125133A975BF4e85a91b'  #chainlink_flags
     )
@@ -117,7 +117,7 @@ mainnet_upgrade_address = UpgradeAddresses(
 
 mainnet_third_party_address = ThirdPartyAddresses(
     '0x096760F208390250649E3e8763348E783AEF5562', #l2_gateway
-    '0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612', #chainlink_usdc_price_feed
+    '0x50834F3163758fcC1Df9973b6e91f0F0F0434aD3', #chainlink_usdc_price_feed
     '0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8', #usdc_arbitrum
     '0x3C14e07Edd0dC67442FA96f1Ec6999c57E810a83' #chainlink_flags
     )

@@ -1,5 +1,3 @@
-// Current version: 3
-// This contract's version: 4
 // Changes: removed incorrect and not-in-used getUSDCPrice() and getUSDCprice_prec()
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.6.12;
@@ -12,9 +10,9 @@ import "@chainlink/contracts/src/v0.6/interfaces/AggregatorV3Interface.sol";
 import "@chainlink/contracts/src/v0.6/interfaces/FlagsInterface.sol";
 import '@uniswap/v3-core/contracts/interfaces/IUniswapV3Factory.sol';
 
-import "../vault/VaultCore.sol";
-import "../interfaces/IOracle.sol";
-import "../interfaces/IUSDs.sol";
+import "./VaultCoreV5.sol";
+import "./interfaces/IOracleV2.sol";
+import "./interfaces/IUSDsV2.sol";
 import "../libraries/OracleLibrary.sol";
 
 /**
@@ -24,7 +22,7 @@ import "../libraries/OracleLibrary.sol";
  * @dev providing records of USDs inflow and outflow ratio
  * @author Sperax Inc
  */
-contract Oracle is Initializable, IOracle, OwnableUpgradeable {
+contract OracleV4 is Initializable, IOracleV2, OwnableUpgradeable {
     using SafeMathUpgradeable for uint;
     uint public override USDsInOutRatio; // USDsInOutRatio is accurate after 24 hours (one iteration)
     uint32 public constant override USDsInOutRatio_prec = 10**6;
@@ -175,8 +173,8 @@ contract Oracle is Initializable, IOracle, OwnableUpgradeable {
         require(timeElapsed >= updatePeriod, "updateInOutRatio: the time elapsed is too short.");
         uint32 indexNew = updateNextIndex;
         uint32 indexOld = (indexNew + 1) % (FREQUENCY + 1);
-        USDsInflow[indexNew] = IUSDs(USDsAddr).mintedViaUsers();
-        USDsOutflow[indexNew] = IUSDs(USDsAddr).burntViaUsers();
+        USDsInflow[indexNew] = IUSDsV2(USDsAddr).mintedViaUsers();
+        USDsOutflow[indexNew] = IUSDsV2(USDsAddr).burntViaUsers();
         uint USDsInflow_average = USDsInflow[indexNew].sub(USDsInflow[indexOld]);
         uint USDsOutflow_average = USDsOutflow[indexNew].sub(USDsOutflow[indexOld]);
         if (USDsInflow_average == 0 && USDsOutflow_average == 0) {

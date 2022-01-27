@@ -7,12 +7,12 @@ import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/SafeERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
-import "../interfaces/IStrategy.sol";
+import "./IStrategyV1.sol";
 /**
  * @title USDs Strategies abstract contract
  * @author Sperax Foundation
  */
-abstract contract InitializableAbstractStrategy is IStrategy, Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeable {
+abstract contract InitializableAbstractStrategyV1 is IStrategyV1, Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeable {
     using SafeERC20Upgradeable for IERC20Upgradeable;
     using SafeMathUpgradeable for uint;
 
@@ -232,10 +232,7 @@ abstract contract InitializableAbstractStrategy is IStrategy, Initializable, Own
     function collectInterest(
         address _recipient,
         address _asset
-    ) external virtual override returns(
-        address interestAsset,
-        uint256 interestAmt
-    );
+    ) external virtual override;
 
     /**
      * @dev Collect accumulated reward token and send to Vault.
