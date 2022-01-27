@@ -13,7 +13,7 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import { StableMath } from "../libraries/StableMath.sol";
 import "arb-bridge-peripherals/contracts/tokenbridge/arbitrum/IArbToken.sol";
-import "../interfaces/IUSDs.sol";
+import "./interfaces/IUSDsV1.sol";
 import "arb-bridge-peripherals/contracts/tokenbridge/libraries/aeERC20.sol";
 
 /**
@@ -29,7 +29,7 @@ import "arb-bridge-peripherals/contracts/tokenbridge/libraries/aeERC20.sol";
   * @dev inspired by OUSD: https://github.com/OriginProtocol/origin-dollar/blob/master/contracts/contracts/token/OUSD.sol
   * @author Sperax Foundation
   */
-contract USDsL2V2 is aeERC20, OwnableUpgradeable, IArbToken, IUSDs, ReentrancyGuardUpgradeable {
+contract USDsL2V2 is aeERC20, OwnableUpgradeable, IArbToken, IUSDsV1, ReentrancyGuardUpgradeable {
     using SafeMathUpgradeable for uint256;
     using StableMath for uint256;
 

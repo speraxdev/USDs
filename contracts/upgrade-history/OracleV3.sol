@@ -15,7 +15,7 @@ import "@chainlink/contracts/src/v0.6/interfaces/FlagsInterface.sol";
 import '@uniswap/v3-core/contracts/interfaces/IUniswapV3Factory.sol';
 
 import "../vault/VaultCore.sol";
-import "../interfaces/IOracle.sol";
+import "./interfaces/IOracleV1.sol";
 import "../interfaces/IUSDs.sol";
 import "../libraries/OracleLibrary.sol";
 
@@ -26,7 +26,7 @@ import "../libraries/OracleLibrary.sol";
  * @dev providing records of USDs inflow and outflow ratio
  * @author Sperax Inc
  */
-contract OracleV3 is Initializable, IOracle, OwnableUpgradeable {
+contract OracleV3 is Initializable, IOracleV1, OwnableUpgradeable {
     using SafeMathUpgradeable for uint;
     uint public override USDsInOutRatio; // USDsInOutRatio is accurate after 24 hours (one iteration)
     uint32 public constant override USDsInOutRatio_prec = 10**6;
