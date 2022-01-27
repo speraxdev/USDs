@@ -2,6 +2,7 @@
 // This contract's version: 5
 // Changes: fixed mint and redeem event
 //			removed rebase's impact on USDs outflow
+// 			support optimized TwoPoolStrategy (optimized withdrawal)
 
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.6.12;
