@@ -168,12 +168,12 @@ def dai(MockToken, owner_l2):
     print("DAI: ", token.address)
     return brownie.interface.IERC20(token.address)
 
-@pytest.fixture(scope="module", autouse=True)
-def crv(owner_l2):
-    crv_source_address = '0x97e2768e8e73511ca874545dc5ff8067eb19b787'
-    crv_erc20 = brownie.interface.IERC20("0x11cdb42b0eb46d95f990bedd4695a6e3fa034978")
-    txn = crv_erc20.transfer(owner_l2, 100*10**18, {'from': crv_source_address})
-    return crv_erc20
+# @pytest.fixture(scope="module", autouse=True)
+# def crv(owner_l2):
+#     crv_source_address = '0x97e2768e8e73511ca874545dc5ff8067eb19b787'
+#     crv_erc20 = brownie.interface.IERC20("0x11cdb42b0eb46d95f990bedd4695a6e3fa034978")
+#     txn = crv_erc20.transfer(owner_l2, 100*10**18, {'from': crv_source_address})
+#     return crv_erc20
 
 @pytest.fixture(scope="module", autouse=True)
 def proxy_admin(
