@@ -150,7 +150,7 @@ def main():
 
         confirm(f"Confirm that the {vault_core}'s proxy address is {vault_proxy_address}")
 
-        vault_proxy = '0xF783DD830A4650D2A8594423F123250652340E3f'
+        vault_proxy_addr = '0xF783DD830A4650D2A8594423F123250652340E3f'
 
         version_contract_name, version_contract =  getContractToUpgrade(vault_core)
 
@@ -163,7 +163,7 @@ def main():
         )
 
         proxy_admin.upgrade(
-            vault_proxy,
+            vault_proxy_addr,
             new_vault.address,
             {'from': admin, 'gas_limit': 100000000}
         )
@@ -176,11 +176,11 @@ def main():
 
         new_vault_proxy = Contract.from_abi(
             version_contract_name,
-            vault_proxy,
+            vault_proxy_addr,
             version_contract.abi
         )
 
-        print(f"original {vault_core} proxy address: {vault_proxy}")
+        print(f"original {vault_core} proxy address: {vault_proxy_addr}")
         print(f"upgraded {vault_core} proxy address: {new_vault_proxy.address}")
         print(f"upgraded {vault_core} implementation address: {new_vault.address}")
         # print(f"{vault_core} version: {new_vault_proxy.version()}")
@@ -190,7 +190,7 @@ def main():
         confirm(f"Confirm that the {USDs}' proxy address is {usds_proxy_address}")
         confirm(f"Confirm that the {vault_core}'s proxy address is {vault_proxy_address}")
         print(f"upgrade {USDs} contract:\n")
-        vault_proxy = '0xF783DD830A4650D2A8594423F123250652340E3f'
+        vault_proxy_addr = '0xF783DD830A4650D2A8594423F123250652340E3f'
 
         usds_proxy = Contract.from_abi(
             USDs,
@@ -215,7 +215,7 @@ def main():
         new_usds.initialize(
             usds_proxy.name(),
             usds_proxy.symbol(),
-            vault_proxy,
+            vault_proxy_addr,
             usds_proxy.l2Gateway(),
             usds_proxy.l1Address(),
             {'from': owner, 'gas_limit': 1000000000}
@@ -235,11 +235,7 @@ def main():
     if oracle_proxy_upgrade:
         confirm(f"Confirm that the {oracle}'s proxy address is {oracle_proxy_address}")
 
-        oracle_proxy = Contract.from_abi(
-            oracle,
-            oracle_proxy_address,
-            Oracle.abi
-        )
+        oracle_proxy_addr = '0xf3f98086f7B61a32be4EdF8d8A4b964eC886BBcd'
 
         version_contract_name, version_contract =  getContractToUpgrade(oracle)
         # change vault address to verify state changes persist
@@ -247,11 +243,11 @@ def main():
 
         print(f"upgrade {oracle} contract:\n")
         new_oracle = version_contract.deploy(
-            {'from': owner, 'gas_limit': 1500000000}
+            {'from': owner, 'gas_limit': 1000000000}
         )
 
         proxy_admin.upgrade(
-            oracle_proxy.address,
+            oracle_proxy_addr,
             new_oracle.address,
             {'from': admin, 'gas_limit': 200000000}
         )
@@ -265,10 +261,10 @@ def main():
 
         new_oracle_proxy = Contract.from_abi(
             version_contract_name,
-            oracle_proxy.address,
+            oracle_proxy_addr,
             version_contract.abi
         )
-        print(f"original {oracle} proxy address: {oracle_proxy.address}")
+        print(f"original {oracle} proxy address: {oracle_proxy_addr}")
         print(f"upgraded {oracle} proxy address: {new_oracle_proxy.address}")
         print(f"upgraded {oracle} implementation address: {new_oracle.address}")
         # print(f"{oracle}  version: {new_oracle_proxy.version()}")
