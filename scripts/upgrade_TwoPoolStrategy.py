@@ -79,3 +79,7 @@ def main():
         '0xf3f98086f7B61a32be4EdF8d8A4b964eC886BBcd',
         {'from': owner, 'gas_limit': 100000000}
     )
+
+    print(f"upgraded USDC strategy implementation address: {new_usdc_strategy_logic.address}")
+    print(f"upgraded USDT strategy implementation address: {new_usdt_strategy_logic.address}")
+
