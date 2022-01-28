@@ -28,11 +28,13 @@ def main():
         '0x3E49925A79CbFb68BAa5bc9DFb4f7D955D1ddF25',
         ProxyAdmin.abi
     )
-    new_usdc_strategy_logic = TwoPoolStrategyV2.deploy({'from': owner})
+    new_usdc_strategy_logic = TwoPoolStrategyV2.deploy(
+        {'from': owner, 'gas_limit': 1000000000}
+    )
     proxy_admin.upgrade(
         '0xbF82a3212e13b2d407D10f5107b5C8404dE7F403',
         new_usdc_strategy_logic.address,
-        {'from': admin}
+        {'from': admin, 'gas_limit': 100000000}
     )
     new_usdc_strategy_logic.initialize(
         '0x7f90122bf0700f9e7e1f688fe926940e8839f353',
@@ -43,13 +45,15 @@ def main():
         '0xbF7E49483881C76487b0989CD7d9A8239B20CA41',
         0,
         '0xf3f98086f7B61a32be4EdF8d8A4b964eC886BBcd',
-        {'from': owner}
+        {'from': owner, 'gas_limit': 100000000}
     )
-    new_usdt_strategy_logic = TwoPoolStrategyV2.deploy({'from': owner})
+    new_usdt_strategy_logic = TwoPoolStrategyV2.deploy(
+        {'from': owner, 'gas_limit': 1000000000}
+    )
     proxy_admin.upgrade(
         '0xdc118F2F00812326Fe0De5c9c74c1c0c609d1eB4',
         new_usdt_strategy_logic.address,
-        {'from': admin}
+        {'from': admin, 'gas_limit': 100000000}
     )
     new_usdt_strategy_logic.initialize(
         '0x7f90122bf0700f9e7e1f688fe926940e8839f353',
@@ -60,5 +64,5 @@ def main():
         '0xbF7E49483881C76487b0989CD7d9A8239B20CA41',
         1,
         '0xf3f98086f7B61a32be4EdF8d8A4b964eC886BBcd',
-        {'from': owner}
+        {'from': owner, 'gas_limit': 100000000}
     )
