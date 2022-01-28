@@ -142,7 +142,7 @@ def main():
         proxy_admin.upgrade(
             vault_tools_proxy.address,
             new_vault_tools.address,
-            {'from': admin, 'gas_limit': 500000000}
+            {'from': admin, 'gas_limit': 200000000}
         )
 
         new_vault_tools.initialize(bancor_formula_address, {'from': owner, 'gas_limit': 500000000})
@@ -233,7 +233,7 @@ def main():
         proxy_admin.upgrade(
             usds_proxy.address,
             new_usds.address,
-            {'from': admin, 'gas_limit': 1000000000}
+            {'from': admin, 'gas_limit': 200000000}
         )
         new_usds.initialize(
             usds_proxy.name(),
@@ -270,20 +270,20 @@ def main():
 
         print(f"upgrade {oracle} contract:\n")
         new_oracle = version_contract.deploy(
-            {'from': owner, 'gas_limit': 2000000000}
+            {'from': owner, 'gas_limit': 1500000000}
         )
 
         proxy_admin.upgrade(
             oracle_proxy.address,
             new_oracle.address,
-            {'from': admin, 'gas_limit': 500000000}
+            {'from': admin, 'gas_limit': 200000000}
         )
         new_oracle.initialize(
             chainlink_usdc_price_feed,
             mainnetAddresses.deploy.L2_SPA,
             usdc_arbitrum,
             chainlink_flags,
-            {'from': owner, 'gas_limit': 1500000000}
+            {'from': owner, 'gas_limit': 1000000000}
         )
 
         new_oracle_proxy = Contract.from_abi(
