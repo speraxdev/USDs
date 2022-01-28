@@ -2,6 +2,19 @@ import signal
 import click
 import importlib
 import brownie
+from .utils import (
+    confirm,
+    choice,
+    onlyDevelopment,
+    getAddressFromNetwork,
+    getContractToUpgrade,
+    signal_handler
+)
+
+accounts = brownie.accounts
+ProxyAdmin = brownie.ProxyAdmin
+TwoPoolStrategyV2 = brownie.TwoPoolStrategyV2
+
 
 def main():
     signal.signal(signal.SIGINT, signal_handler)
