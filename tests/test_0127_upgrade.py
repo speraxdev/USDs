@@ -37,7 +37,6 @@ def test_upgrade(sperax, ProxyAdmin, VaultCoreV5, USDsL2V3, Buyback, TwoPoolStra
     )
     interest_before = USDC_strategy.checkInterestEarned('0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8')
 
-
     # upgrade everything
     new_usds_logic = USDsL2V3.deploy({'from': owner})
     proxy_admin.upgrade(
@@ -165,16 +164,25 @@ def test_upgrade(sperax, ProxyAdmin, VaultCoreV5, USDsL2V3, Buyback, TwoPoolStra
         True,
         {'from': owner}
     )
-    vault_core.updateStrategyRwdBuybackAddr(
-        USDC_strategy.address,
-        buyback.address,
-        {'from': owner}
-    )
-    vault_core.updateStrategyRwdBuybackAddr(
+    vault_core.updateCollateralInfo(
+        '0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9',
         '0xdc118F2F00812326Fe0De5c9c74c1c0c609d1eB4',
+        True,
+        80,
         buyback.address,
+        True,
         {'from': owner}
     )
+    # vault_core.updateStrategyRwdBuybackAddr(
+    #     USDC_strategy.address,
+    #     buyback.address,
+    #     {'from': owner}
+    # )
+    # vault_core.updateStrategyRwdBuybackAddr(
+    #     '0xdc118F2F00812326Fe0De5c9c74c1c0c609d1eB4',
+    #     buyback.address,
+    #     {'from': owner}
+    # )
     outflow_before = usds.totalBurnt()
     txn = vault_core.rebase({'from': owner})
     outflow_after = usds.totalBurnt()
