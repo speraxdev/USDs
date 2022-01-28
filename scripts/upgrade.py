@@ -25,21 +25,6 @@ VaultCoreTools = brownie.VaultCoreTools
 USDsL2 = brownie.USDsL2
 Oracle = brownie.Oracle
 
-vitalik_address = "0xd8da6bf26964af9d7eed9e03e53415d37aa96045"
-def vault_test_state_change(vault_proxy, owner):
-    print("set mintRedeemAllowed to false to check that state changes:\n")
-    # set mintRedeemAllowed to false to check that state changes
-    vault_proxy.updateMintBurnPermission(False, {'from': owner, 'gas_limit': 1000000000})
-    print(f"mintRedeemAllowed is now: {vault_proxy.mintRedeemAllowed()}\n")
-
-def USDs_test_state_change(usds_proxy, owner):
-    usds_proxy.changeVault(vitalik_address, {'from': owner, 'gas_limit': 1000000000})
-    print(f"vaultAddress is now: {usds_proxy.vaultAddress()}\n")
-
-def oracle_test_state_change(oracle_proxy, owner):
-    oracle_proxy.updateVaultAddress(vitalik_address, {'from': owner, 'gas_limit': 1000000000})
-    print(f"VaultAddr is now: {oracle_proxy.VaultAddr()}\n")
-
 def main():
     # handle ctrl-C event
     signal.signal(signal.SIGINT, signal_handler)
@@ -164,12 +149,8 @@ def main():
 
 
         confirm(f"Confirm that the {vault_core}'s proxy address is {vault_proxy_address}")
-        
-        vault_proxy = Contract.from_abi(
-            vault_core,
-            vault_proxy_address,
-            VaultCore.abi
-        )
+
+        vault_proxy = '0xF783DD830A4650D2A8594423F123250652340E3f'
 
         version_contract_name, version_contract =  getContractToUpgrade(vault_core)
 
@@ -182,7 +163,7 @@ def main():
         )
 
         proxy_admin.upgrade(
-            vault_proxy.address,
+            vault_proxy,
             new_vault.address,
             {'from': admin, 'gas_limit': 100000000}
         )
@@ -195,11 +176,11 @@ def main():
 
         new_vault_proxy = Contract.from_abi(
             version_contract_name,
-            vault_proxy.address,
+            vault_proxy,
             version_contract.abi
         )
-        
-        print(f"original {vault_core} proxy address: {vault_proxy.address}")
+
+        print(f"original {vault_core} proxy address: {vault_proxy}")
         print(f"upgraded {vault_core} proxy address: {new_vault_proxy.address}")
         print(f"upgraded {vault_core} implementation address: {new_vault.address}")
         # print(f"{vault_core} version: {new_vault_proxy.version()}")
@@ -209,11 +190,7 @@ def main():
         confirm(f"Confirm that the {USDs}' proxy address is {usds_proxy_address}")
         confirm(f"Confirm that the {vault_core}'s proxy address is {vault_proxy_address}")
         print(f"upgrade {USDs} contract:\n")
-        vault_proxy = Contract.from_abi(
-            vault_core,
-            vault_proxy_address,
-            VaultCore.abi
-        )
+        vault_proxy = '0xF783DD830A4650D2A8594423F123250652340E3f'
 
         usds_proxy = Contract.from_abi(
             USDs,
@@ -238,7 +215,7 @@ def main():
         new_usds.initialize(
             usds_proxy.name(),
             usds_proxy.symbol(),
-            vault_proxy.address,
+            vault_proxy,
             usds_proxy.l2Gateway(),
             usds_proxy.l1Address(),
             {'from': owner, 'gas_limit': 1000000000}
