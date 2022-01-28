@@ -22,7 +22,7 @@ def main():
     buyback = brownie.Buyback.deploy(
         '0xD74f5255D557944cf7Dd0E45FF521520002D5748', #USDs
         '0xF783DD830A4650D2A8594423F123250652340E3f', #VaultCore
-        {'from': owner}
+        {'from': owner, 'gas_limit': 500000000}
     )
     # configure buyback for USDC, USDT and CRV
     buyback.updateInputTokenInfo(
@@ -34,7 +34,7 @@ def main():
         500,
         0,
         0,
-        {'from': owner}
+        {'from': owner, 'gas_limit': 100000000}
     )
     buyback.updateInputTokenInfo(
         '0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9', #USDT
@@ -45,7 +45,7 @@ def main():
         500,
         500,
         0,
-        {'from': owner}
+        {'from': owner, 'gas_limit': 100000000}
     )
     buyback.updateInputTokenInfo(
         '0x11cdb42b0eb46d95f990bedd4695a6e3fa034978', #CRV
@@ -56,7 +56,7 @@ def main():
         3000,
         500,
         500,
-        {'from': owner}
+        {'from': owner, 'gas_limit': 100000000}
     )
     vault_core = brownie.Contract.from_abi(
         'VaultCore',
@@ -71,7 +71,7 @@ def main():
         80,
         buyback.address,
         True,
-        {'from': owner}
+        {'from': owner, 'gas_limit': 100000000}
     )
     # update USDT
     vault_core.updateCollateralInfo(
@@ -81,15 +81,15 @@ def main():
         80,
         buyback.address,
         True,
-        {'from': owner}
+        {'from': owner, 'gas_limit': 100000000}
     )
     vault_core.updateStrategyRwdBuybackAddr(
         '0xbF82a3212e13b2d407D10f5107b5C8404dE7F403', #USDC_strategy
         buyback.address,
-        {'from': owner}
+        {'from': owner, 'gas_limit': 100000000}
     )
     vault_core.updateStrategyRwdBuybackAddr(
         '0xdc118F2F00812326Fe0De5c9c74c1c0c609d1eB4', #USDT_strategy
         buyback.address,
-        {'from': owner}
+        {'from': owner, 'gas_limit': 100000000}
     )
