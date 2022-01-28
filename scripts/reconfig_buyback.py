@@ -19,9 +19,9 @@ def main():
     print(f"account: {owner.address}\n")
 
     # deploy buyBack
-    buyback = Buyback.deploy(
+    buyback = brownie.Buyback.deploy(
         '0xD74f5255D557944cf7Dd0E45FF521520002D5748', #USDs
-        '0xF783DD830A4650D2A8594423F123250652340E3', #VaultCore
+        '0xF783DD830A4650D2A8594423F123250652340E3f', #VaultCore
         {'from': owner}
     )
     # configure buyback for USDC, USDT and CRV
@@ -58,6 +58,11 @@ def main():
         500,
         {'from': owner}
     )
+    vault_core = brownie.Contract.from_abi(
+        'VaultCore',
+        '0xF783DD830A4650D2A8594423F123250652340E3f', #Vault
+        brownie.VaultCore.abi
+    )
     # update USDC
     vault_core.updateCollateralInfo(
         '0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8', #USDC
@@ -77,11 +82,6 @@ def main():
         buyback.address,
         True,
         {'from': owner}
-    )
-    vault_core = brownie.Contract.from_abi(
-        'VaultCore',
-        '0xF783DD830A4650D2A8594423F123250652340E3f', #Vault
-        VaultCore.abi
     )
     vault_core.updateStrategyRwdBuybackAddr(
         '0xbF82a3212e13b2d407D10f5107b5C8404dE7F403', #USDC_strategy
