@@ -38,7 +38,7 @@ def main():
     )
     new_usdc_strategy_logic.initialize(
         '0x7f90122bf0700f9e7e1f688fe926940e8839f353',
-        vault_core.address,
+        '0xF783DD830A4650D2A8594423F123250652340E3f',
         '0x11cdb42b0eb46d95f990bedd4695a6e3fa034978',
         ['0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8','0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9'],
         ['0x7f90122bf0700f9e7e1f688fe926940e8839f353','0x7f90122bf0700f9e7e1f688fe926940e8839f353'],
@@ -57,7 +57,7 @@ def main():
     )
     new_usdt_strategy_logic.initialize(
         '0x7f90122bf0700f9e7e1f688fe926940e8839f353',
-        vault_core.address,
+        '0xF783DD830A4650D2A8594423F123250652340E3f',
         '0x11cdb42b0eb46d95f990bedd4695a6e3fa034978',
         ['0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8','0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9'],
         ['0x7f90122bf0700f9e7e1f688fe926940e8839f353','0x7f90122bf0700f9e7e1f688fe926940e8839f353'],
