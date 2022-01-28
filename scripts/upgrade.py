@@ -134,7 +134,7 @@ def main():
         # Note: we cannot *easily* test state changes because there are no setters in VaultCoreTools
         # the version check and checks in other functions should suffice
 
-        print(f"upgrade {vault_core} contract:\n")
+        print(f"upgrade {vault_core_tools} contract:\n")
         new_vault_tools = version_contract.deploy(
             {'from': owner, 'gas_limit': 1500000000}
         )
