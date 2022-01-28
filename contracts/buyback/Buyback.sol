@@ -176,7 +176,6 @@ contract Buyback is IBuyback, Ownable {
             // Executes the swap.
             amountOut = swapRouter.exactInput(params);
         }
-        TransferHelper.safeApprove(inputToken, address(swapRouter), amountOut);
 
         emit Swap(inputToken, amountIn, amountOut);
     }
