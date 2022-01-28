@@ -2,7 +2,7 @@
 //pragma solidity ^0.8.0;
 pragma solidity ^0.6.12;
 
-interface ICurve2Pool {
+interface ICurve2PoolV1 {
     function get_virtual_price() external view returns (uint256);
 
     //function add_liquidity(uint256[3] calldata _amounts, uint256 _min) external payable;
@@ -17,9 +17,8 @@ interface ICurve2Pool {
     function remove_liquidity_one_coin(
         uint256 _amount,
         int128 _index,
-        uint256 _minAmount,
-        address _receiver
-    ) external returns (uint256);
+        uint256 _minAmount
+    ) external;
 
     function remove_liquidity(
         uint256 _amount,

@@ -1,5 +1,6 @@
-// Changes: now the contract collects yield in the token with higher return,
+// Changes: 1. now the contract collects yield in the token with higher return,
 //          instead of in the original invested token
+//          2. optimized token flow of withdrawal
 // SPDX-License-Identifier: MIT
 /**
  * @title Curve 2Pool Strategy
@@ -11,7 +12,7 @@
 import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import './interfaces/IOracleV2.sol';
-import { ICurve2Pool } from "../interfaces/ICurve2Pool.sol";
+import { ICurve2PoolV2 } from "./interfaces/ICurve2PoolV2.sol";
 import { ICurveGauge } from "../interfaces/ICurveGauge.sol";
 import { InitializableAbstractStrategyV2 } from "./interfaces/InitializableAbstractStrategyV2.sol";
 import { StableMath } from "../libraries/StableMath.sol";
@@ -29,7 +30,7 @@ contract TwoPoolStrategyV2 is InitializableAbstractStrategyV2 {
     uint256 internal supportedAssetIndex;
 
     ICurveGauge public curveGauge;
-    ICurve2Pool public curvePool;
+    ICurve2PoolV2 public curvePool;
     IOracleV2 public oracle;
 
     /**
@@ -69,7 +70,7 @@ contract TwoPoolStrategyV2 is InitializableAbstractStrategyV2 {
             _assets,
             _pTokens
         );
-        curvePool = ICurve2Pool(platformAddress);
+        curvePool = ICurve2PoolV2(platformAddress);
     }
 
     /**
@@ -217,15 +218,12 @@ contract TwoPoolStrategyV2 is InitializableAbstractStrategyV2 {
             _getExpectedAssetAmt(maxBurnedPTokens, returnAsset)
             .mul(lpAssetSlippage)
             .div(10000000);
-        uint256 balance_before = IERC20(returnAsset).balanceOf(address(this));
-        curvePool.remove_liquidity_one_coin(
+        interestAmt = curvePool.remove_liquidity_one_coin(
             maxBurnedPTokens,
             int128(_getPoolCoinIndex(returnAsset)),
-            minRedeemAmount
+            minRedeemAmount,
+            _recipient
         );
-        interestAmt = IERC20(returnAsset).balanceOf(address(this))
-            .sub(balance_before);
-        IERC20(returnAsset).safeTransfer(_recipient, interestAmt);
         emit InterestCollected(
             returnAsset,
             address(assetToPToken[_asset]),
@@ -344,20 +342,17 @@ contract TwoPoolStrategyV2 is InitializableAbstractStrategyV2 {
         uint256 minRedeemAmount = expectedAssetAmt
             .mul(lpAssetSlippage)
             .div(10000000);
-        uint256 balance_before = IERC20(_asset).balanceOf(address(this));
-        curvePool.remove_liquidity_one_coin(
+        uint256 _amount_received = curvePool.remove_liquidity_one_coin(
             maxBurnedPTokens,
             int128(_getPoolCoinIndex(_asset)),
-            minRedeemAmount
+            minRedeemAmount,
+            _recipient
         );
-        uint256 _amount_received = IERC20(_asset).balanceOf(address(this))
-            .sub(balance_before);
         if (_amount_received >= allocatedAmt[_asset]) {
             allocatedAmt[_asset] = 0;
         } else {
             allocatedAmt[_asset] = allocatedAmt[_asset].sub(_amount_received);
         }
-        IERC20(_asset).safeTransfer(_recipient, _amount_received);
         emit Withdrawal(_asset, address(assetToPToken[_asset]), _amount_received);
     }
 

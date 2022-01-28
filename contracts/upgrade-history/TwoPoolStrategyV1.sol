@@ -9,7 +9,7 @@
 import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import './interfaces/IOracleV1.sol';
-import { ICurve2Pool } from "../interfaces/ICurve2Pool.sol";
+import { ICurve2PoolV1 } from "./interfaces/ICurve2PoolV1.sol";
 import { ICurveGauge } from "../interfaces/ICurveGauge.sol";
 import { InitializableAbstractStrategyV1 } from "./interfaces/InitializableAbstractStrategyV1.sol";
 import { StableMath } from "../libraries/StableMath.sol";
@@ -27,7 +27,7 @@ contract TwoPoolStrategyV1 is InitializableAbstractStrategyV1 {
     uint256 internal supportedAssetIndex;
 
     ICurveGauge public curveGauge;
-    ICurve2Pool public curvePool;
+    ICurve2PoolV1 public curvePool;
     IOracleV1 public oracle;
 
     /**
@@ -67,7 +67,7 @@ contract TwoPoolStrategyV1 is InitializableAbstractStrategyV1 {
             _assets,
             _pTokens
         );
-        curvePool = ICurve2Pool(platformAddress);
+        curvePool = ICurve2PoolV1(platformAddress);
     }
 
     /**

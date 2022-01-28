@@ -217,15 +217,12 @@ contract TwoPoolStrategy is InitializableAbstractStrategy {
             _getExpectedAssetAmt(maxBurnedPTokens, returnAsset)
             .mul(lpAssetSlippage)
             .div(10000000);
-        uint256 balance_before = IERC20(returnAsset).balanceOf(address(this));
-        curvePool.remove_liquidity_one_coin(
+        interestAmt = curvePool.remove_liquidity_one_coin(
             maxBurnedPTokens,
             int128(_getPoolCoinIndex(returnAsset)),
-            minRedeemAmount
+            minRedeemAmount,
+            _recipient
         );
-        interestAmt = IERC20(returnAsset).balanceOf(address(this))
-            .sub(balance_before);
-        IERC20(returnAsset).safeTransfer(_recipient, interestAmt);
         emit InterestCollected(
             returnAsset,
             address(assetToPToken[_asset]),
@@ -344,20 +341,17 @@ contract TwoPoolStrategy is InitializableAbstractStrategy {
         uint256 minRedeemAmount = expectedAssetAmt
             .mul(lpAssetSlippage)
             .div(10000000);
-        uint256 balance_before = IERC20(_asset).balanceOf(address(this));
-        curvePool.remove_liquidity_one_coin(
+        uint256 _amount_received = curvePool.remove_liquidity_one_coin(
             maxBurnedPTokens,
             int128(_getPoolCoinIndex(_asset)),
-            minRedeemAmount
+            minRedeemAmount,
+            _recipient
         );
-        uint256 _amount_received = IERC20(_asset).balanceOf(address(this))
-            .sub(balance_before);
         if (_amount_received >= allocatedAmt[_asset]) {
             allocatedAmt[_asset] = 0;
         } else {
             allocatedAmt[_asset] = allocatedAmt[_asset].sub(_amount_received);
         }
-        IERC20(_asset).safeTransfer(_recipient, _amount_received);
         emit Withdrawal(_asset, address(assetToPToken[_asset]), _amount_received);
     }
 
