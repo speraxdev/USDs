@@ -78,3 +78,18 @@ def main():
         True,
         {'from': owner}
     )
+    vault_core = brownie.Contract.from_abi(
+        'VaultCore',
+        '0xF783DD830A4650D2A8594423F123250652340E3f', #Vault
+        VaultCore.abi
+    )
+    vault_core.updateStrategyRwdBuybackAddr(
+        '0xbF82a3212e13b2d407D10f5107b5C8404dE7F403', #USDC_strategy
+        buyback.address,
+        {'from': owner}
+    )
+    vault_core.updateStrategyRwdBuybackAddr(
+        '0xdc118F2F00812326Fe0De5c9c74c1c0c609d1eB4', #USDT_strategy
+        buyback.address,
+        {'from': owner}
+    )

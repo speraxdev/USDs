@@ -170,6 +170,11 @@ def test_upgrade(sperax, ProxyAdmin, VaultCoreV5, USDsL2V3, Buyback, TwoPoolStra
         buyback.address,
         {'from': owner}
     )
+    vault_core.updateStrategyRwdBuybackAddr(
+        '0xdc118F2F00812326Fe0De5c9c74c1c0c609d1eB4',
+        buyback.address,
+        {'from': owner}
+    )
     outflow_before = usds.totalBurnt()
     txn = vault_core.rebase({'from': owner})
     outflow_after = usds.totalBurnt()
