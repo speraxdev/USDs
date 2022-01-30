@@ -1,10 +1,7 @@
-// Current version: 2
-// This contract's version: 3
 // Changes: removed rebase's impact on USDs outflow
-
+// Changes not reflected
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.6.12;
-
 
 import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
@@ -12,7 +9,7 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import { StableMath } from "../libraries/StableMath.sol";
 import "arb-bridge-peripherals/contracts/tokenbridge/arbitrum/IArbToken.sol";
-import "../interfaces/IUSDs.sol";
+import "./interfaces/IUSDsV2.sol";
 import "arb-bridge-peripherals/contracts/tokenbridge/libraries/aeERC20.sol";
 
 /**
@@ -28,7 +25,7 @@ import "arb-bridge-peripherals/contracts/tokenbridge/libraries/aeERC20.sol";
   * @dev inspired by OUSD: https://github.com/OriginProtocol/origin-dollar/blob/master/contracts/contracts/token/OUSD.sol
   * @author Sperax Foundation
   */
-contract USDsL2 is aeERC20, OwnableUpgradeable, IArbToken, IUSDs, ReentrancyGuardUpgradeable {
+contract USDsL2V4 is aeERC20, OwnableUpgradeable, IArbToken, IUSDsV2, ReentrancyGuardUpgradeable {
     using SafeMathUpgradeable for uint256;
     using StableMath for uint256;
 
@@ -194,8 +191,8 @@ contract USDsL2 is aeERC20, OwnableUpgradeable, IArbToken, IUSDs, ReentrancyGuar
 
         // Credits deducted and credited might be different due to the
         // differing creditsPerToken used by each account
-        uint256 creditsCredited = _value.mulTruncateCeil(_creditsPerToken(_to));
-        uint256 creditsDeducted = _value.mulTruncateCeil(_creditsPerToken(_from));
+        uint256 creditsCredited = _value.mulTruncate(_creditsPerToken(_to));
+        uint256 creditsDeducted = _value.mulTruncate(_creditsPerToken(_from));
 
         _creditBalances[_from] = _creditBalances[_from].sub(
             creditsDeducted,
@@ -314,7 +311,7 @@ contract USDsL2 is aeERC20, OwnableUpgradeable, IArbToken, IUSDs, ReentrancyGuar
 
         bool isNonRebasingAccount = _isNonRebasingAccount(_account);
 
-        uint256 creditAmount = _amount.mulTruncateCeil(_creditsPerToken(_account));
+        uint256 creditAmount = _amount.mulTruncate(_creditsPerToken(_account));
         _creditBalances[_account] = _creditBalances[_account].add(creditAmount);
 
         // notice: If the account is non rebasing and doesn't have a set creditsPerToken
@@ -368,7 +365,7 @@ contract USDsL2 is aeERC20, OwnableUpgradeable, IArbToken, IUSDs, ReentrancyGuar
         }
 
         bool isNonRebasingAccount = _isNonRebasingAccount(_account);
-        uint256 creditAmount = _amount.mulTruncateCeil(_creditsPerToken(_account));
+        uint256 creditAmount = _amount.mulTruncate(_creditsPerToken(_account));
         uint256 currentCredits = _creditBalances[_account];
 
         // Remove the credits, burning rounding errors
