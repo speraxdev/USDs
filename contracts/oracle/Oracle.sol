@@ -1,6 +1,7 @@
-// Current version: 3
+// Current version: 4
 // This contract's version: 4
-// Changes: removed incorrect and not-in-used getUSDCPrice() and getUSDCprice_prec()
+// Arbitrum-one proxy address: 0xf3f98086f7B61a32be4EdF8d8A4b964eC886BBcd
+
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.6.12;
 

@@ -1,6 +1,10 @@
-// Changes: fixed mint and redeem event
-//			removed rebase's impact on USDs outflow
-// 			support optimized TwoPoolStrategy (optimized withdrawal)
+// Upgraded Date: 01-28-2022
+// Commits: https://github.com/Sperax/USDs/commit/6ebcb7bb4ce895474953a98a2e518db31ed649b5#diff-b094db7ce2f99cbcbde7ec178a6754bac666e2192f076807acbd70d49ddd0559
+//		    https://github.com/Sperax/USDs/commit/746cf7facdeaba40b5d74011ab0a9a5c91390d3b#diff-b094db7ce2f99cbcbde7ec178a6754bac666e2192f076807acbd70d49ddd0559
+// Changes: 1. fixed mint and redeem event
+//			2. removed rebase's impact on USDs outflow
+// 			3. support optimized TwoPoolStrategy (optimized withdrawal)
+// Implementation Contract Address: 0x2B00efdfCa499c75D0bD8d6e51c6455C352Aaa10
 
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.6.12;

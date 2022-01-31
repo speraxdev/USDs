@@ -1,4 +1,8 @@
+// Upgraded Date: 01-28-2022
+// Commit: https://github.com/Sperax/USDs/commit/acd56f5cb5a549fc39e2d11cd9ea42f24b72a8f2
 // Changes: removed incorrect and not-in-used getUSDCPrice() and getUSDCprice_prec()
+// Implementation Contract Address: 0x46728c5B55ccB6f15D1865cB8Cec62f44B0071b9
+
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.6.12;
 

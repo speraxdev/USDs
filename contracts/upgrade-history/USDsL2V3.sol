@@ -1,4 +1,8 @@
-// Changes: removed rebase's impact on USDs outflow
+// Upgraded Date: 01-28-2022
+// Commits: https://github.com/Sperax/USDs/commit/6ebcb7bb4ce895474953a98a2e518db31ed649b5#diff-b094db7ce2f99cbcbde7ec178a6754bac666e2192f076807acbd70d49ddd0559
+// Changes: removed rebase's impact on USDs outflow (added burnExclFromOutFlow)
+// Implementation Contract Address: 0x09FCEA2a535cA9C5F757C2Ad8Ac394D66f5be5F8
+// Bug: changes made on top of USDsL2V1.sol instead of USDsL2V2
 
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.6.12;

@@ -1,3 +1,5 @@
+// Arbitrum-one proxy address: 0x1F6803ED9DF57D664297186575D53648616ABa26
+
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.6.12;
 pragma experimental ABIEncoderV2;

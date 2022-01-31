@@ -1,3 +1,7 @@
+// Current deployed version: 4
+// This contract's version: 4
+// Arbitrum-one proxy address: 0x0390C6c7c320e41fCe0e6F0b982D20A88660F473
+
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.6.12;
 

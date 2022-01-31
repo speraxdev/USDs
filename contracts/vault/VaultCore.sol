@@ -1,8 +1,6 @@
-// Current version: 4
+// Current version: 5
 // This contract's version: 5
-// Changes: fixed mint and redeem event
-//			removed rebase's impact on USDs outflow
-// 			support optimized TwoPoolStrategy (optimized withdrawal)
+// Arbitrum-one proxy address: 0xF783DD830A4650D2A8594423F123250652340E3f
 
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.6.12;

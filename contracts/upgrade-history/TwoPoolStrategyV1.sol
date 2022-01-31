@@ -1,3 +1,6 @@
+// Deployed Date: 01-04-2022
+// Commit: https://github.com/Sperax/USDs/commit/b356a03c71327b7565980c08f69feb1953de1631
+
 // SPDX-License-Identifier: MIT
 /**
  * @title Curve 2Pool Strategy

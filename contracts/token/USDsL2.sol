@@ -1,6 +1,6 @@
-// Current version: 2
-// This contract's version: 3
-// Changes: removed rebase's impact on USDs outflow
+// Current version: 4
+// This contract's version: 4
+// Arbitrum-one proxy address: 0xD74f5255D557944cf7Dd0E45FF521520002D5748
 
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.6.12;

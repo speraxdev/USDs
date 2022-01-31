@@ -1,5 +1,7 @@
+// Upgraded Date: 01-28-2022
+// Commits: https://github.com/Sperax/USDs/commit/acd56f5cb5a549fc39e2d11cd9ea42f24b72a8f2#diff-b094db7ce2f99cbcbde7ec178a6754bac666e2192f076807acbd70d49ddd0559
 // Changes: import new IOracle with abandoned functions removed
-
+// Implementation Contract Address: 0xe7b284C08F3361a85775C8d0748543dAfad423A7
 
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.6.12;

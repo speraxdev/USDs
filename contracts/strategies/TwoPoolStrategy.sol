@@ -1,5 +1,8 @@
-// Current version: 1
+// Current version: 2
 // This contract's version: 2
+// Arbitrum-one proxy addresses: 1. USDC strategy: 0xbF82a3212e13b2d407D10f5107b5C8404dE7F403
+//                               2. USDT strategy: 0xdc118F2F00812326Fe0De5c9c74c1c0c609d1eB4
+
 // SPDX-License-Identifier: MIT
 /**
  * @title Curve 2Pool Strategy

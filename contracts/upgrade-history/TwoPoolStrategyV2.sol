@@ -1,6 +1,14 @@
+// Upgraded Date: 01-28-2022
+// Commits: https://github.com/Sperax/USDs/commit/177c1f24c9de18940ec0b5ddce996f87b2343b8d#diff-b094db7ce2f99cbcbde7ec178a6754bac666e2192f076807acbd70d49ddd0559
+//          https://github.com/Sperax/USDs/commit/7d5d63260f7b0088f4aac60c690bc4a1b9265f2f#diff-b094db7ce2f99cbcbde7ec178a6754bac666e2192f076807acbd70d49ddd0559
+//          https://github.com/Sperax/USDs/commit/6ebcb7bb4ce895474953a98a2e518db31ed649b5#diff-b094db7ce2f99cbcbde7ec178a6754bac666e2192f076807acbd70d49ddd0559
 // Changes: 1. now the contract collects yield in the token with higher return,
 //          instead of in the original invested token
 //          2. optimized token flow of withdrawal
+// Implementation Contract Address:
+//          1. USDC strategy: 0x5D2A5d67fD5C970A4A4Ab60bA6cF9b438f869fb9
+//          2. USDT strategy: 0xa2255E689D1E4cC82a7cDC1F01CAe603C93Fd92D
+
 // SPDX-License-Identifier: MIT
 /**
  * @title Curve 2Pool Strategy
