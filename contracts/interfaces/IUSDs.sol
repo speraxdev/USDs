@@ -1,4 +1,4 @@
-// Current version: 1
+// Current version: 2
 // This contract's version: 2
 // Changes: removed rebase's impact on USDs outflow
 
