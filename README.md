@@ -1,6 +1,6 @@
 # USDs
 
-## Deploy 
+## Deploy
 To deploy and configure the smart contracts, run the script/deploy.py script:
 
 Testnet (Arbitrum rinkeby):
@@ -13,12 +13,20 @@ Testnet (Ethereum rinkeby):
 brownie run deploy --network rinkeby
 ```
 ## Upgrade
-To upgrade the two upgradeable smart contracts, Vault and Oracle, run the script/upgrade.py script:
+To upgrade the upgradeable smart contracts: Oracle, TwoPoolStrategy, USDsL2, VaultCoreTools and VaultCore
+1. In the upgrade-history folder, make a copy of the existing contract of the highest version number; rename it with increased version number. (i.e. to upgrade Oracle whose highest version number is 4, copy OracleV4.sol to OracleV5.sol)
+2. Modify the new .sol file produced by step 1; make the same modification on the original contract .sol file (not in upgrade-history folder). (i.e. modify upgrade-history/OracleV5.sol and oracle/Oracle.sol)
+3. Run scripts/upgrade.py to upgrade the deployed contract.
 
-Testnet:
+Arbitrum Mainnet Fork:
 ```
-brownie run upgrade --network arbitrum-rinkeby
+brownie run upgrade --network arbitrum-main-fork
 ```
+Arbitrum Mainnet:
+```
+brownie run upgrade --network arbitrum-one
+```
+4. Modify the comments on top of the two modified .sol files in step 2 to keep a record of the upgrade dates, commits, changes and addresses.
 
 ## Testing
 To run the tests, execute the following command:
@@ -48,7 +56,7 @@ select API 10 registerTokenOnL2()
 
 ```
 SPA L2 address: 0x59d51ef2cbB1Ae4de94D362045f013B3cAFe5563
-maxSubmissionsCost*: 
+maxSubmissionsCost*:
 maxGas: 0
 gasPriceBid: 0
 creditBackAddress: 0xe0C97480CA7BDb33B2CD9810cC7f103188de4383 (address of minter on rinkeby)
@@ -74,7 +82,7 @@ brownie pm install OpenZeppelin/openzeppelin-contracts@3.4.0
 ```
 
 ### Configure Arbitrum network
-Brownie must be configured so it can access the Arbitrum network. 
+Brownie must be configured so it can access the Arbitrum network.
 
 public testnet guide: https://developer.offchainlabs.com/docs/public_testnet
 
