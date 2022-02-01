@@ -17,6 +17,7 @@ To upgrade the upgradeable smart contracts: Oracle, TwoPoolStrategy, USDsL2, Vau
 1. In the upgrade-history folder, make a copy of the existing contract of the highest version number; rename it with increased version number. (i.e. to upgrade Oracle whose highest version number is 4, copy OracleV4.sol to OracleV5.sol)
 2. Modify the new .sol file produced by step 1; make the same modification on the original contract .sol file (not in upgrade-history folder). (i.e. modify upgrade-history/OracleV5.sol and oracle/Oracle.sol)
 3. Run scripts/upgrade.py to upgrade the deployed contract.
+
 Arbitrum Mainnet Fork:
 ```
 brownie run upgrade --network arbitrum-main-fork
@@ -25,7 +26,7 @@ Arbitrum Mainnet:
 ```
 brownie run upgrade --network arbitrum-one
 ```
-4. Modify the comments on top of the two modifed .sol files in step 2 to keep record of the upgrade dates, commits, changes and addresses.
+4. Modify the comments on top of the two modified .sol files in step 2 to keep a record of the upgrade dates, commits, changes and addresses.
 
 ## Testing
 To run the tests, execute the following command:
