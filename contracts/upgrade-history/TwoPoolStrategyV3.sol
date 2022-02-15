@@ -1,7 +1,17 @@
-// Current version: 2
-// This contract's version: 3
+// Upgraded Date:
+// Commits:
+// Changes: 1. debugged _convertBetween() wrong parameter order in _checkMaxReturn()
+//          2. fixed _convertBetween() typo
+//          3. renamed couple of variables in _checkMaxReturn() for better clarity
 // Arbitrum-one proxy addresses: 1. USDC strategy: 0xbF82a3212e13b2d407D10f5107b5C8404dE7F403
 //                               2. USDT strategy: 0xdc118F2F00812326Fe0De5c9c74c1c0c609d1eB4
+
+// SPDX-License-Identifier: MIT
+/**
+ * @title Curve 2Pool Strategy
+ * @notice Investment strategy for investing stablecoins via Curve 2Pool
+ * @author Sperax Inc
+ */
 
 // SPDX-License-Identifier: MIT
 /**
@@ -13,13 +23,13 @@ pragma solidity ^0.6.12;
 
 import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
-import '../interfaces/IOracle.sol';
-import { ICurve2Pool } from "../interfaces/ICurve2Pool.sol";
+import './interfaces/IOracleV2.sol';
+import { ICurve2PoolV2 } from "./interfaces/ICurve2PoolV2.sol";
 import { ICurveGauge } from "../interfaces/ICurveGauge.sol";
-import { InitializableAbstractStrategy } from "./InitializableAbstractStrategy.sol";
+import { InitializableAbstractStrategyV2 } from "./interfaces/InitializableAbstractStrategyV2.sol";
 import { StableMath } from "../libraries/StableMath.sol";
 
-contract TwoPoolStrategy is InitializableAbstractStrategy {
+contract TwoPoolStrategyV3 is InitializableAbstractStrategyV2 {
     using StableMath for uint256;
     using SafeERC20 for IERC20;
 
@@ -32,12 +42,12 @@ contract TwoPoolStrategy is InitializableAbstractStrategy {
     uint256 internal supportedAssetIndex;
 
     ICurveGauge public curveGauge;
-    ICurve2Pool public curvePool;
-    IOracle public oracle;
+    ICurve2PoolV2 public curvePool;
+    IOracleV2 public oracle;
 
     /**
      * Initializer for setting up strategy internal state. This overrides the
-     * InitializableAbstractStrategy initializer as Curve strategies don't fit
+     * InitializableAbstractStrategyV2 initializer as Curve strategies don't fit
      * well within that abstraction.
      * @param _platformAddress Address of the Curve 2Pool
      * @param _vaultAddress Address of the vault
@@ -64,15 +74,15 @@ contract TwoPoolStrategy is InitializableAbstractStrategy {
         // abstractSetPToken calls will fail
         curveGauge = ICurveGauge(_crvGaugeAddress);
         supportedAssetIndex = _supportedAssetIndex;
-        oracle = IOracle(_oracleAddr);
-        InitializableAbstractStrategy._initialize(
+        oracle = IOracleV2(_oracleAddr);
+        InitializableAbstractStrategyV2._initialize(
             _platformAddress,
             _vaultAddress,
             _rewardTokenAddress,
             _assets,
             _pTokens
         );
-        curvePool = ICurve2Pool(platformAddress);
+        curvePool = ICurve2PoolV2(platformAddress);
     }
 
     /**
