@@ -485,7 +485,7 @@ contract TwoPoolStrategyV2 is InitializableAbstractStrategyV2 {
     }
 
     /**
-     * @notice Get the total asset value held in the platform
+     * @notice Check which token to redeem lp token to for maximum return
      * @return maxReturn The amount of maximum returnAsset token redeemable
      * @return returnAsset The token that lp tokens are redeemed to
      */
