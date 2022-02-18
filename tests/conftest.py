@@ -15,17 +15,17 @@ def ordered_tokens(token1, amount1, token2, amount2):
         return token1, amount1, token2, amount2
     return token2, amount2, token1, amount1
 
-@pytest.fixture(scope="module", autouse=True)
+@pytest.fixture(scope="module")
 def admin(accounts):
     return accounts[0]
 
-@pytest.fixture(scope="module", autouse=True)
+@pytest.fixture(scope="module")
 def owner_l1(accounts):
     if brownie.network.show_active() == 'rinkeby':
         return accounts.add(os.getenv('LOCAL_ACCOUNT_PRIVATE_KEY')) # minter
     return accounts[1]
 
-@pytest.fixture(scope="module", autouse=True)
+@pytest.fixture(scope="module")
 def gatewayL1():
     # rinkeby
     if brownie.network.show_active() == 'rinkeby':
@@ -34,7 +34,7 @@ def gatewayL1():
         gateway = '0xcEe284F754E854890e311e3280b767F80797180d'
     return gateway
 
-@pytest.fixture(scope="module", autouse=True)
+@pytest.fixture(scope="module")
 def spa_l1(SperaxToken, SperaxTokenL1, gatewayL1, owner_l1):
     # rinkeby:
     if brownie.network.show_active() == 'rinkeby':
@@ -89,32 +89,32 @@ def usds1(USDsL1, gatewayL1, owner_l1):
     )
     return usds1
 
-@pytest.fixture(scope="module", autouse=True)
+@pytest.fixture(scope="module")
 def owner_l2(accounts):
     return accounts[2]
 
-@pytest.fixture(scope="module", autouse=True)
+@pytest.fixture(scope="module")
 def vault_fee(accounts):
     return accounts[3]
 
-@pytest.fixture(scope="module", autouse=True)
+@pytest.fixture(scope="module")
 def user_account(accounts):
     return accounts[4]
 
-@pytest.fixture(scope="module", autouse=True)
+@pytest.fixture(scope="module")
 def chainlink_flags():
     # Arbitrum-rinkeby testnet:
     #return '0x491B1dDA0A8fa069bbC1125133A975BF4e85a91b'
     # Arbitrum-one mainnet:
     return '0x3C14e07Edd0dC67442FA96f1Ec6999c57E810a83'
 
-@pytest.fixture(scope="module", autouse=True)
+@pytest.fixture(scope="module")
 def weth():
     # Arbitrum-one mainnet:
     weth_address = '0x82af49447d8a07e3bd95bd0d56f35241523fbab1'
     return brownie.interface.IWETH9(weth_address)
 
-@pytest.fixture(scope="module", autouse=True)
+@pytest.fixture(scope="module")
 def usdt(MockToken, owner_l2):
     # token = MockToken.deploy(
     #     "USDT Token",
@@ -129,7 +129,7 @@ def usdt(MockToken, owner_l2):
     usdt_erc20.transfer(owner_l2, 1000*10**6, {'from': usdt_source_address})
     return usdt_erc20
 
-@pytest.fixture(scope="module", autouse=True)
+@pytest.fixture(scope="module")
 def wbtc(MockToken, owner_l2):
     token = MockToken.deploy(
         "WBTC Token",
@@ -140,7 +140,7 @@ def wbtc(MockToken, owner_l2):
     print("WBTC: ", token.address)
     return brownie.interface.IERC20(token.address)
 
-@pytest.fixture(scope="module", autouse=True)
+@pytest.fixture(scope="module")
 def usdc(MockToken, owner_l2):
     # if brownie.network.show_active() == 'arbitrum-rinkeby':
     #     return brownie.interface.IERC20('0x09b98f8b2395d076514037ff7d39a091a536206c')
@@ -156,7 +156,7 @@ def usdc(MockToken, owner_l2):
     usdc_erc20.transfer(owner_l2, 1000*10**6, {'from': usdc_source_address})
     return usdc_erc20
 
-@pytest.fixture(scope="module", autouse=True)
+@pytest.fixture(scope="module")
 def dai(MockToken, owner_l2):
     # Arbitrum-one mainnet:
     token = MockToken.deploy(
@@ -168,14 +168,14 @@ def dai(MockToken, owner_l2):
     print("DAI: ", token.address)
     return brownie.interface.IERC20(token.address)
 
-# @pytest.fixture(scope="module", autouse=True)
+# @pytest.fixture(scope="module")
 # def crv(owner_l2):
 #     crv_source_address = '0x97e2768e8e73511ca874545dc5ff8067eb19b787'
 #     crv_erc20 = brownie.interface.IERC20("0x11cdb42b0eb46d95f990bedd4695a6e3fa034978")
 #     txn = crv_erc20.transfer(owner_l2, 100*10**18, {'from': crv_source_address})
 #     return crv_erc20
 
-@pytest.fixture(scope="module", autouse=True)
+@pytest.fixture(scope="module")
 def proxy_admin(
     ProxyAdmin,
     admin
@@ -185,7 +185,7 @@ def proxy_admin(
         {'from': admin}
     )
 
-@pytest.fixture(scope="module", autouse=True)
+@pytest.fixture(scope="module")
 def sperax(
     proxy_admin,
     TransparentUpgradeableProxy,
